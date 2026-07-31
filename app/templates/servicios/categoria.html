@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}{{ categoria.nombre }} — eServicios{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb">
+    <a class="breadcrumb__link" href="{{ url_for('servicios.index') }}">Servicios y Productos</a>
+    <span class="breadcrumb__current">{{ categoria.nombre }}</span>
+</nav>
+
+<section class="category-hero">
+    <h1 class="category-hero__title">{{ categoria.nombre }}</h1>
+    {% if categoria.descripcion %}
+    <p class="category-hero__subtitle">{{ categoria.descripcion }}</p>
+    {% endif %}
+</section>
+
+<section class="offering-grid">
+    {% for oferta in ofertas %}
+    <article class="offering-card">
+        {% if oferta.destacado %}<span class="offering-card__badge">Destacado</span>{% endif %}
+        <h2 class="offering-card__title">{{ oferta.nombre }}</h2>
+        <span class="offering-card__tipo">{{ oferta.tipo.value | capitalize }}</span>
+        <p class="offering-card__desc">{{ oferta.descripcion }}</p>
+        {% if oferta.vendible and oferta.precio %}
+        <p class="offering-card__precio">Desde ${{ "%.2f"|format(oferta.precio) }}</p>
+        <button class="offering-card__cta" type="button">Agregar al carrito</button>
+        {% else %}
+        <button class="offering-card__cta offering-card__cta--secondary" type="button">Solicitar cotización</button>
+        {% endif %}
+    </article>
+    {% else %}
+    <p class="catalog-empty">Todavía no hay ítems cargados en esta categoría.</p>
+    {% endfor %}
+</section>
+{% endblock %}

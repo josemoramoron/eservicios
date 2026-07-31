@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}eServicios — Soluciones Tech de Autonomía Digital{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1 class="hero__title">eServicios</h1>
+    <p class="hero__subtitle">
+        Integrador tecnológico independiente: infraestructura propia, privacidad,
+        automatización del hogar, cripto, fabricación 3D y hardware — con la capa
+        educativa para que aprendas a operar lo que implementamos.
+    </p>
+    <a class="hero__cta" href="{{ url_for('servicios.index') }}">Ver catálogo de servicios</a>
+</section>
+{% endblock %}

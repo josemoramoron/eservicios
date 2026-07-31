@@ -20,8 +20,11 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     db.init_app(app)
     migrate.init_app(app, db)
 
+    from app import models  # noqa: F401  (registra los modelos para Flask-Migrate)
     from app.routes.health import health_bp
+    from app.routes.servicios import servicios_bp
 
     app.register_blueprint(health_bp)
+    app.register_blueprint(servicios_bp)
 
     return app

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Servicios y Productos — eServicios{% endblock %}
+
+{% block content %}
+<section class="catalog-hero">
+    <h1 class="catalog-hero__title">Servicios y Productos</h1>
+    <p class="catalog-hero__subtitle">Explora el catálogo por categoría.</p>
+</section>
+
+<section class="category-grid">
+    {% for cat in categorias %}
+    <a class="category-card" href="{{ url_for('servicios.categoria', slug=cat.slug) }}">
+        <h2 class="category-card__title">{{ cat.nombre }}</h2>
+        {% if cat.descripcion %}
+        <p class="category-card__desc">{{ cat.descripcion }}</p>
+        {% endif %}
+    </a>
+    {% else %}
+    <p class="catalog-empty">Todavía no hay categorías cargadas.</p>
+    {% endfor %}
+</section>
+{% endblock %}

@@ -7,6 +7,20 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    {% block content %}{% endblock %}
+    <header class="site-header">
+        <nav class="site-nav">
+            <a class="site-nav__brand" href="{{ url_for('health.index') }}">eServicios</a>
+            <a class="site-nav__link" href="{{ url_for('servicios.index') }}">Servicios y Productos</a>
+            {# Contacto/cotizar llega cuando exista el formulario de Lead (roadmap punto 5) #}
+        </nav>
+    </header>
+
+    <main class="site-main">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <p class="site-footer__text">eServicios LLC — Soluciones Tech de Autonomía Digital</p>
+    </footer>
 </body>
 </html>

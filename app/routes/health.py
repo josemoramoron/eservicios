@@ -1,5 +1,5 @@
-"""Endpoints de salud/diagnóstico y página de inicio temporal."""
-from flask import Blueprint, Response, jsonify
+"""Endpoints de salud/diagnóstico y página de inicio."""
+from flask import Blueprint, Response, jsonify, render_template
 
 health_bp = Blueprint("health", __name__)
 
@@ -16,9 +16,9 @@ def health() -> Response:
 
 @health_bp.route("/")
 def index() -> str:
-    """Página de inicio temporal mientras se construye el marketplace.
+    """Página de inicio del sitio de productos y servicios.
 
     Returns:
-        HTML simple de confirmación.
+        HTML de la landing principal.
     """
-    return "<h1>eServicios — en construcción</h1><p>Esqueleto técnico activo.</p>"
+    return render_template("home.html")
