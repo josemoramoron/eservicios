@@ -9,6 +9,7 @@
 </nav>
 
 <section class="category-hero">
+    <span class="category-hero__icon" aria-hidden="true">{{ icono_categoria(categoria.slug) | safe }}</span>
     <h1 class="category-hero__title">{{ categoria.nombre }}</h1>
     {% if categoria.descripcion %}
     <p class="category-hero__subtitle">{{ categoria.descripcion }}</p>

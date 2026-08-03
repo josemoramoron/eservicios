@@ -21,6 +21,7 @@ class Category(db.Model):
     slug: Mapped[str] = mapped_column(String(120), unique=True, nullable=False, index=True)
     descripcion: Mapped[str | None] = mapped_column(Text, nullable=True)
     orden: Mapped[int] = mapped_column(default=0, nullable=False)
+    imagen_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
     offerings: Mapped[list["Offering"]] = relationship(  # noqa: F821
         back_populates="category", order_by="Offering.nombre"

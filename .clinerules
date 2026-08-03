@@ -1,0 +1,109 @@
+# .clinerules — eServicios
+# Adaptado del .clinerules de Ceiba21 (proyecto hermano). Cline/Claude
+# leen este archivo automáticamente en cada sesión sobre este repo.
+
+## Proyecto
+Nombre: eServicios — dossier de productos, servicios y educación (eServicios LLC)
+Stack: Flask 3.1 + PostgreSQL + SQLAlchemy 2.0 (Mapped/mapped_column) + Redis + Python 3.13
+Infraestructura: Raspberry Pi 5, Cloudflare Tunnel, cuenta de Cloudflare conectada (R2 pendiente de credenciales de objeto)
+Entorno local: Windows, localhost:5000, BD eservicios_dev
+Dominio: eservicios.org (el marketplace de trabajos temporales se movió a un proyecto aparte: polunga.com)
+
+## Arquitectura
+Capas en orden estricto: Routes → Services → Models
+- app/models/     → modelos SQLAlchemy (Category, Offering, Order, OrderItem, AdminUser, Lead, Testimonial)
+- app/routes/     → controllers Flask con Blueprints (solo orquestación) — health.py, servicios.py
+- app/services/   → toda la lógica de negocio — catalogo_service.py
+- app/templates/  → views Jinja2, sin lógica Python
+- app/static/     → CSS, JS, imágenes (íconos de categoría en static/img/categorias/)
+- scripts/        → migraciones y utilidades (seed_catalogo.py, idempotente por slug)
+- migrations/     → Alembic/Flask-Migrate, versionado en git (a diferencia de otros proyectos, aquí SÍ está en el repo)
+
+No hay app/bot/ ni app/telegram/ todavía — si alguna vez se automatiza el bot de Telegram/WhatsApp
+del catálogo (una de las ofertas del dossier), aplican las mismas reglas de contexto Flask de más abajo.
+
+## Reglas de codificación
+1. Python 3.13 con Type Hints en todas las funciones
+2. Sigue PEP 8 estrictamente: snake_case para funciones/variables, PascalCase para clases
+3. Todas las funciones públicas con Docstrings en formato Google
+4. Nunca uses except: pass — captura excepciones específicas con respuestas claras
+5. Si una función supera 60 líneas sepárala en un módulo independiente
+6. No mezcles lógica de negocio en routes — va en services/
+
+## Regla sobre funciones largas
+- Si una función supera 60 líneas pero su firma tiene muchos parámetros opcionales
+  (ej: 10+ argumentos), los parámetros no cuentan como líneas de lógica.
+  Lo importante es que el cuerpo de la función sea legible, no el número total.
+- No dividir por dividir: solo extraer un helper si tiene responsabilidad propia
+  y nombre claro. Un helper llamado _parte2() no aporta nada.
+
+## Reglas operacionales
+1. Antes de modificar código analiza dependencias para no romper otras partes
+2. Antes de ejecutar pip install, migraciones de BD, o cualquier comando que escriba
+   en el Postgres real (dev o producción), pídeme confirmación explícita — genera y
+   prueba el código/la migración en un entorno descartable primero
+3. Nunca leas archivos .db o .sqlite completos — lee solo los models de Python
+4. Si un cambio afecta otro módulo avísame antes de proceder
+5. Si no tienes suficiente contexto pregunta antes de suponer
+6. Después de cada cambio dime cómo probarlo localmente
+7. Para ejecutar tests siempre usar: python -m pytest app\tests\ -v (nunca solo "pytest")
+
+## Flujo de deploy
+- Desarrollo: localhost:5000 con `flask --app wsgi run`
+- Deploy: desde C:\proyectos\eservicios, correr `.\deploy.ps1` — hace `git push origin main`
+  (respaldo/histórico en GitHub) y luego `git push production main`
+- El remoto `production` apunta a `eservicios-webmaster:/home/webmaster/repos/eservicios.git`
+  (repo bare en la Pi). El alias SSH `eservicios-webmaster` en `~/.ssh/config` de Windows
+  debe usar la IP fija `192.168.20.74` — NUNCA `raspberrypi.local` (Windows no resuelve
+  mDNS de forma confiable; esto ya causó una falla real de deploy)
+- El hook `post-receive` de ese repo bare hace checkout a `/var/www/eservicios` y corre
+  `/var/www/eservicios/deploy.sh`
+- `deploy.sh` (vive solo en la Pi, NO versionado en git — pendiente de meterlo al repo):
+  crea/activa venv, `pip install -r requirements.txt`, `flask db upgrade` si existe la
+  carpeta `migrations` (ojo: antes comprobaba `-f manage.py`, un archivo que este proyecto
+  nunca tuvo — bug ya corregido a mano en la Pi), `sudo systemctl restart eservicios`
+- NUNCA modificar archivos directamente en el Raspberry Pi salvo excepciones ya acordadas
+  explícitamente (como el fix puntual de `deploy.sh` documentado en el roadmap)
+
+## Cuando hay un error
+1. Identifica en qué capa ocurrió (model/service/route/template)
+2. Propón la solución mínima sin cambiar nada innecesario
+3. Si requiere refactorizar dímelo primero y espera confirmación
+4. Muéstrame cómo reproducir el error antes de corregirlo
+
+## Reglas CSS
+- Nunca usar !important para resolver conflictos de tema
+- Colores adaptativos SIEMPRE mediante variables CSS en :root y [data-theme="dark"]
+  (ver app/static/css/style.css — ya sigue este patrón)
+- Nunca hardcodear colores con style="" en elementos que deben cambiar con el tema
+- Selectores siempre específicos (.site-nav, .category-card__title) nunca genéricos (nav, body, a)
+- Íconos/SVG de categoría: usar `currentColor` o variables CSS para el trazo/relleno,
+  nunca hex fijo, para que se adapten a tema claro/oscuro igual que el resto del sitio
+
+## Reglas de refactorización
+- Antes de refactorizar un bloque que llama métodos de un Model,
+  leer el Model completo para verificar nombres exactos de métodos.
+- No asumir nombres de métodos — verificar siempre con grep o leyendo el archivo.
+
+## Acceso al Depositorio de Github
+- En Cowork/Claude: acceso directo al folder conectado C:\proyectos\eservicios
+  (Read/Write/Edit), no hace falta curl a raw.githubusercontent.com salvo que se
+  use Cline u otra herramienta sin acceso directo al filesystem.
+
+## Regla sobre contexto de petición (Flask)
+- Todo lo que corra FUERA de una petición HTTP (hilos con Thread, cron,
+  scripts, tareas de APScheduler, webhooks de Stripe procesados en background,
+  envío de correos transaccionales) NO puede tocar `session`, `request`,
+  `current_client()` ni `render_template()`.
+- `render_template()` ejecuta los context processors de la app, que pueden leer
+  `session` y exigen una petición activa. Para renderizar fuera de una petición
+  usar `app.jinja_env.get_template(...)`.
+- Las URLs absolutas (`url_for(..., _external=True)`) se construyen DENTRO de la
+  petición y se pasan ya hechas al hilo/tarea. Nunca generarlas en el hilo.
+- Nunca definir `SERVER_NAME` en desarrollo: además de las URLs, afecta al
+  enrutamiento y Flask empieza a rechazar peticiones cuyo Host no coincida
+  (rompe localhost:5000). Solo en producción.
+- Antes de mover código a un hilo o a un script, verificar qué dependencias de
+  contexto arrastra. En Ceiba21 este patrón causó tres fallos (Service Worker,
+  pausa global del bot, envío de correos) — aplica la misma cautela aquí cuando
+  se implemente el webhook de Stripe o el envío de correo transaccional (SES).

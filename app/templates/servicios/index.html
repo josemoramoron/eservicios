@@ -11,6 +11,7 @@
 <section class="category-grid">
     {% for cat in categorias %}
     <a class="category-card" href="{{ url_for('servicios.categoria', slug=cat.slug) }}">
+        <span class="category-card__icon" aria-hidden="true">{{ icono_categoria(cat.slug) | safe }}</span>
         <h2 class="category-card__title">{{ cat.nombre }}</h2>
         {% if cat.descripcion %}
         <p class="category-card__desc">{{ cat.descripcion }}</p>

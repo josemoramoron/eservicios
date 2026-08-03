@@ -345,6 +345,9 @@ CATEGORIAS: list[dict] = [
 def upsert_categoria(datos: dict) -> Category:
     """Crea o actualiza una categoría por su slug.
 
+    El ícono se deriva del slug (`app/static/img/categorias/<slug>.svg`),
+    así que no hace falta declararlo a mano en cada entrada de `CATEGORIAS`.
+
     Args:
         datos: Diccionario con nombre, slug, descripcion y orden.
 
@@ -358,6 +361,7 @@ def upsert_categoria(datos: dict) -> Category:
     categoria.nombre = datos["nombre"]
     categoria.descripcion = datos["descripcion"]
     categoria.orden = datos["orden"]
+    categoria.imagen_url = f"/static/img/categorias/{datos['slug']}.svg"
     return categoria
 
 
