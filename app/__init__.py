@@ -1,7 +1,8 @@
 """Application factory de eServicios."""
 from datetime import datetime, timezone
+from pathlib import Path
 
-from flask import Flask
+from flask import Flask, url_for
 
 from app.extensions import db, migrate
 from config import Config
@@ -32,6 +33,30 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     app.register_blueprint(servicios_bp)
     app.jinja_env.globals["icono_categoria"] = obtener_icono_categoria
     app.jinja_env.globals["icono_red"] = obtener_icono_red
+
+    def estatico_v(nombre_archivo: str) -> str:
+        """URL de un archivo estático con un parámetro `?v=` de cache-busting.
+
+        El valor de `v` es la fecha de modificación del archivo, así que
+        cambia solo cuando el archivo cambia — cada deploy invalida el
+        caché del navegador y de Cloudflare para ese archivo automáticamente,
+        sin depender de una purga manual.
+
+        Args:
+            nombre_archivo: Ruta relativa a `app/static/`, ej. "css/style.css".
+
+        Returns:
+            URL del archivo estático con `?v=<timestamp>` si el archivo
+            existe, o la URL simple si no se pudo leer la fecha de modificación.
+        """
+        ruta = Path(app.static_folder) / nombre_archivo
+        try:
+            version = int(ruta.stat().st_mtime)
+        except OSError:
+            return url_for("static", filename=nombre_archivo)
+        return url_for("static", filename=nombre_archivo, v=version)
+
+    app.jinja_env.globals["estatico_v"] = estatico_v
 
     @app.context_processor
     def inyectar_info_sitio() -> dict:
