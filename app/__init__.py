@@ -1,4 +1,6 @@
 """Application factory de eServicios."""
+from datetime import datetime, timezone
+
 from flask import Flask
 
 from app.extensions import db, migrate
@@ -23,10 +25,21 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     from app import models  # noqa: F401  (registra los modelos para Flask-Migrate)
     from app.routes.health import health_bp
     from app.routes.servicios import servicios_bp
-    from app.services.iconos_service import obtener_icono_svg
+    from app.services.iconos_service import obtener_icono_categoria, obtener_icono_red
+    from app.services.site_info_service import obtener_info_sitio
 
     app.register_blueprint(health_bp)
     app.register_blueprint(servicios_bp)
-    app.jinja_env.globals["icono_categoria"] = obtener_icono_svg
+    app.jinja_env.globals["icono_categoria"] = obtener_icono_categoria
+    app.jinja_env.globals["icono_red"] = obtener_icono_red
+
+    @app.context_processor
+    def inyectar_info_sitio() -> dict:
+        """Expone `sitio` (contacto/redes) y el año actual a las plantillas.
+
+        Returns:
+            Diccionario con las claves `sitio` y `anio_actual` para Jinja.
+        """
+        return {"sitio": obtener_info_sitio(), "anio_actual": datetime.now(timezone.utc).year}
 
     return app

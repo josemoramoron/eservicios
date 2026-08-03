@@ -20,7 +20,43 @@
     </main>
 
     <footer class="site-footer">
-        <p class="site-footer__text">eServicios LLC — Soluciones Tech de Autonomía Digital</p>
+        <div class="site-footer__grid">
+            <div class="site-footer__col">
+                <p class="site-footer__brand">eServicios LLC</p>
+                <p class="site-footer__text">Soluciones Tech de Autonomía Digital</p>
+            </div>
+            <div class="site-footer__col">
+                <p class="site-footer__heading">Contacto</p>
+                <p class="site-footer__text">{{ sitio.contacto.direccion }}</p>
+                <p class="site-footer__text">
+                    <a class="site-footer__link" href="mailto:{{ sitio.contacto.email }}">{{ sitio.contacto.email }}</a>
+                </p>
+                <p class="site-footer__text">
+                    <a class="site-footer__link" href="{{ sitio.contacto.whatsapp_url }}" target="_blank" rel="noopener">
+                        WhatsApp: {{ sitio.contacto.whatsapp_numero }}
+                    </a>
+                </p>
+                <p class="site-footer__text">
+                    <a class="site-footer__link" href="{{ sitio.contacto.sitio_web }}">{{ sitio.contacto.sitio_web }}</a>
+                </p>
+            </div>
+            <div class="site-footer__col">
+                <p class="site-footer__heading">Síguenos</p>
+                <div class="site-footer__social">
+                    {% for red in sitio.redes_sociales %}
+                    <a class="site-footer__social-link" href="{{ red.url }}" target="_blank" rel="noopener" title="{{ red.nombre }}{% if red.handle %} — {{ red.handle }}{% endif %}">
+                        <span class="site-footer__social-icon" aria-hidden="true">{{ icono_red(red.clave) | safe }}</span>
+                        <span class="sr-only">{{ red.nombre }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <p class="site-footer__copy">&copy; {{ anio_actual }} eServicios LLC</p>
     </footer>
+
+    <a class="whatsapp-fab" href="{{ sitio.contacto.whatsapp_url }}" target="_blank" rel="noopener" aria-label="Escribir por WhatsApp">
+        {{ icono_red("whatsapp") | safe }}
+    </a>
 </body>
 </html>

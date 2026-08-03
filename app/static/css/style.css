@@ -6,6 +6,8 @@
     --color-border: #e2e5ea;
     --color-accent: #2563eb;
     --color-accent-contrast: #ffffff;
+    --color-whatsapp: #25d366;
+    --color-whatsapp-contrast: #ffffff;
 }
 
 [data-theme="dark"] {
@@ -16,6 +18,20 @@
     --color-border: #2c2c31;
     --color-accent: #60a5fa;
     --color-accent-contrast: #0b0b0b;
+    --color-whatsapp: #25d366;
+    --color-whatsapp-contrast: #ffffff;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
 }
 
 body {
@@ -60,14 +76,109 @@ body {
 
 .site-footer {
     border-top: 1px solid var(--color-border);
-    padding: 1.5rem;
-    text-align: center;
+    padding: 2rem 1.5rem 1.5rem;
+}
+
+.site-footer__grid {
+    max-width: 1000px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.site-footer__brand {
+    font-weight: 700;
+    margin: 0 0 0.25rem;
+}
+
+.site-footer__heading {
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--color-text-muted);
 }
 
 .site-footer__text {
     color: var(--color-text-muted);
     font-size: 0.9rem;
-    margin: 0;
+    margin: 0 0 0.35rem;
+}
+
+.site-footer__link {
+    color: var(--color-text-muted);
+    text-decoration: none;
+}
+
+.site-footer__link:hover {
+    color: var(--color-accent);
+}
+
+.site-footer__social {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.site-footer__social-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    color: var(--color-text-muted);
+    text-decoration: none;
+}
+
+.site-footer__social-link:hover {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+}
+
+.site-footer__social-icon {
+    display: inline-flex;
+    width: 18px;
+    height: 18px;
+}
+
+.site-footer__social-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.site-footer__copy {
+    max-width: 1000px;
+    margin: 1.5rem auto 0;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+.whatsapp-fab {
+    position: fixed;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    width: 56px;
+    height: 56px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-whatsapp);
+    color: var(--color-whatsapp-contrast);
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    z-index: 40;
+}
+
+.whatsapp-fab svg {
+    width: 30px;
+    height: 30px;
 }
 
 .hero {

@@ -1,33 +1,55 @@
-"""Carga de íconos SVG inline para las categorías del catálogo.
+"""Carga de íconos SVG inline (categorías del catálogo y redes sociales).
 
 Los íconos se insertan inline en el HTML (no como `<img src="...">`)
-para que `stroke="currentColor"` herede el `color` de CSS y se adapten
-a tema claro/oscuro, según la regla de `.clinerules`.
+para que `stroke="currentColor"` / `fill="currentColor"` hereden el
+`color` de CSS y se adapten a tema claro/oscuro, según la regla de
+`.clinerules`.
 """
 from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
 
-_ICONOS_DIR = Path(__file__).resolve().parent.parent / "static" / "img" / "categorias"
+_STATIC_IMG_DIR = Path(__file__).resolve().parent.parent / "static" / "img"
+_CATEGORIAS_DIR = _STATIC_IMG_DIR / "categorias"
+_REDES_DIR = _STATIC_IMG_DIR / "redes"
 
 
-@lru_cache(maxsize=64)
-def obtener_icono_svg(slug: str) -> str:
-    """Lee el contenido de un ícono SVG de categoría por su slug.
-
-    El resultado se cachea en memoria (los archivos son estáticos y no
-    cambian mientras el proceso está corriendo).
+def _leer_svg(ruta: Path) -> str:
+    """Lee el contenido de un archivo SVG si existe.
 
     Args:
-        slug: Slug de la categoría, debe coincidir con el nombre del
-            archivo `<slug>.svg` dentro de `static/img/categorias/`.
+        ruta: Ruta absoluta al archivo `.svg`.
 
     Returns:
-        El markup SVG como texto, o una cadena vacía si no existe el
-        archivo (para que la plantilla simplemente no muestre nada).
+        El markup SVG como texto, o cadena vacía si el archivo no existe.
     """
-    ruta = _ICONOS_DIR / f"{slug}.svg"
     if not ruta.is_file():
         return ""
     return ruta.read_text(encoding="utf-8")
+
+
+@lru_cache(maxsize=64)
+def obtener_icono_categoria(slug: str) -> str:
+    """Ícono SVG de una categoría del catálogo, por su slug.
+
+    Args:
+        slug: Debe coincidir con `<slug>.svg` en `static/img/categorias/`.
+
+    Returns:
+        Markup SVG, o cadena vacía si no existe el archivo.
+    """
+    return _leer_svg(_CATEGORIAS_DIR / f"{slug}.svg")
+
+
+@lru_cache(maxsize=32)
+def obtener_icono_red(clave: str) -> str:
+    """Ícono SVG de una red social, por su clave.
+
+    Args:
+        clave: Debe coincidir con `<clave>.svg` en `static/img/redes/`.
+
+    Returns:
+        Markup SVG, o cadena vacía si no existe el archivo.
+    """
+    return _leer_svg(_REDES_DIR / f"{clave}.svg")
