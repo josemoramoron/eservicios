@@ -12,4 +12,32 @@
     </p>
     <a class="hero__cta" href="{{ url_for('servicios.index') }}">Ver catálogo de servicios</a>
 </section>
+
+{% if destacados %}
+<section class="hero-slider" aria-label="Productos y servicios destacados">
+    <div class="hero-slider__track">
+        {% for oferta in destacados %}
+        <a class="hero-slider__slide" href="{{ url_for('producto.detalle', slug=oferta.slug) }}" style="background-image: url('{{ oferta.imagen_url }}');">
+            <span class="hero-slider__caption">
+                <span class="hero-slider__caption-title">{{ oferta.nombre }}</span>
+                {% if oferta.vendible and oferta.precio %}
+                <span class="hero-slider__caption-precio">Desde ${{ "%.2f"|format(oferta.precio) }}</span>
+                {% endif %}
+            </span>
+        </a>
+        {% endfor %}
+    </div>
+    {% if destacados|length > 1 %}
+    <button class="hero-slider__btn hero-slider__btn--prev" type="button" aria-label="Anterior">‹</button>
+    <button class="hero-slider__btn hero-slider__btn--next" type="button" aria-label="Siguiente">›</button>
+    <div class="hero-slider__dots"></div>
+    {% endif %}
+</section>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if destacados|length > 1 %}
+<script src="{{ estatico_v('js/slider.js') }}"></script>
+{% endif %}
 {% endblock %}

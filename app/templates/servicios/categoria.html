@@ -20,6 +20,9 @@
     {% for oferta in ofertas %}
     <article class="offering-card">
         {% if oferta.destacado %}<span class="offering-card__badge">Destacado</span>{% endif %}
+        {% if oferta.imagen_url %}
+        <img class="offering-card__foto" src="{{ oferta.imagen_url }}" alt="{{ oferta.nombre }}" loading="lazy">
+        {% endif %}
         <h2 class="offering-card__title">
             <a class="offering-card__title-link" href="{{ url_for('producto.detalle', slug=oferta.slug) }}">{{ oferta.nombre }}</a>
         </h2>

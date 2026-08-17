@@ -197,6 +197,113 @@ body {
     margin: 0 auto 1.5rem;
 }
 
+.hero-slider {
+    position: relative;
+    margin: 2rem auto 0;
+    max-width: 900px;
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+.hero-slider__track {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+}
+
+.hero-slider__track::-webkit-scrollbar {
+    display: none;
+}
+
+.hero-slider__slide {
+    position: relative;
+    flex: 0 0 100%;
+    scroll-snap-align: start;
+    min-height: 220px;
+    aspect-ratio: 16 / 7;
+    background-size: cover;
+    background-position: center;
+    background-color: var(--color-surface);
+    display: flex;
+    align-items: flex-end;
+    text-decoration: none;
+}
+
+.hero-slider__slide::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0));
+}
+
+.hero-slider__caption {
+    position: relative;
+    z-index: 1;
+    padding: 1.25rem;
+    color: #fff;
+}
+
+.hero-slider__caption-title {
+    display: block;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.hero-slider__caption-precio {
+    display: block;
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.hero-slider__btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.25rem;
+    line-height: 1;
+    z-index: 1;
+}
+
+.hero-slider__btn--prev {
+    left: 0.75rem;
+}
+
+.hero-slider__btn--next {
+    right: 0.75rem;
+}
+
+.hero-slider__dots {
+    position: absolute;
+    bottom: 0.75rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.4rem;
+    z-index: 1;
+}
+
+.hero-slider__dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.6);
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.hero-slider__dot--active {
+    background-color: #fff;
+}
+
 .hero__cta,
 .catalog-hero__cta {
     display: inline-block;
@@ -281,6 +388,15 @@ body {
     border: 1px solid var(--color-border);
     border-radius: 0.75rem;
     padding: 1.25rem;
+}
+
+.offering-card__foto {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+    border-radius: 0.5rem;
+    margin-bottom: 0.75rem;
 }
 
 .offering-card__badge {
@@ -864,6 +980,15 @@ body {
 .producto-detail__icon svg {
     width: 100%;
     height: 100%;
+}
+
+.producto-detail__foto {
+    display: block;
+    width: 100%;
+    max-height: 360px;
+    object-fit: cover;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
 }
 
 .producto-detail__tipo {

@@ -11,7 +11,11 @@
 
 <article class="producto-detail">
     {% if oferta.destacado %}<span class="producto-detail__badge">Destacado</span>{% endif %}
+    {% if oferta.imagen_url %}
+    <img class="producto-detail__foto" src="{{ oferta.imagen_url }}" alt="{{ oferta.nombre }}">
+    {% else %}
     <span class="producto-detail__icon" aria-hidden="true">{{ icono_categoria(categoria.slug) | safe }}</span>
+    {% endif %}
     <span class="producto-detail__tipo">{{ oferta.tipo.value | capitalize }}</span>
     <h1 class="producto-detail__title">{{ oferta.nombre }}</h1>
     <p class="producto-detail__desc">{{ oferta.descripcion }}</p>

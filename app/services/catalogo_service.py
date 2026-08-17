@@ -66,6 +66,33 @@ def listar_ofertas_activas(category: Category) -> list[Offering]:
     )
 
 
+def listar_destacados_con_imagen(limite: int = 6) -> list[Offering]:
+    """Devuelve ofertas destacadas y activas que ya tienen foto, para el slider de inicio.
+
+    Se filtra por `imagen_url` para no mostrar diapositivas vacías —
+    en cuanto se le agrega foto a una oferta destacada desde el panel
+    de administración, aparece aquí automáticamente.
+
+    Args:
+        limite: Cantidad máxima de ofertas a devolver.
+
+    Returns:
+        Lista de `Offering` destacadas, activas y con imagen, más
+        recientes primero por id.
+    """
+    return (
+        Offering.query.filter(
+            Offering.destacado.is_(True),
+            Offering.activo.is_(True),
+            Offering.imagen_url.isnot(None),
+            Offering.imagen_url != "",
+        )
+        .order_by(Offering.id.desc())
+        .limit(limite)
+        .all()
+    )
+
+
 def obtener_oferta_activa_por_slug(slug: str) -> Offering | None:
     """Busca una oferta activa por su slug (para la ficha pública de producto).
 
