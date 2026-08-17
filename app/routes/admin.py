@@ -6,7 +6,7 @@ from decimal import Decimal, InvalidOperation
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from werkzeug.datastructures import ImmutableMultiDict
 
-from app.models import Category, Offering, TipoOffering
+from app.models import Category, EstadoBlogPost, Offering, TipoOffering
 from app.services.auth_service import (
     admin_actual,
     autenticar,
@@ -15,6 +15,14 @@ from app.services.auth_service import (
     iniciar_sesion_admin,
     requiere_admin,
     validar_csrf_token,
+)
+from app.services.blog_service import (
+    SlugDuplicadoBlogError,
+    actualizar_post,
+    crear_post,
+    eliminar_post,
+    listar_todos_los_posts,
+    obtener_post_por_id,
 )
 from app.services.catalogo_service import (
     CategoriaConOfertasError,
@@ -90,6 +98,7 @@ def dashboard():
         "admin/dashboard.html",
         total_categorias=len(listar_categorias()),
         total_ofertas=len(listar_todas_las_ofertas()),
+        total_posts=len(listar_todos_los_posts()),
     )
 
 
@@ -371,3 +380,147 @@ def oferta_eliminar(oferta_id: int):
     eliminar_oferta(oferta)
     flash(f'Oferta "{oferta.nombre}" eliminada.', "success")
     return redirect(url_for("admin.ofertas_lista"))
+
+
+# --- Blog ---
+
+
+def _post_a_valores(post) -> dict:
+    """Convierte un `BlogPost` (o None) en un dict plano para el formulario.
+
+    Args:
+        post: Artículo existente, o None para un formulario vacío.
+
+    Returns:
+        Diccionario con los valores a precargar en el formulario.
+    """
+    if post is None:
+        return {
+            "titulo": "",
+            "slug": "",
+            "resumen": "",
+            "contenido_markdown": "",
+            "imagen_url": "",
+            "estado": EstadoBlogPost.BORRADOR.value,
+        }
+    return {
+        "titulo": post.titulo,
+        "slug": post.slug,
+        "resumen": post.resumen or "",
+        "contenido_markdown": post.contenido_markdown,
+        "imagen_url": post.imagen_url or "",
+        "estado": post.estado.value,
+    }
+
+
+def _leer_datos_post(form: ImmutableMultiDict) -> tuple[dict, str | None]:
+    """Extrae, tipa y valida los campos del formulario de artículo.
+
+    Args:
+        form: `request.form` de Flask.
+
+    Returns:
+        Tupla `(datos, error)`: `datos` con los valores tipados (misma forma
+        que `_post_a_valores`, para poder re-renderizar el formulario tal
+        cual si algo falla más adelante), y `error` con un mensaje si algún
+        campo no es válido, o None si todo está bien.
+    """
+    estado_raw = form.get("estado", "")
+    try:
+        estado = EstadoBlogPost(estado_raw)
+    except ValueError:
+        datos_reenviados = {
+            "titulo": form.get("titulo", "").strip(),
+            "slug": form.get("slug", "").strip().lower(),
+            "resumen": form.get("resumen", "").strip(),
+            "contenido_markdown": form.get("contenido_markdown", ""),
+            "imagen_url": form.get("imagen_url", "").strip(),
+            "estado": EstadoBlogPost.BORRADOR.value,
+        }
+        return datos_reenviados, "Estado de publicación inválido."
+
+    titulo = form.get("titulo", "").strip()
+    contenido_markdown = form.get("contenido_markdown", "").strip()
+    if not titulo or not contenido_markdown:
+        datos_reenviados = {
+            "titulo": titulo,
+            "slug": form.get("slug", "").strip().lower(),
+            "resumen": form.get("resumen", "").strip(),
+            "contenido_markdown": contenido_markdown,
+            "imagen_url": form.get("imagen_url", "").strip(),
+            "estado": estado.value,
+        }
+        return datos_reenviados, "Título y contenido son obligatorios."
+
+    datos = {
+        "titulo": titulo,
+        "slug": form.get("slug", "").strip().lower(),
+        "resumen": form.get("resumen", "").strip(),
+        "contenido_markdown": contenido_markdown,
+        "imagen_url": form.get("imagen_url", "").strip(),
+        "estado": estado.value,
+    }
+    return datos, None
+
+
+@admin_bp.route("/blog")
+@requiere_admin
+def blog_lista():
+    """Lista todos los artículos del blog (borradores y publicados)."""
+    return render_template("admin/blog_lista.html", posts=listar_todos_los_posts())
+
+
+@admin_bp.route("/blog/nuevo", methods=["GET", "POST"])
+@requiere_admin
+def blog_nuevo():
+    """Formulario para crear un artículo nuevo."""
+    if request.method == "POST":
+        _verificar_csrf()
+        datos, error = _leer_datos_post(request.form)
+        if error:
+            flash(error, "error")
+            return render_template("admin/blog_form.html", post=None, valores=datos)
+        try:
+            crear_post(datos)
+        except SlugDuplicadoBlogError as exc:
+            flash(str(exc), "error")
+            return render_template("admin/blog_form.html", post=None, valores=datos)
+        flash(f'Artículo "{datos["titulo"]}" creado.', "success")
+        return redirect(url_for("admin.blog_lista"))
+    return render_template("admin/blog_form.html", post=None, valores=_post_a_valores(None))
+
+
+@admin_bp.route("/blog/<int:post_id>/editar", methods=["GET", "POST"])
+@requiere_admin
+def blog_editar(post_id: int):
+    """Formulario para editar un artículo existente."""
+    post = obtener_post_por_id(post_id)
+    if post is None:
+        abort(404)
+    if request.method == "POST":
+        _verificar_csrf()
+        datos, error = _leer_datos_post(request.form)
+        if error:
+            flash(error, "error")
+            return render_template("admin/blog_form.html", post=post, valores=datos)
+        try:
+            actualizar_post(post, datos)
+        except SlugDuplicadoBlogError as exc:
+            flash(str(exc), "error")
+            return render_template("admin/blog_form.html", post=post, valores=datos)
+        flash(f'Artículo "{datos["titulo"]}" actualizado.', "success")
+        return redirect(url_for("admin.blog_lista"))
+    return render_template("admin/blog_form.html", post=post, valores=_post_a_valores(post))
+
+
+@admin_bp.route("/blog/<int:post_id>/eliminar", methods=["POST"])
+@requiere_admin
+def blog_eliminar(post_id: int):
+    """Elimina un artículo del blog."""
+    _verificar_csrf()
+    post = obtener_post_por_id(post_id)
+    if post is None:
+        abort(404)
+    eliminar_post(post)
+    flash(f'Artículo "{post.titulo}" eliminado.', "success")
+    return redirect(url_for("admin.blog_lista"))

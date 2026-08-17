@@ -13,5 +13,9 @@
         <span class="admin-stat-card__value">{{ total_ofertas }}</span>
         <span class="admin-stat-card__label">Productos y servicios</span>
     </a>
+    <a class="admin-stat-card" href="{{ url_for('admin.blog_lista') }}">
+        <span class="admin-stat-card__value">{{ total_posts }}</span>
+        <span class="admin-stat-card__label">Artículos del blog</span>
+    </a>
 </div>
 {% endblock %}

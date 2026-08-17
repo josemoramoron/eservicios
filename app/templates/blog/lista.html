@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Blog — eServicios{% endblock %}
+
+{% block content %}
+<section class="catalog-hero">
+    <h1 class="catalog-hero__title">Blog</h1>
+    <p class="catalog-hero__subtitle">Noticias y novedades de eServicios.</p>
+</section>
+
+<section class="blog-list">
+    {% for post in posts %}
+    <a class="blog-card" href="{{ url_for('blog.detalle', slug=post.slug) }}">
+        <h2 class="blog-card__title">{{ post.titulo }}</h2>
+        <p class="blog-card__meta">{{ post.publicado_en.strftime('%d de %B de %Y') if post.publicado_en else '' }}</p>
+        {% if post.resumen %}
+        <p class="blog-card__excerpt">{{ post.resumen }}</p>
+        {% endif %}
+        <span class="blog-card__link">Leer más →</span>
+    </a>
+    {% else %}
+    <p class="catalog-empty">Todavía no hay artículos publicados.</p>
+    {% endfor %}
+</section>
+{% endblock %}

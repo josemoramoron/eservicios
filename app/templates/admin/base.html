@@ -13,6 +13,7 @@
             {% if admin %}
             <a class="admin-nav__link" href="{{ url_for('admin.categorias_lista') }}">Categorías</a>
             <a class="admin-nav__link" href="{{ url_for('admin.ofertas_lista') }}">Ofertas</a>
+            <a class="admin-nav__link" href="{{ url_for('admin.blog_lista') }}">Blog</a>
             <span class="admin-nav__spacer"></span>
             <span class="admin-nav__user">{{ admin.email }}</span>
             <form method="post" action="{{ url_for('admin.logout') }}" class="admin-nav__logout-form">

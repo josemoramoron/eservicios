@@ -6,6 +6,7 @@ administración (AdminUser). Los modelos de marketplace (candidatos,
 empleadores, vacantes) quedaron pendientes para el proyecto Polunga.
 """
 from app.models.admin_user import AdminUser, RolAdmin
+from app.models.blog_post import BlogPost, EstadoBlogPost
 from app.models.category import Category
 from app.models.lead import Lead
 from app.models.offering import Offering, TipoOffering
@@ -15,6 +16,8 @@ from app.models.testimonial import Testimonial
 __all__ = [
     "AdminUser",
     "RolAdmin",
+    "BlogPost",
+    "EstadoBlogPost",
     "Category",
     "Lead",
     "Offering",

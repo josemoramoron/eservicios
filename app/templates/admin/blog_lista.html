@@ -1,0 +1,52 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Blog — eServicios Admin{% endblock %}
+
+{% block content %}
+<div class="admin-page-header">
+    <h1 class="admin-page-title">Artículos del blog</h1>
+    <a class="admin-btn admin-btn--primary" href="{{ url_for('admin.blog_nuevo') }}">Nuevo artículo</a>
+</div>
+
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>Título</th>
+            <th>Estado</th>
+            <th>Publicado</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for post in posts %}
+        <tr>
+            <td>{{ post.titulo }}</td>
+            <td>
+                {% if post.estado.value == 'publicado' %}
+                <span class="admin-badge">Publicado</span>
+                {% else %}
+                {{ post.estado.value | capitalize }}
+                {% endif %}
+            </td>
+            <td>{{ post.publicado_en.strftime('%Y-%m-%d') if post.publicado_en else '—' }}</td>
+            <td class="admin-table__actions">
+                <a class="admin-link" href="{{ url_for('admin.blog_editar', post_id=post.id) }}">Editar</a>
+                <form
+                    method="post"
+                    action="{{ url_for('admin.blog_eliminar', post_id=post.id) }}"
+                    class="admin-table__inline-form"
+                    onsubmit="return confirm('¿Eliminar el artículo \'{{ post.titulo }}\'?');"
+                >
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="admin-link admin-link--danger" type="submit">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="4">Todavía no hay artículos.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

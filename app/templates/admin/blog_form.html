@@ -1,0 +1,37 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ 'Editar' if post else 'Nuevo' }} artículo — eServicios Admin{% endblock %}
+
+{% block content %}
+<h1 class="admin-page-title">{{ 'Editar artículo' if post else 'Nuevo artículo' }}</h1>
+
+<form method="post" class="admin-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <label class="admin-form__label" for="titulo">Título</label>
+    <input class="admin-form__input" type="text" id="titulo" name="titulo" value="{{ valores.titulo }}" required>
+
+    <label class="admin-form__label" for="slug">Slug (para la URL /blog/&lt;slug&gt;)</label>
+    <input class="admin-form__input" type="text" id="slug" name="slug" value="{{ valores.slug }}" required pattern="[a-z0-9-]+">
+
+    <label class="admin-form__label" for="resumen">Resumen (se muestra en el listado, opcional)</label>
+    <input class="admin-form__input" type="text" id="resumen" name="resumen" value="{{ valores.resumen }}" maxlength="300">
+
+    <label class="admin-form__label" for="contenido_markdown">Contenido (Markdown)</label>
+    <textarea class="admin-form__textarea admin-form__textarea--grande" id="contenido_markdown" name="contenido_markdown" rows="16" required>{{ valores.contenido_markdown }}</textarea>
+
+    <label class="admin-form__label" for="imagen_url">Imagen de portada (ruta o URL, opcional)</label>
+    <input class="admin-form__input" type="text" id="imagen_url" name="imagen_url" value="{{ valores.imagen_url }}">
+
+    <label class="admin-form__label" for="estado">Estado</label>
+    <select class="admin-form__input" id="estado" name="estado" required>
+        <option value="borrador" {% if valores.estado == 'borrador' %}selected{% endif %}>Borrador (no visible en el sitio)</option>
+        <option value="publicado" {% if valores.estado == 'publicado' %}selected{% endif %}>Publicado</option>
+    </select>
+
+    <div class="admin-form__actions">
+        <button class="admin-btn admin-btn--primary" type="submit">Guardar</button>
+        <a class="admin-btn" href="{{ url_for('admin.blog_lista') }}">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

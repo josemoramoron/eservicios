@@ -11,9 +11,9 @@ Dominio: eservicios.org (el marketplace de trabajos temporales se movió a un pr
 
 ## Arquitectura
 Capas en orden estricto: Routes → Services → Models
-- app/models/     → modelos SQLAlchemy (Category, Offering, Order, OrderItem, AdminUser, Lead, Testimonial)
-- app/routes/     → controllers Flask con Blueprints (solo orquestación) — health.py, servicios.py
-- app/services/   → toda la lógica de negocio — catalogo_service.py
+- app/models/     → modelos SQLAlchemy (Category, Offering, Order, OrderItem, AdminUser, Lead, Testimonial, BlogPost)
+- app/routes/     → controllers Flask con Blueprints (solo orquestación) — health.py, servicios.py, blog.py, admin.py
+- app/services/   → toda la lógica de negocio — catalogo_service.py, blog_service.py (incluye render_markdown), auth_service.py, site_info_service.py, iconos_service.py
 - app/templates/  → views Jinja2, sin lógica Python
 - app/static/     → CSS, JS, imágenes (íconos de categoría en static/img/categorias/)
 - scripts/        → migraciones y utilidades (seed_catalogo.py, idempotente por slug)
