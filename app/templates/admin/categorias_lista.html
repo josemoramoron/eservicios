@@ -1,0 +1,48 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Categorías — eServicios Admin{% endblock %}
+
+{% block content %}
+<div class="admin-page-header">
+    <h1 class="admin-page-title">Categorías</h1>
+    <a class="admin-btn admin-btn--primary" href="{{ url_for('admin.categoria_nueva') }}">Nueva categoría</a>
+</div>
+
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>Orden</th>
+            <th>Nombre</th>
+            <th>Slug</th>
+            <th>Ofertas</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for cat in categorias %}
+        <tr>
+            <td>{{ cat.orden }}</td>
+            <td>{{ cat.nombre }}</td>
+            <td><code>{{ cat.slug }}</code></td>
+            <td>{{ cat.offerings | length }}</td>
+            <td class="admin-table__actions">
+                <a class="admin-link" href="{{ url_for('admin.categoria_editar', categoria_id=cat.id) }}">Editar</a>
+                <form
+                    method="post"
+                    action="{{ url_for('admin.categoria_eliminar', categoria_id=cat.id) }}"
+                    class="admin-table__inline-form"
+                    onsubmit="return confirm('¿Eliminar la categoría \'{{ cat.nombre }}\'?');"
+                >
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="admin-link admin-link--danger" type="submit">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5">Todavía no hay categorías.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Panel de administración — eServicios{% endblock %}</title>
+    <link rel="stylesheet" href="{{ estatico_v('css/style.css') }}">
+</head>
+<body>
+    <header class="admin-header">
+        <nav class="admin-nav">
+            <a class="admin-nav__brand" href="{{ url_for('admin.dashboard') }}">eServicios Admin</a>
+            {% if admin %}
+            <a class="admin-nav__link" href="{{ url_for('admin.categorias_lista') }}">Categorías</a>
+            <a class="admin-nav__link" href="{{ url_for('admin.ofertas_lista') }}">Ofertas</a>
+            <span class="admin-nav__spacer"></span>
+            <span class="admin-nav__user">{{ admin.email }}</span>
+            <form method="post" action="{{ url_for('admin.logout') }}" class="admin-nav__logout-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="admin-nav__logout" type="submit">Salir</button>
+            </form>
+            {% endif %}
+        </nav>
+    </header>
+
+    <main class="admin-main">
+        {% with mensajes = get_flashed_messages(with_categories=true) %}
+        {% if mensajes %}
+        <div class="admin-flash-list">
+            {% for categoria_mensaje, mensaje in mensajes %}
+            <p class="admin-flash admin-flash--{{ categoria_mensaje }}">{{ mensaje }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

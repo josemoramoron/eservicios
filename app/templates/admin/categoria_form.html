@@ -1,0 +1,31 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ 'Editar' if categoria else 'Nueva' }} categoría — eServicios Admin{% endblock %}
+
+{% block content %}
+<h1 class="admin-page-title">{{ 'Editar categoría' if categoria else 'Nueva categoría' }}</h1>
+
+<form method="post" class="admin-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <label class="admin-form__label" for="nombre">Nombre</label>
+    <input class="admin-form__input" type="text" id="nombre" name="nombre" value="{{ valores.nombre }}" required>
+
+    <label class="admin-form__label" for="slug">Slug (para la URL /servicios/&lt;slug&gt;)</label>
+    <input class="admin-form__input" type="text" id="slug" name="slug" value="{{ valores.slug }}" required pattern="[a-z0-9-]+">
+
+    <label class="admin-form__label" for="descripcion">Descripción</label>
+    <textarea class="admin-form__textarea" id="descripcion" name="descripcion" rows="3">{{ valores.descripcion }}</textarea>
+
+    <label class="admin-form__label" for="orden">Orden</label>
+    <input class="admin-form__input" type="number" id="orden" name="orden" value="{{ valores.orden }}">
+
+    <label class="admin-form__label" for="imagen_url">Ícono / imagen (ruta o URL)</label>
+    <input class="admin-form__input" type="text" id="imagen_url" name="imagen_url" value="{{ valores.imagen_url }}">
+
+    <div class="admin-form__actions">
+        <button class="admin-btn admin-btn--primary" type="submit">Guardar</button>
+        <a class="admin-btn" href="{{ url_for('admin.categorias_lista') }}">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

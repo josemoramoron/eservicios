@@ -1,0 +1,17 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Panel — eServicios Admin{% endblock %}
+
+{% block content %}
+<h1 class="admin-page-title">Panel de administración</h1>
+<div class="admin-stats">
+    <a class="admin-stat-card" href="{{ url_for('admin.categorias_lista') }}">
+        <span class="admin-stat-card__value">{{ total_categorias }}</span>
+        <span class="admin-stat-card__label">Categorías</span>
+    </a>
+    <a class="admin-stat-card" href="{{ url_for('admin.ofertas_lista') }}">
+        <span class="admin-stat-card__value">{{ total_ofertas }}</span>
+        <span class="admin-stat-card__label">Productos y servicios</span>
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,65 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ 'Editar' if oferta else 'Nueva' }} oferta — eServicios Admin{% endblock %}
+
+{% block content %}
+<h1 class="admin-page-title">{{ 'Editar oferta' if oferta else 'Nueva oferta' }}</h1>
+
+<form method="post" class="admin-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <label class="admin-form__label" for="category_id">Categoría</label>
+    <select class="admin-form__input" id="category_id" name="category_id" required>
+        <option value="" disabled {% if not valores.category_id %}selected{% endif %}>Selecciona una categoría</option>
+        {% for cat in categorias %}
+        <option value="{{ cat.id }}" {% if valores.category_id == cat.id %}selected{% endif %}>{{ cat.nombre }}</option>
+        {% endfor %}
+    </select>
+
+    <label class="admin-form__label" for="nombre">Nombre</label>
+    <input class="admin-form__input" type="text" id="nombre" name="nombre" value="{{ valores.nombre }}" required>
+
+    <label class="admin-form__label" for="slug">Slug</label>
+    <input class="admin-form__input" type="text" id="slug" name="slug" value="{{ valores.slug }}" required pattern="[a-z0-9-]+">
+
+    <label class="admin-form__label" for="tipo">Tipo</label>
+    <select class="admin-form__input" id="tipo" name="tipo" required>
+        <option value="producto" {% if valores.tipo == 'producto' %}selected{% endif %}>Producto</option>
+        <option value="servicio" {% if valores.tipo == 'servicio' %}selected{% endif %}>Servicio</option>
+        <option value="curso" {% if valores.tipo == 'curso' %}selected{% endif %}>Curso</option>
+        <option value="consultoria" {% if valores.tipo == 'consultoria' %}selected{% endif %}>Consultoría</option>
+    </select>
+
+    <label class="admin-form__label" for="descripcion">Descripción</label>
+    <textarea class="admin-form__textarea" id="descripcion" name="descripcion" rows="3" required>{{ valores.descripcion }}</textarea>
+
+    <label class="admin-form__label" for="imagen_url">Ícono / imagen (ruta o URL)</label>
+    <input class="admin-form__input" type="text" id="imagen_url" name="imagen_url" value="{{ valores.imagen_url }}">
+
+    <label class="admin-form__label" for="precio">Precio (USD, vacío si no aplica)</label>
+    <input class="admin-form__input" type="text" id="precio" name="precio" value="{{ valores.precio }}" inputmode="decimal">
+
+    <label class="admin-form__label" for="stock">Stock (vacío si no aplica)</label>
+    <input class="admin-form__input" type="text" id="stock" name="stock" value="{{ valores.stock }}" inputmode="numeric">
+
+    <div class="admin-form__checkbox-row">
+        <label class="admin-form__checkbox">
+            <input type="checkbox" name="vendible" {% if valores.vendible %}checked{% endif %}>
+            Vendible directo (carrito) — si no, el sitio muestra "Solicitar cotización"
+        </label>
+        <label class="admin-form__checkbox">
+            <input type="checkbox" name="destacado" {% if valores.destacado %}checked{% endif %}>
+            Destacado
+        </label>
+        <label class="admin-form__checkbox">
+            <input type="checkbox" name="activo" {% if valores.activo %}checked{% endif %}>
+            Activo (visible en el sitio público)
+        </label>
+    </div>
+
+    <div class="admin-form__actions">
+        <button class="admin-btn admin-btn--primary" type="submit">Guardar</button>
+        <a class="admin-btn" href="{{ url_for('admin.ofertas_lista') }}">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

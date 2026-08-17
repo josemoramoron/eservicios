@@ -1,0 +1,62 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Ofertas — eServicios Admin{% endblock %}
+
+{% block content %}
+<div class="admin-page-header">
+    <h1 class="admin-page-title">Productos y servicios</h1>
+    <a class="admin-btn admin-btn--primary" href="{{ url_for('admin.oferta_nueva') }}">Nueva oferta</a>
+</div>
+
+<form method="get" class="admin-filter">
+    <label class="admin-filter__label" for="categoria">Filtrar por categoría</label>
+    <select class="admin-form__input admin-filter__select" id="categoria" name="categoria" onchange="this.form.submit()">
+        <option value="">Todas</option>
+        {% for cat in categorias %}
+        <option value="{{ cat.id }}" {% if categoria_seleccionada == cat.id %}selected{% endif %}>{{ cat.nombre }}</option>
+        {% endfor %}
+    </select>
+</form>
+
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Categoría</th>
+            <th>Tipo</th>
+            <th>Precio</th>
+            <th>Vendible</th>
+            <th>Activo</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for oferta in ofertas %}
+        <tr>
+            <td>{{ oferta.nombre }}{% if oferta.destacado %} <span class="admin-badge">Destacado</span>{% endif %}</td>
+            <td>{{ oferta.category.nombre }}</td>
+            <td>{{ oferta.tipo.value | capitalize }}</td>
+            <td>{% if oferta.precio %}${{ "%.2f"|format(oferta.precio) }}{% else %}—{% endif %}</td>
+            <td>{{ "Sí" if oferta.vendible else "No" }}</td>
+            <td>{{ "Sí" if oferta.activo else "No" }}</td>
+            <td class="admin-table__actions">
+                <a class="admin-link" href="{{ url_for('admin.oferta_editar', oferta_id=oferta.id) }}">Editar</a>
+                <form
+                    method="post"
+                    action="{{ url_for('admin.oferta_eliminar', oferta_id=oferta.id) }}"
+                    class="admin-table__inline-form"
+                    onsubmit="return confirm('¿Eliminar \'{{ oferta.nombre }}\'?');"
+                >
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="admin-link admin-link--danger" type="submit">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="7">No hay ofertas para mostrar.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

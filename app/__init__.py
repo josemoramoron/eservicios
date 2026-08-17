@@ -24,6 +24,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     migrate.init_app(app, db)
 
     from app import models  # noqa: F401  (registra los modelos para Flask-Migrate)
+    from app.routes.admin import admin_bp
     from app.routes.health import health_bp
     from app.routes.servicios import servicios_bp
     from app.services.iconos_service import obtener_icono_categoria, obtener_icono_red
@@ -31,6 +32,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
 
     app.register_blueprint(health_bp)
     app.register_blueprint(servicios_bp)
+    app.register_blueprint(admin_bp)
     app.jinja_env.globals["icono_categoria"] = obtener_icono_categoria
     app.jinja_env.globals["icono_red"] = obtener_icono_red
 
