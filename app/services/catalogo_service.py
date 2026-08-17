@@ -66,6 +66,18 @@ def listar_ofertas_activas(category: Category) -> list[Offering]:
     )
 
 
+def obtener_oferta_activa_por_slug(slug: str) -> Offering | None:
+    """Busca una oferta activa por su slug (para la ficha pública de producto).
+
+    Args:
+        slug: Identificador url-friendly de la oferta.
+
+    Returns:
+        La oferta encontrada, o None si no existe o está inactiva.
+    """
+    return Offering.query.filter_by(slug=slug, activo=True).first()
+
+
 def listar_todas_las_ofertas(category_id: int | None = None) -> list[Offering]:
     """Devuelve todas las ofertas (activas e inactivas) para el panel de admin.
 

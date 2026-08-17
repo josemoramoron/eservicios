@@ -27,12 +27,14 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     from app.routes.admin import admin_bp
     from app.routes.blog import blog_bp
     from app.routes.health import health_bp
+    from app.routes.producto import producto_bp
     from app.routes.servicios import servicios_bp
     from app.services.iconos_service import obtener_icono_categoria, obtener_icono_red
     from app.services.site_info_service import obtener_info_sitio
 
     app.register_blueprint(health_bp)
     app.register_blueprint(servicios_bp)
+    app.register_blueprint(producto_bp)
     app.register_blueprint(blog_bp)
     app.register_blueprint(admin_bp)
     app.jinja_env.globals["icono_categoria"] = obtener_icono_categoria

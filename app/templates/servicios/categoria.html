@@ -20,7 +20,9 @@
     {% for oferta in ofertas %}
     <article class="offering-card">
         {% if oferta.destacado %}<span class="offering-card__badge">Destacado</span>{% endif %}
-        <h2 class="offering-card__title">{{ oferta.nombre }}</h2>
+        <h2 class="offering-card__title">
+            <a class="offering-card__title-link" href="{{ url_for('producto.detalle', slug=oferta.slug) }}">{{ oferta.nombre }}</a>
+        </h2>
         <span class="offering-card__tipo">{{ oferta.tipo.value | capitalize }}</span>
         <p class="offering-card__desc">{{ oferta.descripcion }}</p>
         {% if oferta.vendible and oferta.precio %}

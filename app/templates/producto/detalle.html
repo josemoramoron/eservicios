@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}{{ oferta.nombre }} — eServicios{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb">
+    <a class="breadcrumb__link" href="{{ url_for('servicios.index') }}">Servicios y Productos</a>
+    <a class="breadcrumb__link" href="{{ url_for('servicios.categoria', slug=categoria.slug) }}">{{ categoria.nombre }}</a>
+    <span class="breadcrumb__current">{{ oferta.nombre }}</span>
+</nav>
+
+<article class="producto-detail">
+    {% if oferta.destacado %}<span class="producto-detail__badge">Destacado</span>{% endif %}
+    <span class="producto-detail__icon" aria-hidden="true">{{ icono_categoria(categoria.slug) | safe }}</span>
+    <span class="producto-detail__tipo">{{ oferta.tipo.value | capitalize }}</span>
+    <h1 class="producto-detail__title">{{ oferta.nombre }}</h1>
+    <p class="producto-detail__desc">{{ oferta.descripcion }}</p>
+
+    {% if oferta.stock is not none %}
+    <p class="producto-detail__stock">
+        {% if oferta.stock > 0 %}{{ oferta.stock }} disponible(s){% else %}Agotado{% endif %}
+    </p>
+    {% endif %}
+
+    {% if oferta.vendible and oferta.precio %}
+    <p class="producto-detail__precio">${{ "%.2f"|format(oferta.precio) }}</p>
+    <button class="producto-detail__cta" type="button">Agregar al carrito</button>
+    {% else %}
+    <button class="producto-detail__cta producto-detail__cta--secondary" type="button">Solicitar cotización</button>
+    {% endif %}
+
+    <p class="producto-detail__volver">
+        <a class="breadcrumb__link" href="{{ url_for('servicios.categoria', slug=categoria.slug) }}">← Ver más de {{ categoria.nombre }}</a>
+    </p>
+</article>
+{% endblock %}
