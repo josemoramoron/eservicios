@@ -9,6 +9,9 @@
 </nav>
 
 <article class="blog-post">
+    {% if post.imagen_url %}
+    <img class="blog-post__foto" src="{{ post.imagen_url }}" alt="{{ post.titulo }}">
+    {% endif %}
     <h1 class="blog-post__title">{{ post.titulo }}</h1>
     <p class="blog-post__meta">{{ post.publicado_en.strftime('%d de %B de %Y') if post.publicado_en else '' }}</p>
     <div class="blog-post__body">

@@ -827,6 +827,15 @@ body {
     border-color: var(--color-accent);
 }
 
+.blog-card__foto {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
 .blog-card__title {
     margin: 0 0 0.35rem;
     font-size: 1.15rem;
@@ -855,6 +864,15 @@ body {
     max-width: 720px;
     margin: 0 auto;
     padding: 1rem 0 3rem;
+}
+
+.blog-post__foto {
+    display: block;
+    width: 100%;
+    max-height: 400px;
+    object-fit: cover;
+    border-radius: 0.75rem;
+    margin-bottom: 1.25rem;
 }
 
 .blog-post__title {

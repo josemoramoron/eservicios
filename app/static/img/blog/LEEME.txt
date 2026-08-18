@@ -1,0 +1,37 @@
+Imágenes de portada del blog
+=============================
+
+Esta carpeta es para las fotos de portada de tus artículos del blog —
+separada de app/static/img/productos/, que es solo para fotos de
+productos/servicios del catálogo.
+
+Cómo usarlas:
+
+1. Copia el archivo aquí, ej.:
+   app/static/img/blog/privacidad-pixel-grapheneos.jpg
+
+   Sugerencia de nombre: el slug del artículo (lo ves en la URL del
+   artículo, /blog/<slug>, o en el panel admin).
+
+2. Entra a /admin/blog, edita el artículo, y en el campo "Imagen de
+   portada" escribe la RUTA WEB, no la ruta de archivos:
+
+   CORRECTO:   /static/img/blog/privacidad-pixel-grapheneos.jpg
+   INCORRECTO: app/static/img/productos/grapheneOS.jpg
+
+   Dos errores comunes que rompen la imagen:
+   - Falta la "/" inicial (Flask sirve los estáticos en /static/..., no
+     en app/static/...; la carpeta "app/" es solo la ruta en tu disco,
+     nunca aparece en la URL)
+   - Usar la carpeta de productos en vez de blog/ (funciona igual
+     técnicamente, pero mejor mantenerlas separadas para no perder el
+     orden)
+
+3. Guarda. La foto aparece automáticamente como portada en:
+   - la tarjeta del artículo en el listado (/blog)
+   - el encabezado del artículo (/blog/<slug>)
+
+Si un artículo no tiene foto todavía, simplemente no muestra ninguna
+(no rompe nada).
+
+Formatos recomendados: .jpg o .webp, idealmente no más de ~500 KB.

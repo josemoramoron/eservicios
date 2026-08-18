@@ -11,6 +11,9 @@
 <section class="blog-list">
     {% for post in posts %}
     <a class="blog-card" href="{{ url_for('blog.detalle', slug=post.slug) }}">
+        {% if post.imagen_url %}
+        <img class="blog-card__foto" src="{{ post.imagen_url }}" alt="{{ post.titulo }}" loading="lazy">
+        {% endif %}
         <h2 class="blog-card__title">{{ post.titulo }}</h2>
         <p class="blog-card__meta">{{ post.publicado_en.strftime('%d de %B de %Y') if post.publicado_en else '' }}</p>
         {% if post.resumen %}
