@@ -6,12 +6,16 @@ conversión de Markdown a HTML para renderizar los artículos.
 """
 from __future__ import annotations
 
+import re
 from datetime import datetime, timezone
 
 import markdown
 
 from app.extensions import db
 from app.models import BlogPost, EstadoBlogPost
+
+_ETIQUETA_HTML = re.compile(r"<[^>]+>")
+_ESPACIOS = re.compile(r"\s+")
 
 
 class SlugDuplicadoBlogError(Exception):
@@ -75,6 +79,29 @@ def render_markdown(texto: str) -> str:
         HTML listo para insertar en la plantilla con `| safe`.
     """
     return markdown.markdown(texto, extensions=["fenced_code", "tables", "nl2br"])
+
+
+def obtener_descripcion_meta(post: BlogPost, longitud: int = 160) -> str:
+    """Genera la descripción corta para metaetiquetas (Open Graph / Twitter Card).
+
+    Usa el `resumen` del artículo si existe; si no, deriva un extracto en
+    texto plano a partir del contenido en Markdown (sin etiquetas HTML ni
+    sintaxis de Markdown), recortado a `longitud` caracteres.
+
+    Args:
+        post: Artículo del cual generar la descripción.
+        longitud: Cantidad máxima de caracteres del extracto.
+
+    Returns:
+        Texto plano listo para usar en `content="..."` de una metaetiqueta.
+    """
+    if post.resumen:
+        return post.resumen
+    texto_plano = _ETIQUETA_HTML.sub(" ", render_markdown(post.contenido_markdown))
+    texto_plano = _ESPACIOS.sub(" ", texto_plano).strip()
+    if len(texto_plano) <= longitud:
+        return texto_plano
+    return texto_plano[:longitud].rsplit(" ", 1)[0] + "…"
 
 
 def crear_post(datos: dict) -> BlogPost:

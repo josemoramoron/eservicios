@@ -2,6 +2,21 @@
 
 {% block title %}{{ post.titulo }} — Blog eServicios{% endblock %}
 
+{% block meta %}
+<meta name="description" content="{{ descripcion_meta }}">
+<meta property="og:site_name" content="eServicios">
+<meta property="og:type" content="article">
+<meta property="og:title" content="{{ post.titulo }}">
+<meta property="og:description" content="{{ descripcion_meta }}">
+<meta property="og:url" content="{{ url_for('blog.detalle', slug=post.slug, _external=True) }}">
+{% if post.imagen_url %}
+<meta property="og:image" content="{{ url_absoluta(post.imagen_url) }}">
+<meta name="twitter:card" content="summary_large_image">
+{% else %}
+<meta name="twitter:card" content="summary">
+{% endif %}
+{% endblock %}
+
 {% block content %}
 <nav class="breadcrumb">
     <a class="breadcrumb__link" href="{{ url_for('blog.index') }}">Blog</a>

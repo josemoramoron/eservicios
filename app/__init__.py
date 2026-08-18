@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 from pathlib import Path
 
-from flask import Flask, url_for
+from flask import Flask, request, url_for
 
 from app.extensions import db, migrate
 from config import Config
@@ -63,6 +63,28 @@ def create_app(config_class: type[Config] = Config) -> Flask:
         return url_for("static", filename=nombre_archivo, v=version)
 
     app.jinja_env.globals["estatico_v"] = estatico_v
+
+    def url_absoluta(ruta: str) -> str:
+        """Convierte una ruta de imagen (`/static/...`) en una URL absoluta.
+
+        Las miniaturas de WhatsApp, Facebook, etc. (metaetiquetas Open Graph)
+        exigen una URL completa (`https://eservicios.org/static/...`), no
+        una ruta relativa — de lo contrario el scraper de la red social no
+        encuentra la imagen. Si `ruta` ya es una URL absoluta (empieza con
+        `http`, ej. una futura imagen servida desde Cloudflare R2), se
+        devuelve tal cual.
+
+        Args:
+            ruta: Ruta o URL guardada en `imagen_url` de un modelo.
+
+        Returns:
+            URL absoluta lista para usar en una metaetiqueta.
+        """
+        if ruta.startswith(("http://", "https://")):
+            return ruta
+        return request.url_root.rstrip("/") + ruta
+
+    app.jinja_env.globals["url_absoluta"] = url_absoluta
 
     @app.context_processor
     def inyectar_info_sitio() -> dict:

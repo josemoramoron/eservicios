@@ -5,6 +5,7 @@ from flask import Blueprint, abort, render_template
 
 from app.services.blog_service import (
     listar_posts_publicados,
+    obtener_descripcion_meta,
     obtener_post_publicado_por_slug,
     render_markdown,
 )
@@ -37,4 +38,7 @@ def detalle(slug: str) -> str:
     if post is None:
         abort(404)
     contenido_html = render_markdown(post.contenido_markdown)
-    return render_template("blog/detalle.html", post=post, contenido_html=contenido_html)
+    descripcion_meta = obtener_descripcion_meta(post)
+    return render_template(
+        "blog/detalle.html", post=post, contenido_html=contenido_html, descripcion_meta=descripcion_meta
+    )

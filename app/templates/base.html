@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}eServicios{% endblock %}</title>
+    {% block meta %}
+    <meta name="description" content="Integrador tecnológico independiente: infraestructura propia, privacidad, automatización del hogar, cripto, fabricación 3D, hardware y educación.">
+    <meta property="og:site_name" content="eServicios">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="eServicios — Soluciones Tech de Autonomía Digital">
+    <meta property="og:description" content="Integrador tecnológico independiente: infraestructura propia, privacidad, automatización del hogar, cripto, fabricación 3D, hardware y educación.">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta name="twitter:card" content="summary">
+    {% endblock %}
     <link rel="stylesheet" href="{{ estatico_v('css/style.css') }}">
 </head>
 <body>

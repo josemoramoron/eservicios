@@ -2,6 +2,21 @@
 
 {% block title %}{{ oferta.nombre }} — eServicios{% endblock %}
 
+{% block meta %}
+<meta name="description" content="{{ oferta.descripcion }}">
+<meta property="og:site_name" content="eServicios">
+<meta property="og:type" content="product">
+<meta property="og:title" content="{{ oferta.nombre }}">
+<meta property="og:description" content="{{ oferta.descripcion }}">
+<meta property="og:url" content="{{ url_for('producto.detalle', slug=oferta.slug, _external=True) }}">
+{% if oferta.imagen_url %}
+<meta property="og:image" content="{{ url_absoluta(oferta.imagen_url) }}">
+<meta name="twitter:card" content="summary_large_image">
+{% else %}
+<meta name="twitter:card" content="summary">
+{% endif %}
+{% endblock %}
+
 {% block content %}
 <nav class="breadcrumb">
     <a class="breadcrumb__link" href="{{ url_for('servicios.index') }}">Servicios y Productos</a>
