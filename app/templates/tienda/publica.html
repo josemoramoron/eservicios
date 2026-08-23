@@ -35,18 +35,36 @@
     </a>
 </header>
 
+{% if enlaces_redes or enlaces_otros %}
+<nav class="tienda-links">
+    {% if enlaces_redes %}
+    <div class="tienda-links__redes">
+        {% for link, icono in enlaces_redes %}
+        <a class="tienda-links__icono" href="{{ link.url }}" target="_blank" rel="noopener noreferrer" aria-label="{{ link.titulo }}" title="{{ link.titulo }}">
+            {{ icono_red(icono) | safe }}
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% for link in enlaces_otros %}
+    <a class="tienda-links__item" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.titulo }}</a>
+    {% endfor %}
+</nav>
+{% endif %}
+
 <main class="tienda-main">
     {% if productos %}
     <p class="tienda-seccion-titulo">Productos</p>
     <div class="tienda-grid">
         {% for producto, wa_href in productos %}
+        {% set fotos_producto = (producto.fotos | map(attribute='url') | list) if producto.fotos else ([producto.foto_url] if producto.foto_url else []) %}
         <button
             type="button"
             class="tienda-card"
             data-titulo="{{ producto.titulo }}"
             data-precio="${{ '%.2f' | format(producto.precio) }}"
             data-descripcion="{{ producto.descripcion }}"
-            data-foto="{{ producto.foto_url or '' }}"
+            data-fotos='{{ fotos_producto | tojson }}'
             data-wa="{{ wa_href }}"
         >
             <span class="tienda-card__foto" {% if producto.foto_url %}style="background-image: url('{{ producto.foto_url }}');"{% endif %}>
@@ -59,7 +77,7 @@
         </button>
         {% endfor %}
     </div>
-    {% else %}
+    {% elif not enlaces_redes and not enlaces_otros %}
     <p class="tienda-vacio">Todavía no hay productos publicados.</p>
     {% endif %}
 </main>
@@ -73,6 +91,7 @@
     <div class="tienda-modal__panel">
         <button type="button" class="tienda-modal__cerrar" data-cerrar aria-label="Cerrar">&times;</button>
         <div class="tienda-modal__foto" id="tienda-modal-foto"></div>
+        <div class="tienda-modal__miniaturas" id="tienda-modal-miniaturas"></div>
         <p class="tienda-modal__titulo" id="tienda-modal-titulo"></p>
         <p class="tienda-modal__precio" id="tienda-modal-precio"></p>
         <p class="tienda-modal__descripcion" id="tienda-modal-descripcion"></p>

@@ -14,10 +14,14 @@ import re
 from decimal import Decimal
 from urllib.parse import quote
 
+from sqlalchemy import func
+
 from app.extensions import db
-from app.models import ReservedSlug, Vendor, VendorProduct
+from app.models import ReservedSlug, Vendor, VendorLink, VendorProduct
 
 _SLUG_RE = re.compile(r"^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$")
+
+MAX_FOTOS_PRODUCTO = 5
 
 
 class SlugInvalidoError(Exception):
@@ -50,6 +54,10 @@ class PasswordActualIncorrectaError(Exception):
 
 class PasswordNuevaInvalidaError(Exception):
     """La contraseña nueva no cumple los requisitos mínimos."""
+
+
+class LinkInvalidoError(Exception):
+    """El título o la URL del enlace no son válidos."""
 
 
 def validar_formato_slug(slug: str) -> str:
@@ -274,8 +282,30 @@ def obtener_producto_de_vendor(vendor: Vendor, producto_id: int) -> VendorProduc
     return VendorProduct.query.filter_by(id=producto_id, vendor_id=vendor.id).first()
 
 
+def _establecer_fotos_producto(producto: VendorProduct, urls: list[str]) -> None:
+    """Reemplaza la galería de fotos de un producto y sincroniza la portada.
+
+    `VendorProduct.foto_url` (la portada, usada en la tarjeta de la
+    grilla y como imagen inicial del modal) se mantiene siempre igual a
+    la primera foto de `urls` — así no hay dos fuentes de verdad que se
+    puedan desincronizar. Igual que `catalogo_service._establecer_fotos_oferta`,
+    se reemplaza la colección completa de golpe (`cascade="all, delete-orphan"`
+    en `VendorProduct.fotos`) en vez de diffear fila por fila.
+
+    Args:
+        producto: Producto dueño de la galería (nuevo o existente).
+        urls: URLs ya resueltas (subidas a R2), en el orden final, sin
+            huecos ni duplicados de posición vacía. Máximo `MAX_FOTOS_PRODUCTO`.
+    """
+    from app.models import VendorProductFoto  # import local para evitar ciclo con VendorProduct
+
+    urls = urls[:MAX_FOTOS_PRODUCTO]
+    producto.fotos = [VendorProductFoto(url=url, orden=indice) for indice, url in enumerate(urls)]
+    producto.foto_url = urls[0] if urls else None
+
+
 def crear_producto(
-    vendor: Vendor, *, titulo: str, descripcion: str, precio: Decimal, foto_url: str | None = None
+    vendor: Vendor, *, titulo: str, descripcion: str, precio: Decimal, fotos_urls: list[str] | None = None
 ) -> VendorProduct:
     """Crea un producto nuevo para una tienda. Sin moderación: queda activo de inmediato.
 
@@ -284,7 +314,8 @@ def crear_producto(
         titulo: Nombre del producto.
         descripcion: Descripción del producto.
         precio: Precio en USD.
-        foto_url: URL de la foto del producto ya subida a R2 (opcional).
+        fotos_urls: URLs de las fotos del producto ya subidas a R2 (hasta
+            `MAX_FOTOS_PRODUCTO`, en orden — la primera queda como portada).
 
     Returns:
         El `VendorProduct` recién creado.
@@ -294,8 +325,8 @@ def crear_producto(
         titulo=titulo.strip(),
         descripcion=descripcion.strip(),
         precio=precio,
-        foto_url=foto_url,
     )
+    _establecer_fotos_producto(producto, fotos_urls or [])
     db.session.add(producto)
     db.session.commit()
     return producto
@@ -307,7 +338,7 @@ def actualizar_producto(
     titulo: str,
     descripcion: str,
     precio: Decimal,
-    foto_url: str | None,
+    fotos_urls: list[str] | None,
     activo: bool,
 ) -> None:
     """Actualiza los datos de un producto existente.
@@ -317,13 +348,15 @@ def actualizar_producto(
         titulo: Nuevo nombre del producto.
         descripcion: Nueva descripción.
         precio: Nuevo precio en USD.
-        foto_url: Nueva URL de foto ya subida a R2 (o None para quitarla).
+        fotos_urls: URLs finales de las fotos del producto (hasta
+            `MAX_FOTOS_PRODUCTO`, en orden — la primera queda como portada;
+            lista vacía si se quitaron todas).
         activo: Si el producto debe seguir visible en la tienda pública.
     """
     producto.titulo = titulo.strip()
     producto.descripcion = descripcion.strip()
     producto.precio = precio
-    producto.foto_url = foto_url
+    _establecer_fotos_producto(producto, fotos_urls or [])
     producto.activo = activo
     db.session.commit()
 
@@ -382,3 +415,166 @@ def href_whatsapp_producto(vendor: Vendor, producto: VendorProduct) -> str:
         vendor.whatsapp_numero,
         f'Hola, quiero info sobre "{producto.titulo}" en {vendor.nombre_negocio}.',
     )
+
+
+# --- Enlaces personalizados (estilo Linktree) ---
+
+
+def _validar_url_link(url: str) -> str:
+    """Valida y normaliza la URL de un enlace personalizado.
+
+    Solo exige que empiece con `http://` o `https://` — no se valida
+    contra una lista de dominios permitidos a propósito, para que el
+    vendedor pueda enlazar cualquier red o sitio (Instagram, TikTok,
+    su propio sitio web, etc.), igual que en Linktree/Beacons.
+
+    Args:
+        url: URL tal como la escribió el vendedor.
+
+    Returns:
+        La URL con espacios recortados.
+
+    Raises:
+        LinkInvalidoError: Si no empieza con `http://` o `https://`.
+    """
+    url = url.strip()
+    if not url.lower().startswith(("http://", "https://")):
+        raise LinkInvalidoError("El enlace debe empezar con http:// o https://.")
+    return url
+
+
+def listar_links_de_vendor(vendor: Vendor) -> list[VendorLink]:
+    """Devuelve todos los enlaces de una tienda (activos e inactivos), para el panel.
+
+    Args:
+        vendor: Tienda dueña de los enlaces.
+
+    Returns:
+        Lista de `VendorLink` ordenada por el campo `orden`.
+    """
+    return VendorLink.query.filter_by(vendor_id=vendor.id).order_by(VendorLink.orden).all()
+
+
+def listar_links_activos(vendor: Vendor) -> list[VendorLink]:
+    """Devuelve los enlaces activos de una tienda, para la página pública.
+
+    Args:
+        vendor: Tienda dueña de los enlaces.
+
+    Returns:
+        Lista de `VendorLink` activos, ordenada por el campo `orden`.
+    """
+    return (
+        VendorLink.query.filter_by(vendor_id=vendor.id, activo=True)
+        .order_by(VendorLink.orden)
+        .all()
+    )
+
+
+def obtener_link_de_vendor(vendor: Vendor, link_id: int) -> VendorLink | None:
+    """Busca un enlace por id, verificando que pertenezca a la tienda dada.
+
+    Evita que un vendedor edite o borre enlaces de otra tienda
+    adivinando ids en la URL.
+
+    Args:
+        vendor: Tienda que debería ser dueña del enlace.
+        link_id: Id del enlace buscado.
+
+    Returns:
+        El `VendorLink` si existe y pertenece a `vendor`, o None.
+    """
+    return VendorLink.query.filter_by(id=link_id, vendor_id=vendor.id).first()
+
+
+def crear_link(vendor: Vendor, *, titulo: str, url: str) -> VendorLink:
+    """Crea un enlace personalizado nuevo para una tienda.
+
+    Se agrega al final del orden actual (no hay límite de cantidad —
+    el plan gratis no restringe cuántos enlaces puede tener una tienda).
+
+    Args:
+        vendor: Tienda dueña del enlace nuevo.
+        titulo: Texto visible del botón (ej. "Mi Instagram").
+        url: Destino del enlace.
+
+    Returns:
+        El `VendorLink` recién creado.
+
+    Raises:
+        LinkInvalidoError: Si el título queda vacío o la URL no es válida.
+    """
+    titulo = titulo.strip()
+    if not titulo:
+        raise LinkInvalidoError("El título del enlace es obligatorio.")
+    url_valida = _validar_url_link(url)
+
+    orden_maximo = (
+        db.session.query(func.max(VendorLink.orden)).filter(VendorLink.vendor_id == vendor.id).scalar()
+    )
+    siguiente_orden = (orden_maximo + 1) if orden_maximo is not None else 0
+
+    link = VendorLink(vendor_id=vendor.id, titulo=titulo, url=url_valida, orden=siguiente_orden)
+    db.session.add(link)
+    db.session.commit()
+    return link
+
+
+def actualizar_link(link: VendorLink, *, titulo: str, url: str, activo: bool) -> None:
+    """Actualiza los datos de un enlace existente.
+
+    Args:
+        link: Enlace a actualizar.
+        titulo: Nuevo texto visible del botón.
+        url: Nuevo destino del enlace.
+        activo: Si el enlace debe seguir visible en la tienda pública.
+
+    Raises:
+        LinkInvalidoError: Si el título queda vacío o la URL no es válida.
+    """
+    titulo = titulo.strip()
+    if not titulo:
+        raise LinkInvalidoError("El título del enlace es obligatorio.")
+    link.titulo = titulo
+    link.url = _validar_url_link(url)
+    link.activo = activo
+    db.session.commit()
+
+
+def eliminar_link(link: VendorLink) -> None:
+    """Elimina un enlace de forma permanente.
+
+    Args:
+        link: Enlace a eliminar.
+    """
+    db.session.delete(link)
+    db.session.commit()
+
+
+def mover_link(vendor: Vendor, link: VendorLink, *, direccion: str) -> None:
+    """Sube o baja un enlace un puesto, intercambiando `orden` con su vecino.
+
+    Se busca el vecino inmediato en la lista completa (activos e
+    inactivos) de la tienda, ordenada por `orden`, y se intercambian los
+    valores — así no hace falta renumerar toda la lista ni usar
+    drag-and-drop en el front.
+
+    Args:
+        vendor: Tienda dueña del enlace (para acotar la búsqueda del vecino).
+        link: Enlace a mover.
+        direccion: `"arriba"` o `"abajo"`.
+    """
+    links = listar_links_de_vendor(vendor)
+    posicion = next((i for i, l in enumerate(links) if l.id == link.id), None)
+    if posicion is None:
+        return
+
+    if direccion == "arriba" and posicion > 0:
+        vecino = links[posicion - 1]
+    elif direccion == "abajo" and posicion < len(links) - 1:
+        vecino = links[posicion + 1]
+    else:
+        return
+
+    link.orden, vecino.orden = vecino.orden, link.orden
+    db.session.commit()

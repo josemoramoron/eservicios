@@ -34,6 +34,9 @@ class VendorProduct(db.Model):
     )
 
     vendor: Mapped["Vendor"] = relationship(back_populates="productos")  # noqa: F821
+    fotos: Mapped[list["VendorProductFoto"]] = relationship(  # noqa: F821
+        back_populates="producto", cascade="all, delete-orphan", order_by="VendorProductFoto.orden"
+    )
 
     def __repr__(self) -> str:
         """Representación legible para debugging.

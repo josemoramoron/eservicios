@@ -23,20 +23,28 @@ from app.services.vendor_auth_service import (
     vendor_actual,
 )
 from app.services.vendor_service import (
+    MAX_FOTOS_PRODUCTO,
     EmailDuplicadoError,
     EmailInvalidoError,
+    LinkInvalidoError,
     PasswordActualIncorrectaError,
     PasswordNuevaInvalidaError,
     PerfilInvalidoError,
     SlugDuplicadoError,
     SlugInvalidoError,
     SlugReservadoError,
+    actualizar_link,
     actualizar_perfil,
     actualizar_producto,
     cambiar_password,
+    crear_link,
     crear_producto,
+    eliminar_link,
     eliminar_producto,
+    listar_links_de_vendor,
     listar_productos_de_vendor,
+    mover_link,
+    obtener_link_de_vendor,
     obtener_producto_de_vendor,
     registrar_vendor,
     slug_disponible,
@@ -81,6 +89,51 @@ def _subir_imagen_opcional(campo: str, carpeta: str) -> tuple[str | None, str | 
         return r2_service.subir_imagen(archivo, carpeta=carpeta), None
     except (r2_service.ArchivoInvalidoError, r2_service.ArchivoDemasiadoGrandeError) as exc:
         return None, str(exc)
+
+
+def _resolver_fotos_producto(vendor, producto: VendorProduct | None) -> tuple[list[str], str | None]:
+    """Resuelve las hasta `MAX_FOTOS_PRODUCTO` fotos del formulario de producto.
+
+    El formulario trae un `<input type="file">` por posición
+    (`foto_1`..`foto_N`) más un checkbox `quitar_foto_N` para vaciar esa
+    posición sin subir nada nuevo. Por cada posición: si llegó un
+    archivo nuevo, se sube a R2 y reemplaza lo que hubiera ahí (borrando
+    en R2 la foto anterior de esa posición, si existía); si se marcó
+    "quitar", se borra en R2 y la posición queda vacía; si no pasó nada
+    de eso, se conserva la foto existente tal cual. Las posiciones
+    vacías se compactan (no dejan huecos) para que el orden final quede
+    siempre sin saltos.
+
+    Args:
+        vendor: Tienda dueña del producto (para la carpeta de R2).
+        producto: Producto existente (para sus fotos actuales), o None
+            si es un producto nuevo (todas las posiciones parten vacías).
+
+    Returns:
+        Tupla `(urls, error)`: `urls` con la lista final de fotos, sin
+        huecos, máximo `MAX_FOTOS_PRODUCTO`; y `error` con el mensaje a
+        mostrar si alguna subida falló por tipo o tamaño inválido (en
+        ese caso `urls` es una lista vacía y no se debe usar).
+    """
+    fotos_actuales = [foto.url for foto in producto.fotos] if producto is not None else []
+    fotos_actuales += [None] * (MAX_FOTOS_PRODUCTO - len(fotos_actuales))
+
+    resultado: list[str] = []
+    for i in range(1, MAX_FOTOS_PRODUCTO + 1):
+        url_actual = fotos_actuales[i - 1]
+        url_nueva, error = _subir_imagen_opcional(f"foto_{i}", f"vendors/{vendor.slug}/productos")
+        if error:
+            return [], error
+        if url_nueva is not None:
+            if url_actual:
+                r2_service.eliminar_imagen(url_actual)
+            resultado.append(url_nueva)
+        elif request.form.get(f"quitar_foto_{i}") == "on":
+            if url_actual:
+                r2_service.eliminar_imagen(url_actual)
+        elif url_actual:
+            resultado.append(url_actual)
+    return resultado, None
 
 
 # --- Registro y autenticación ---
@@ -291,6 +344,24 @@ def perfil_password():
 # --- Productos ---
 
 
+def _fotos_valores(producto: VendorProduct | None) -> list[str | None]:
+    """Fotos actuales de un producto, en una lista de exactamente `MAX_FOTOS_PRODUCTO` posiciones.
+
+    Las posiciones sin foto quedan como `None`, así la plantilla puede
+    pintar un slot vacío (solo el selector de archivo) o uno ocupado
+    (preview + checkbox "quitar") sin tener que contar índices.
+
+    Args:
+        producto: Producto existente, o None para un formulario vacío.
+
+    Returns:
+        Lista de `MAX_FOTOS_PRODUCTO` elementos: URL de la foto, o None.
+    """
+    fotos = [foto.url for foto in producto.fotos] if producto is not None else []
+    fotos += [None] * (MAX_FOTOS_PRODUCTO - len(fotos))
+    return fotos
+
+
 def _producto_a_valores(producto: VendorProduct | None) -> dict:
     """Convierte un `VendorProduct` (o None) en un dict plano para el formulario.
 
@@ -301,12 +372,12 @@ def _producto_a_valores(producto: VendorProduct | None) -> dict:
         Diccionario con los valores a precargar en el formulario.
     """
     if producto is None:
-        return {"titulo": "", "descripcion": "", "precio": "", "foto_url": "", "activo": True}
+        return {"titulo": "", "descripcion": "", "precio": "", "fotos": _fotos_valores(None), "activo": True}
     return {
         "titulo": producto.titulo,
         "descripcion": producto.descripcion,
         "precio": producto.precio,
-        "foto_url": producto.foto_url or "",
+        "fotos": _fotos_valores(producto),
         "activo": producto.activo,
     }
 
@@ -314,16 +385,17 @@ def _producto_a_valores(producto: VendorProduct | None) -> dict:
 def _leer_datos_producto(form: ImmutableMultiDict) -> tuple[dict, str | None]:
     """Extrae, tipa y valida los campos de texto del formulario de producto.
 
-    La foto se maneja aparte (`request.files`, ver las rutas de abajo) —
-    este helper solo se encarga de título, descripción, precio y estado.
+    Las fotos se manejan aparte (`request.files`, ver `_resolver_fotos_producto`
+    y las rutas de abajo) — este helper solo se encarga de título,
+    descripción, precio y estado.
 
     Args:
         form: `request.form` de Flask.
 
     Returns:
-        Tupla `(datos, error)`: `datos` con los valores tipados (misma
-        forma que `_producto_a_valores`, sin `foto_url`), y `error` con
-        un mensaje si algún campo no es válido, o None si todo está bien.
+        Tupla `(datos, error)`: `datos` con los valores tipados (título,
+        descripción, precio, activo — sin `fotos`), y `error` con un
+        mensaje si algún campo no es válido, o None si todo está bien.
     """
     titulo = form.get("titulo", "").strip()
     if not titulo:
@@ -349,26 +421,30 @@ def _leer_datos_producto(form: ImmutableMultiDict) -> tuple[dict, str | None]:
 @vendedor_bp.route("/productos/nuevo", methods=["GET", "POST"])
 @requiere_vendor
 def producto_nuevo():
-    """Formulario para subir un producto nuevo a la tienda."""
+    """Formulario para subir un producto nuevo a la tienda (hasta 5 fotos)."""
     vendor = vendor_actual()
     if request.method == "POST":
         _verificar_csrf()
         datos, error = _leer_datos_producto(request.form)
         if error:
             flash(error, "error")
-            return render_template("vendedor/producto_form.html", producto=None, valores={**datos, "foto_url": ""})
+            return render_template(
+                "vendedor/producto_form.html", producto=None, valores={**datos, "fotos": _fotos_valores(None)}
+            )
 
-        foto_url, error_foto = _subir_imagen_opcional("foto", f"vendors/{vendor.slug}/productos")
-        if error_foto:
-            flash(error_foto, "error")
-            return render_template("vendedor/producto_form.html", producto=None, valores={**datos, "foto_url": ""})
+        fotos_urls, error_fotos = _resolver_fotos_producto(vendor, None)
+        if error_fotos:
+            flash(error_fotos, "error")
+            return render_template(
+                "vendedor/producto_form.html", producto=None, valores={**datos, "fotos": _fotos_valores(None)}
+            )
 
         crear_producto(
             vendor,
             titulo=datos["titulo"],
             descripcion=datos["descripcion"],
             precio=datos["precio"],
-            foto_url=foto_url,
+            fotos_urls=fotos_urls,
         )
         flash(f'Producto "{datos["titulo"]}" publicado.', "success")
         return redirect(url_for("vendedor.dashboard"))
@@ -378,7 +454,7 @@ def producto_nuevo():
 @vendedor_bp.route("/productos/<int:producto_id>/editar", methods=["GET", "POST"])
 @requiere_vendor
 def producto_editar(producto_id: int):
-    """Formulario para editar un producto existente de la tienda."""
+    """Formulario para editar un producto existente de la tienda (hasta 5 fotos)."""
     vendor = vendor_actual()
     producto = obtener_producto_de_vendor(vendor, producto_id)
     if producto is None:
@@ -389,29 +465,22 @@ def producto_editar(producto_id: int):
         if error:
             flash(error, "error")
             return render_template(
-                "vendedor/producto_form.html", producto=producto, valores={**datos, "foto_url": producto.foto_url or ""}
+                "vendedor/producto_form.html", producto=producto, valores={**datos, "fotos": _fotos_valores(producto)}
             )
 
-        foto_url, error_foto = _subir_imagen_opcional("foto", f"vendors/{vendor.slug}/productos")
-        if error_foto:
-            flash(error_foto, "error")
+        fotos_urls, error_fotos = _resolver_fotos_producto(vendor, producto)
+        if error_fotos:
+            flash(error_fotos, "error")
             return render_template(
-                "vendedor/producto_form.html", producto=producto, valores={**datos, "foto_url": producto.foto_url or ""}
+                "vendedor/producto_form.html", producto=producto, valores={**datos, "fotos": _fotos_valores(producto)}
             )
-        if foto_url is not None:
-            r2_service.eliminar_imagen(producto.foto_url)
-        elif request.form.get("quitar_foto") == "on":
-            r2_service.eliminar_imagen(producto.foto_url)
-            foto_url = None
-        else:
-            foto_url = producto.foto_url
 
         actualizar_producto(
             producto,
             titulo=datos["titulo"],
             descripcion=datos["descripcion"],
             precio=datos["precio"],
-            foto_url=foto_url,
+            fotos_urls=fotos_urls,
             activo=datos["activo"],
         )
         flash(f'Producto "{datos["titulo"]}" actualizado.', "success")
@@ -424,13 +493,112 @@ def producto_editar(producto_id: int):
 @vendedor_bp.route("/productos/<int:producto_id>/eliminar", methods=["POST"])
 @requiere_vendor
 def producto_eliminar(producto_id: int):
-    """Elimina un producto de la tienda (y su foto en R2, si tenía)."""
+    """Elimina un producto de la tienda (y todas sus fotos en R2, si tenía)."""
     _verificar_csrf()
     producto = obtener_producto_de_vendor(vendor_actual(), producto_id)
     if producto is None:
         abort(404)
     titulo = producto.titulo
-    r2_service.eliminar_imagen(producto.foto_url)
+    for foto in producto.fotos:
+        r2_service.eliminar_imagen(foto.url)
     eliminar_producto(producto)
     flash(f'Producto "{titulo}" eliminado.', "success")
     return redirect(url_for("vendedor.dashboard"))
+
+
+# --- Enlaces personalizados (estilo Linktree) ---
+
+
+def _link_a_valores(link) -> dict:
+    """Convierte un `VendorLink` (o None) en un dict plano para el formulario.
+
+    Args:
+        link: Enlace existente, o None para un formulario vacío.
+
+    Returns:
+        Diccionario con los valores a precargar en el formulario.
+    """
+    if link is None:
+        return {"titulo": "", "url": "", "activo": True}
+    return {"titulo": link.titulo, "url": link.url, "activo": link.activo}
+
+
+@vendedor_bp.route("/enlaces")
+@requiere_vendor
+def enlaces():
+    """Lista los enlaces personalizados de la tienda del vendedor."""
+    return render_template("vendedor/enlaces.html", links=listar_links_de_vendor(vendor_actual()))
+
+
+@vendedor_bp.route("/enlaces/nuevo", methods=["GET", "POST"])
+@requiere_vendor
+def enlace_nuevo():
+    """Formulario para agregar un enlace nuevo a la tienda."""
+    if request.method == "POST":
+        _verificar_csrf()
+        titulo = request.form.get("titulo", "")
+        url = request.form.get("url", "")
+        try:
+            crear_link(vendor_actual(), titulo=titulo, url=url)
+        except LinkInvalidoError as exc:
+            flash(str(exc), "error")
+            return render_template(
+                "vendedor/enlace_form.html", link=None, valores={"titulo": titulo, "url": url, "activo": True}
+            )
+        flash(f'Enlace "{titulo}" agregado.', "success")
+        return redirect(url_for("vendedor.enlaces"))
+    return render_template("vendedor/enlace_form.html", link=None, valores=_link_a_valores(None))
+
+
+@vendedor_bp.route("/enlaces/<int:link_id>/editar", methods=["GET", "POST"])
+@requiere_vendor
+def enlace_editar(link_id: int):
+    """Formulario para editar un enlace existente de la tienda."""
+    vendor = vendor_actual()
+    link = obtener_link_de_vendor(vendor, link_id)
+    if link is None:
+        abort(404)
+    if request.method == "POST":
+        _verificar_csrf()
+        titulo = request.form.get("titulo", "")
+        url = request.form.get("url", "")
+        activo = request.form.get("activo") == "on"
+        try:
+            actualizar_link(link, titulo=titulo, url=url, activo=activo)
+        except LinkInvalidoError as exc:
+            flash(str(exc), "error")
+            return render_template(
+                "vendedor/enlace_form.html", link=link, valores={"titulo": titulo, "url": url, "activo": activo}
+            )
+        flash(f'Enlace "{titulo}" actualizado.', "success")
+        return redirect(url_for("vendedor.enlaces"))
+    return render_template("vendedor/enlace_form.html", link=link, valores=_link_a_valores(link))
+
+
+@vendedor_bp.route("/enlaces/<int:link_id>/eliminar", methods=["POST"])
+@requiere_vendor
+def enlace_eliminar(link_id: int):
+    """Elimina un enlace de la tienda."""
+    _verificar_csrf()
+    link = obtener_link_de_vendor(vendor_actual(), link_id)
+    if link is None:
+        abort(404)
+    titulo = link.titulo
+    eliminar_link(link)
+    flash(f'Enlace "{titulo}" eliminado.', "success")
+    return redirect(url_for("vendedor.enlaces"))
+
+
+@vendedor_bp.route("/enlaces/<int:link_id>/mover", methods=["POST"])
+@requiere_vendor
+def enlace_mover(link_id: int):
+    """Sube o baja un enlace un puesto en el orden de la tienda."""
+    _verificar_csrf()
+    vendor = vendor_actual()
+    link = obtener_link_de_vendor(vendor, link_id)
+    if link is None:
+        abort(404)
+    direccion = request.args.get("direccion", "")
+    if direccion in ("arriba", "abajo"):
+        mover_link(vendor, link, direccion=direccion)
+    return redirect(url_for("vendedor.enlaces"))

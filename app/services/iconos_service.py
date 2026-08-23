@@ -9,10 +9,32 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import urlparse
 
 _STATIC_IMG_DIR = Path(__file__).resolve().parent.parent / "static" / "img"
 _CATEGORIAS_DIR = _STATIC_IMG_DIR / "categorias"
 _REDES_DIR = _STATIC_IMG_DIR / "redes"
+
+# Dominios de redes sociales reconocidas -> clave de ícono (coincide con el
+# nombre de archivo en `static/img/redes/`). Se usa para decidir si un
+# `VendorLink` se muestra como botón circular con ícono (red reconocida) o
+# como botón con texto (cualquier otro sitio) en la tienda pública.
+_DOMINIOS_REDES_SOCIALES: dict[str, str] = {
+    "instagram.com": "instagram",
+    "facebook.com": "facebook",
+    "fb.com": "facebook",
+    "twitter.com": "x",
+    "x.com": "x",
+    "tiktok.com": "tiktok",
+    "linkedin.com": "linkedin",
+    "wa.me": "whatsapp",
+    "whatsapp.com": "whatsapp",
+    "youtube.com": "youtube",
+    "youtu.be": "youtube",
+    "t.me": "telegram",
+    "telegram.me": "telegram",
+    "telegram.org": "telegram",
+}
 
 
 def _leer_svg(ruta: Path) -> str:
@@ -53,3 +75,27 @@ def obtener_icono_red(clave: str) -> str:
         Markup SVG, o cadena vacía si no existe el archivo.
     """
     return _leer_svg(_REDES_DIR / f"{clave}.svg")
+
+
+def detectar_red_social(url: str) -> str | None:
+    """Detecta si una URL pertenece a una red social reconocida, por su dominio.
+
+    Se usa para decidir cómo se muestra un `VendorLink` en la tienda
+    pública: las redes reconocidas se pintan como un ícono circular
+    (ahorra espacio, se ven varias en una fila), cualquier otro sitio
+    se pinta como botón con texto (comportamiento anterior).
+
+    Args:
+        url: URL completa del enlace (ya validada con http(s)://).
+
+    Returns:
+        La clave del ícono (coincide con `obtener_icono_red`) si el
+        dominio es una red social reconocida, o None si no lo es.
+    """
+    dominio = urlparse(url).netloc.lower()
+    if dominio.startswith("www."):
+        dominio = dominio[4:]
+    for sufijo, clave in _DOMINIOS_REDES_SOCIALES.items():
+        if dominio == sufijo or dominio.endswith(f".{sufijo}"):
+            return clave
+    return None

@@ -25,6 +25,7 @@ from app.services.blog_service import (
     obtener_post_por_id,
 )
 from app.services.catalogo_service import (
+    MAX_FOTOS_OFERTA,
     CategoriaConOfertasError,
     SlugDuplicadoError,
     actualizar_categoria,
@@ -220,8 +221,14 @@ def _oferta_a_valores(oferta: Offering | None) -> dict:
         oferta: Oferta existente, o None para un formulario vacío.
 
     Returns:
-        Diccionario con los valores a precargar en el formulario.
+        Diccionario con los valores a precargar en el formulario. `fotos`
+        siempre trae exactamente `MAX_FOTOS_OFERTA` elementos (rellenados
+        con cadenas vacías) para que la plantilla pinte un campo fijo por
+        posición de la galería.
     """
+    fotos = [foto.url for foto in oferta.fotos] if oferta is not None else []
+    fotos += [""] * (MAX_FOTOS_OFERTA - len(fotos))
+
     if oferta is None:
         return {
             "category_id": "",
@@ -230,6 +237,7 @@ def _oferta_a_valores(oferta: Offering | None) -> dict:
             "tipo": TipoOffering.SERVICIO.value,
             "descripcion": "",
             "imagen_url": "",
+            "fotos": fotos,
             "precio": "",
             "vendible": False,
             "stock": "",
@@ -243,6 +251,7 @@ def _oferta_a_valores(oferta: Offering | None) -> dict:
         "tipo": oferta.tipo.value,
         "descripcion": oferta.descripcion,
         "imagen_url": oferta.imagen_url or "",
+        "fotos": fotos,
         "precio": oferta.precio if oferta.precio is not None else "",
         "vendible": oferta.vendible,
         "stock": oferta.stock if oferta.stock is not None else "",
@@ -263,13 +272,15 @@ def _leer_datos_oferta(form: ImmutableMultiDict) -> tuple[dict, str | None]:
         cual si algo falla más adelante), y `error` con un mensaje si algún
         campo no es válido, o None si todo está bien.
     """
+    fotos = [form.get(f"foto_{i}", "").strip() for i in range(1, MAX_FOTOS_OFERTA + 1)]
+
     precio_raw = form.get("precio", "").strip()
     precio: Decimal | str = ""
     if precio_raw:
         try:
             precio = Decimal(precio_raw)
         except InvalidOperation:
-            return {**_oferta_a_valores(None), "nombre": form.get("nombre", "")}, f'"{precio_raw}" no es un precio válido.'
+            return {**_oferta_a_valores(None), "nombre": form.get("nombre", ""), "fotos": fotos}, f'"{precio_raw}" no es un precio válido.'
 
     stock_raw = form.get("stock", "").strip()
     stock: int | str = ""
@@ -277,19 +288,19 @@ def _leer_datos_oferta(form: ImmutableMultiDict) -> tuple[dict, str | None]:
         try:
             stock = int(stock_raw)
         except ValueError:
-            return {**_oferta_a_valores(None), "nombre": form.get("nombre", "")}, f'"{stock_raw}" no es un stock válido.'
+            return {**_oferta_a_valores(None), "nombre": form.get("nombre", ""), "fotos": fotos}, f'"{stock_raw}" no es un stock válido.'
 
     category_id_raw = form.get("category_id", "")
     try:
         category_id = int(category_id_raw)
     except (TypeError, ValueError):
-        return {**_oferta_a_valores(None), "nombre": form.get("nombre", "")}, "Selecciona una categoría."
+        return {**_oferta_a_valores(None), "nombre": form.get("nombre", ""), "fotos": fotos}, "Selecciona una categoría."
 
     tipo_raw = form.get("tipo", "")
     try:
         tipo = TipoOffering(tipo_raw)
     except ValueError:
-        return {**_oferta_a_valores(None), "nombre": form.get("nombre", "")}, "Tipo de oferta inválido."
+        return {**_oferta_a_valores(None), "nombre": form.get("nombre", ""), "fotos": fotos}, "Tipo de oferta inválido."
 
     datos = {
         "category_id": category_id,
@@ -298,6 +309,7 @@ def _leer_datos_oferta(form: ImmutableMultiDict) -> tuple[dict, str | None]:
         "tipo": tipo.value,
         "descripcion": form.get("descripcion", "").strip(),
         "imagen_url": form.get("imagen_url", "").strip(),
+        "fotos": fotos,
         "precio": precio,
         "vendible": form.get("vendible") == "on",
         "stock": stock,

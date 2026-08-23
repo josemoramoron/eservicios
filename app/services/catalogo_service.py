@@ -8,6 +8,8 @@ from __future__ import annotations
 from app.extensions import db
 from app.models import Category, Offering, TipoOffering
 
+MAX_FOTOS_OFERTA = 5
+
 
 class SlugDuplicadoError(Exception):
     """Ya existe otra categoría/oferta con ese slug."""
@@ -203,12 +205,52 @@ def eliminar_categoria(categoria: Category) -> None:
     db.session.commit()
 
 
+def _normalizar_fotos_oferta(fotos: list[str] | None) -> list[str]:
+    """Limpia y recorta la lista de URLs de la galería de una oferta.
+
+    Descarta valores vacíos y limita a `MAX_FOTOS_OFERTA` — el
+    formulario de admin ya manda como máximo esa cantidad de campos,
+    pero se normaliza aquí también por si se llama desde otro lugar
+    (ej. un futuro import).
+
+    Args:
+        fotos: Lista cruda de URLs (puede traer vacíos), o None.
+
+    Returns:
+        Lista de URLs no vacías, recortada a `MAX_FOTOS_OFERTA`.
+    """
+    if not fotos:
+        return []
+    limpias = [url.strip() for url in fotos if url and url.strip()]
+    return limpias[:MAX_FOTOS_OFERTA]
+
+
+def _establecer_fotos_oferta(oferta: Offering, urls: list[str]) -> None:
+    """Reemplaza la galería de fotos de detalle de una oferta.
+
+    Asignar la colección completa (en vez de comparar fila por fila)
+    es más simple y, con un máximo de `MAX_FOTOS_OFERTA` filas, el
+    costo es insignificante — SQLAlchemy se encarga de borrar las
+    filas huérfanas gracias al `cascade="all, delete-orphan"` de la
+    relación `Offering.fotos`.
+
+    Args:
+        oferta: Oferta dueña de la galería (nueva o existente).
+        urls: URLs ya normalizadas (ver `_normalizar_fotos_oferta`).
+    """
+    from app.models import OfferingFoto  # import local para evitar ciclo con Offering
+
+    oferta.fotos = [OfferingFoto(url=url, orden=indice) for indice, url in enumerate(urls)]
+
+
 def crear_oferta(datos: dict) -> Offering:
     """Crea una oferta nueva desde el panel de administración.
 
     Args:
         datos: Diccionario con los campos de `Offering` (ver `_leer_datos_oferta`
-            en `app/routes/admin.py` para la forma exacta).
+            en `app/routes/admin.py` para la forma exacta). La clave
+            opcional `fotos` trae hasta `MAX_FOTOS_OFERTA` URLs para la
+            galería de la ficha de detalle.
 
     Returns:
         La oferta creada.
@@ -231,6 +273,7 @@ def crear_oferta(datos: dict) -> Offering:
         destacado=datos.get("destacado", False),
         activo=datos.get("activo", True),
     )
+    _establecer_fotos_oferta(oferta, _normalizar_fotos_oferta(datos.get("fotos")))
     db.session.add(oferta)
     db.session.commit()
     return oferta
@@ -241,7 +284,7 @@ def actualizar_oferta(oferta: Offering, datos: dict) -> Offering:
 
     Args:
         oferta: Oferta a actualizar.
-        datos: Diccionario con los campos nuevos.
+        datos: Diccionario con los campos nuevos (incluye `fotos`, ver `crear_oferta`).
 
     Returns:
         La oferta actualizada.
@@ -265,6 +308,7 @@ def actualizar_oferta(oferta: Offering, datos: dict) -> Offering:
     oferta.stock = datos.get("stock") or None
     oferta.destacado = datos.get("destacado", False)
     oferta.activo = datos.get("activo", True)
+    _establecer_fotos_oferta(oferta, _normalizar_fotos_oferta(datos.get("fotos")))
     db.session.commit()
     return oferta
 

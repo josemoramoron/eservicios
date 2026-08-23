@@ -15,6 +15,7 @@
         <nav class="admin-nav">
             <a class="admin-nav__brand" href="{{ url_for('vendedor.dashboard') if vendor else url_for('vendedor.login') }}">eServicios · e-link</a>
             {% if vendor %}
+            <a class="admin-nav__link" href="{{ url_for('vendedor.enlaces') }}">Mis enlaces</a>
             <a class="admin-nav__link" href="{{ url_for('vendedor.perfil') }}">Mi perfil</a>
             <span class="admin-nav__spacer"></span>
             <span class="admin-nav__user">{{ vendor.nombre_negocio }}</span>

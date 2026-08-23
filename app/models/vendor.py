@@ -32,9 +32,9 @@ class Vendor(db.Model):
 
     Corre en paralelo al catálogo maestro (`Category`/`Offering`, curado
     por el equipo de eServicios): cada `Vendor` administra sus propios
-    `VendorProduct` de forma autogestionada, sin moderación por ahora.
-    Ver `claude/spec-tiendas-vendedor.md` en el proyecto para el diseño
-    completo.
+    `VendorProduct` y `VendorLink` de forma autogestionada, sin
+    moderación por ahora. Ver `claude/spec-tiendas-vendedor.md` en el
+    proyecto para el diseño completo.
     """
 
     __tablename__ = "vendors"
@@ -56,6 +56,9 @@ class Vendor(db.Model):
 
     productos: Mapped[list["VendorProduct"]] = relationship(  # noqa: F821
         back_populates="vendor", cascade="all, delete-orphan", order_by="VendorProduct.id.desc()"
+    )
+    links: Mapped[list["VendorLink"]] = relationship(  # noqa: F821
+        back_populates="vendor", cascade="all, delete-orphan", order_by="VendorLink.orden"
     )
 
     def set_password(self, password: str) -> None:

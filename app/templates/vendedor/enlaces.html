@@ -1,0 +1,71 @@
+{% extends "vendedor/base.html" %}
+
+{% block title %}Mis enlaces — {{ vendor.nombre_negocio }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a class="breadcrumb__link" href="{{ url_for('health.index') }}">eServicios</a>
+    <a class="breadcrumb__link" href="{{ url_for('vendedor.dashboard') }}">Mi tienda</a>
+    <span class="breadcrumb__current">Mis enlaces</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="admin-page-header">
+    <h1 class="admin-page-title">Mis enlaces</h1>
+    <a class="admin-btn admin-btn--primary" href="{{ url_for('vendedor.enlace_nuevo') }}">Nuevo enlace</a>
+</div>
+
+<p class="admin-auth__title" style="font-size: 14px; margin: -8px 0 20px;">
+    Agrega enlaces a tus otras redes o sitios (Instagram, TikTok, tu sitio web, etc.) —
+    se muestran como botones en tu tienda pública, antes de tus productos.
+</p>
+
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>Enlace</th>
+            <th>URL</th>
+            <th>Activo</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for link in links %}
+        <tr>
+            <td>{{ link.titulo }}</td>
+            <td><a class="admin-link" href="{{ link.url }}" target="_blank" rel="noopener">{{ link.url }}</a></td>
+            <td>{{ "Sí" if link.activo else "No" }}</td>
+            <td class="admin-table__actions">
+                {% if not loop.first %}
+                <form method="post" action="{{ url_for('vendedor.enlace_mover', link_id=link.id, direccion='arriba') }}" class="admin-table__inline-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="admin-link" type="submit" aria-label="Subir">&uarr;</button>
+                </form>
+                {% endif %}
+                {% if not loop.last %}
+                <form method="post" action="{{ url_for('vendedor.enlace_mover', link_id=link.id, direccion='abajo') }}" class="admin-table__inline-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="admin-link" type="submit" aria-label="Bajar">&darr;</button>
+                </form>
+                {% endif %}
+                <a class="admin-link" href="{{ url_for('vendedor.enlace_editar', link_id=link.id) }}">Editar</a>
+                <form
+                    method="post"
+                    action="{{ url_for('vendedor.enlace_eliminar', link_id=link.id) }}"
+                    class="admin-table__inline-form"
+                    onsubmit="return confirm('¿Eliminar \'{{ link.titulo }}\'?');"
+                >
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="admin-link admin-link--danger" type="submit">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="4">Todavía no has agregado ningún enlace.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

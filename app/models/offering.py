@@ -46,6 +46,9 @@ class Offering(db.Model):
     activo: Mapped[bool] = mapped_column(default=True, nullable=False)
 
     category: Mapped["Category"] = relationship(back_populates="offerings")  # noqa: F821
+    fotos: Mapped[list["OfferingFoto"]] = relationship(  # noqa: F821
+        back_populates="offering", cascade="all, delete-orphan", order_by="OfferingFoto.orden"
+    )
 
     def __repr__(self) -> str:
         """Representación legible para debugging.

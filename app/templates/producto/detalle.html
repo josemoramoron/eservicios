@@ -24,13 +24,35 @@
     <span class="breadcrumb__current">{{ oferta.nombre }}</span>
 </nav>
 
+{% set fotos_galeria = (oferta.fotos | map(attribute='url') | list) if oferta.fotos else ([oferta.imagen_url] if oferta.imagen_url else []) %}
+
 <article class="producto-detail">
     {% if oferta.destacado %}<span class="producto-detail__badge">Destacado</span>{% endif %}
-    {% if oferta.imagen_url %}
-    <img class="producto-detail__foto" src="{{ oferta.imagen_url }}" alt="{{ oferta.nombre }}">
+
+    {% if fotos_galeria %}
+    <div class="producto-detail__galeria" data-galeria>
+        <button type="button" class="producto-detail__foto-principal" data-galeria-abrir data-indice="0">
+            <img src="{{ fotos_galeria[0] }}" alt="{{ oferta.nombre }}" data-galeria-principal>
+        </button>
+        {% if fotos_galeria | length > 1 %}
+        <div class="producto-detail__miniaturas">
+            {% for foto in fotos_galeria %}
+            <button
+                type="button"
+                class="producto-detail__miniatura{% if loop.first %} producto-detail__miniatura--activa{% endif %}"
+                data-galeria-miniatura
+                data-indice="{{ loop.index0 }}"
+            >
+                <img src="{{ foto }}" alt="{{ oferta.nombre }} — foto {{ loop.index }}">
+            </button>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
     {% else %}
     <span class="producto-detail__icon" aria-hidden="true">{{ icono_categoria(categoria.slug) | safe }}</span>
     {% endif %}
+
     <span class="producto-detail__tipo">{{ oferta.tipo.value | capitalize }}</span>
     <h1 class="producto-detail__title">{{ oferta.nombre }}</h1>
     <p class="producto-detail__desc">{{ oferta.descripcion }}</p>
@@ -52,4 +74,28 @@
         <a class="breadcrumb__link" href="{{ url_for('servicios.categoria', slug=categoria.slug) }}">← Ver más de {{ categoria.nombre }}</a>
     </p>
 </article>
+
+{% if fotos_galeria | length > 1 %}
+<div class="lightbox" id="lightbox" hidden>
+    <div class="lightbox__backdrop" data-lightbox-cerrar></div>
+    <button type="button" class="lightbox__cerrar" data-lightbox-cerrar aria-label="Cerrar">&times;</button>
+    <button type="button" class="lightbox__nav lightbox__nav--prev" data-lightbox-prev aria-label="Foto anterior">&#8249;</button>
+    <img class="lightbox__img" id="lightbox-img" src="" alt="{{ oferta.nombre }}">
+    <button type="button" class="lightbox__nav lightbox__nav--next" data-lightbox-next aria-label="Foto siguiente">&#8250;</button>
+</div>
+<script>
+    window.__galeriaFotos = {{ fotos_galeria | tojson }};
+</script>
+<script src="{{ estatico_v('js/galeria.js') }}"></script>
+{% elif fotos_galeria %}
+<div class="lightbox" id="lightbox" hidden>
+    <div class="lightbox__backdrop" data-lightbox-cerrar></div>
+    <button type="button" class="lightbox__cerrar" data-lightbox-cerrar aria-label="Cerrar">&times;</button>
+    <img class="lightbox__img" id="lightbox-img" src="" alt="{{ oferta.nombre }}">
+</div>
+<script>
+    window.__galeriaFotos = {{ fotos_galeria | tojson }};
+</script>
+<script src="{{ estatico_v('js/galeria.js') }}"></script>
+{% endif %}
 {% endblock %}

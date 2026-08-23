@@ -87,6 +87,66 @@
     opacity: 0.9;
 }
 
+.tienda-links {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 4px 20px 20px;
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.tienda-links__item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 13px 20px;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    font-weight: 600;
+    font-size: 14.5px;
+    text-decoration: none;
+    text-align: center;
+}
+
+.tienda-links__item:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+
+.tienda-links__redes {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}
+
+.tienda-links__icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    flex: 0 0 auto;
+}
+
+.tienda-links__icono svg {
+    width: 22px;
+    height: 22px;
+}
+
+.tienda-links__icono:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+
 .tienda-main {
     padding: 4px 20px 28px;
     max-width: 480px;
@@ -221,7 +281,35 @@
     background-color: var(--color-border);
     background-size: cover;
     background-position: center;
+    margin: 0 0 10px;
+}
+
+.tienda-modal__miniaturas {
+    display: flex;
+    gap: 8px;
     margin: 0 0 14px;
+    overflow-x: auto;
+}
+
+.tienda-modal__miniaturas:empty {
+    margin: 0;
+}
+
+.tienda-modal__miniatura {
+    flex: 0 0 auto;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    background-color: var(--color-border);
+    background-size: cover;
+    background-position: center;
+    cursor: pointer;
+}
+
+.tienda-modal__miniatura--activa {
+    border-color: var(--color-accent);
 }
 
 .tienda-modal__titulo {

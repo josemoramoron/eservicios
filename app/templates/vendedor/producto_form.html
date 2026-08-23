@@ -25,20 +25,23 @@
     <label class="admin-form__label" for="precio">Precio (USD)</label>
     <input class="admin-form__input" type="text" id="precio" name="precio" value="{{ valores.precio }}" inputmode="decimal" required>
 
-    <label class="admin-form__label" for="foto">Foto</label>
-    {% if valores.foto_url %}
-    <img src="{{ valores.foto_url }}" alt="Foto actual" style="width: 96px; height: 96px; object-fit: cover; border-radius: 10px; margin-bottom: 8px; display: block;">
-    {% endif %}
-    <input class="admin-form__input" type="file" id="foto" name="foto" accept="image/jpeg,image/png,image/webp">
-    <p style="font-size: 0.8rem; color: var(--color-text-muted); margin: 6px 0 0;">
-        JPG, PNG o WEBP, máximo 5 MB.{% if valores.foto_url %} Sube una imagen nueva para reemplazar la actual.{% endif %}
-    </p>
-    {% if valores.foto_url %}
-    <label class="admin-form__checkbox" style="margin-top: 6px;">
-        <input type="checkbox" name="quitar_foto">
-        Quitar la foto actual
-    </label>
-    {% endif %}
+    <label class="admin-form__label">Fotos (hasta 5 — la primera es la portada)</label>
+    <p class="admin-form__hint">JPG, PNG o WEBP, máximo 5 MB cada una.</p>
+    {% for i in range(1, 6) %}
+    {% set foto_actual = valores.fotos[i - 1] if valores.fotos and valores.fotos|length >= i else none %}
+    <div style="margin: 10px 0; padding: 10px; border: 1px solid var(--color-border); border-radius: 0.5rem;">
+        {% if foto_actual %}
+        <img src="{{ foto_actual }}" alt="Foto {{ i }} actual" style="width: 72px; height: 72px; object-fit: cover; border-radius: 8px; margin-bottom: 6px; display: block;">
+        {% endif %}
+        <input class="admin-form__input" type="file" name="foto_{{ i }}" accept="image/jpeg,image/png,image/webp">
+        {% if foto_actual %}
+        <label class="admin-form__checkbox" style="margin-top: 6px;">
+            <input type="checkbox" name="quitar_foto_{{ i }}">
+            Quitar esta foto
+        </label>
+        {% endif %}
+    </div>
+    {% endfor %}
 
     <div class="admin-form__checkbox-row">
         <label class="admin-form__checkbox">

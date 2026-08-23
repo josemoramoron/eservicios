@@ -33,8 +33,21 @@
     <label class="admin-form__label" for="descripcion">Descripción</label>
     <textarea class="admin-form__textarea" id="descripcion" name="descripcion" rows="3" required>{{ valores.descripcion }}</textarea>
 
-    <label class="admin-form__label" for="imagen_url">Ícono / imagen (ruta o URL)</label>
+    <label class="admin-form__label" for="imagen_url">Ícono / imagen de portada (ruta o URL)</label>
     <input class="admin-form__input" type="text" id="imagen_url" name="imagen_url" value="{{ valores.imagen_url }}">
+    <p class="admin-form__hint">Es la imagen que aparece en las tarjetas del catálogo y en el slider de inicio.</p>
+
+    <label class="admin-form__label">Galería de la ficha de detalle (hasta 5 fotos, opcional)</label>
+    <p class="admin-form__hint">Si las dejas vacías, la ficha de detalle usa solo la imagen de portada de arriba.</p>
+    {% for i in range(1, 6) %}
+    <input
+        class="admin-form__input"
+        type="text"
+        name="foto_{{ i }}"
+        value="{{ valores.fotos[i - 1] if valores.fotos and valores.fotos|length >= i else '' }}"
+        placeholder="URL de la foto {{ i }}"
+    >
+    {% endfor %}
 
     <label class="admin-form__label" for="precio">Precio (USD, vacío si no aplica)</label>
     <input class="admin-form__input" type="text" id="precio" name="precio" value="{{ valores.precio }}" inputmode="decimal">

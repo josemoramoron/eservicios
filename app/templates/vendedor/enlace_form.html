@@ -1,0 +1,40 @@
+{% extends "vendedor/base.html" %}
+
+{% block title %}{{ 'Editar' if link else 'Nuevo' }} enlace — Mis enlaces{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a class="breadcrumb__link" href="{{ url_for('health.index') }}">eServicios</a>
+    <a class="breadcrumb__link" href="{{ url_for('vendedor.dashboard') }}">Mi tienda</a>
+    <a class="breadcrumb__link" href="{{ url_for('vendedor.enlaces') }}">Mis enlaces</a>
+    <span class="breadcrumb__current">{{ 'Editar enlace' if link else 'Nuevo enlace' }}</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<h1 class="admin-page-title">{{ 'Editar enlace' if link else 'Nuevo enlace' }}</h1>
+
+<form method="post" class="admin-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <label class="admin-form__label" for="titulo">Título del botón</label>
+    <input class="admin-form__input" type="text" id="titulo" name="titulo" value="{{ valores.titulo }}" placeholder="Ej. Mi Instagram" required>
+
+    <label class="admin-form__label" for="url">URL</label>
+    <input class="admin-form__input" type="text" id="url" name="url" value="{{ valores.url }}" placeholder="https://..." required>
+
+    {% if link %}
+    <div class="admin-form__checkbox-row">
+        <label class="admin-form__checkbox">
+            <input type="checkbox" name="activo" {% if valores.activo %}checked{% endif %}>
+            Activo (visible en tu tienda pública)
+        </label>
+    </div>
+    {% endif %}
+
+    <div class="admin-form__actions">
+        <button class="admin-btn admin-btn--primary" type="submit">Guardar</button>
+        <a class="admin-btn" href="{{ url_for('vendedor.enlaces') }}">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

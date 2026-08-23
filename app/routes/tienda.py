@@ -11,9 +11,11 @@ from __future__ import annotations
 from flask import render_template
 
 from app.models import Vendor
+from app.services.iconos_service import detectar_red_social
 from app.services.vendor_service import (
     href_whatsapp_producto,
     href_whatsapp_tienda,
+    listar_links_activos,
     listar_productos_activos,
 )
 
@@ -29,9 +31,16 @@ def renderizar_tienda(vendor: Vendor) -> str:
     """
     productos = listar_productos_activos(vendor)
     productos_con_href = [(producto, href_whatsapp_producto(vendor, producto)) for producto in productos]
+
+    links_con_icono = [(link, detectar_red_social(link.url)) for link in listar_links_activos(vendor)]
+    enlaces_redes = [(link, icono) for link, icono in links_con_icono if icono]
+    enlaces_otros = [link for link, icono in links_con_icono if not icono]
+
     return render_template(
         "tienda/publica.html",
         vendor=vendor,
         productos=productos_con_href,
+        enlaces_redes=enlaces_redes,
+        enlaces_otros=enlaces_otros,
         whatsapp_href_tienda=href_whatsapp_tienda(vendor),
     )
