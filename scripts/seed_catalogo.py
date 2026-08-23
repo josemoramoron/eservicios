@@ -248,6 +248,21 @@ CATEGORIAS: list[dict] = [
                 descripcion="Manejo de cuentas, creación de contenido y crecimiento orgánico en redes sociales.",
                 vendible=False,
             ),
+            dict(
+                slug="e-link-tienda-con-subdominio",
+                nombre="e-link — Tu Tienda con Subdominio Propio",
+                tipo=TipoOffering.SERVICIO,
+                descripcion=(
+                    "Crea gratis tu propia tienda en línea con tu subdominio "
+                    "personalizado (tunombre.eservicios.org), al estilo Linktree o "
+                    "Beacons pero enfocada en vender: sube tus productos con foto, "
+                    "descripción y precio, y recibe consultas directas de tus "
+                    "clientes por WhatsApp. Sin comisiones ni pasarela de pago — "
+                    "regístrate en minutos en eservicios.org/vendedor/registro."
+                ),
+                vendible=False,
+                destacado=True,
+            ),
         ],
     },
     {

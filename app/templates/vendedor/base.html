@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Panel de vendedor — eServicios{% endblock %}</title>
+    {# Reutiliza las clases .admin-* de style.css: son estilos genéricos de
+       panel (formularios, botones, tabla, flash), no específicos del panel
+       de administración — evita duplicar ~40 reglas de CSS solo por el
+       nombre. Candidato a renombrar a .panel-* en una limpieza futura. #}
+    <link rel="stylesheet" href="{{ estatico_v('css/style.css') }}">
+</head>
+<body>
+    <header class="admin-header">
+        <nav class="admin-nav">
+            <a class="admin-nav__brand" href="{{ url_for('vendedor.dashboard') if vendor else url_for('vendedor.login') }}">eServicios · e-link</a>
+            {% if vendor %}
+            <a class="admin-nav__link" href="{{ url_for('vendedor.perfil') }}">Mi perfil</a>
+            <span class="admin-nav__spacer"></span>
+            <span class="admin-nav__user">{{ vendor.nombre_negocio }}</span>
+            <form method="post" action="{{ url_for('vendedor.logout') }}" class="admin-nav__logout-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="admin-nav__logout" type="submit">Salir</button>
+            </form>
+            {% endif %}
+        </nav>
+    </header>
+
+    <main class="admin-main">
+        {% with mensajes = get_flashed_messages(with_categories=true) %}
+        {% if mensajes %}
+        <div class="admin-flash-list">
+            {% for categoria_mensaje, mensaje in mensajes %}
+            <p class="admin-flash admin-flash--{{ categoria_mensaje }}">{{ mensaje }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+        {% block breadcrumb %}{% endblock %}
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

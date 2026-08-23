@@ -1,0 +1,246 @@
+/* Tienda pública de vendedor (subdominio propio, estilo Linktree/Beacons).
+   Reutiliza las variables de :root y [data-theme="dark"] de style.css. */
+
+.tienda-body {
+    margin: 0;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: system-ui, sans-serif;
+}
+
+.tienda-banner {
+    height: 132px;
+    background: linear-gradient(135deg, var(--color-accent), var(--color-surface));
+    background-size: cover;
+    background-position: center;
+}
+
+.tienda-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 24px 20px;
+    margin-top: -44px;
+}
+
+.tienda-avatar {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    background-color: var(--color-accent);
+    color: var(--color-accent-contrast);
+    border: 4px solid var(--color-bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    font-weight: 700;
+    overflow: hidden;
+}
+
+.tienda-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.tienda-nombre {
+    margin: 14px 0 2px;
+    font-size: 21px;
+    font-weight: 700;
+    text-align: center;
+}
+
+.tienda-subdominio {
+    margin: 0 0 10px;
+    font-size: 13px;
+    color: var(--color-text-muted);
+}
+
+.tienda-bio {
+    margin: 0 0 18px;
+    font-size: 14px;
+    line-height: 1.5;
+    text-align: center;
+    max-width: 340px;
+}
+
+.tienda-whatsapp-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    max-width: 320px;
+    padding: 13px 20px;
+    border-radius: 999px;
+    background-color: var(--color-whatsapp);
+    color: var(--color-whatsapp-contrast);
+    font-weight: 600;
+    font-size: 15px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+}
+
+.tienda-whatsapp-btn:hover {
+    opacity: 0.9;
+}
+
+.tienda-main {
+    padding: 4px 20px 28px;
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.tienda-seccion-titulo {
+    margin: 0 0 14px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+}
+
+.tienda-vacio {
+    color: var(--color-text-muted);
+    font-size: 14px;
+}
+
+.tienda-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.tienda-card {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    overflow: hidden;
+    background-color: var(--color-surface);
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+}
+
+.tienda-card__foto {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-border);
+    background-size: cover;
+    background-position: center;
+    color: var(--color-text-muted);
+}
+
+.tienda-card__titulo {
+    display: block;
+    margin: 10px 12px 3px;
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.tienda-card__precio {
+    display: block;
+    margin: 0 12px 12px;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--color-accent);
+}
+
+.tienda-footer {
+    display: flex;
+    justify-content: center;
+    padding: 6px 20px 30px;
+}
+
+.tienda-badge {
+    font-size: 11.5px;
+    color: var(--color-text-muted);
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    text-decoration: none;
+}
+
+/* Modal de detalle de producto */
+
+.tienda-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.tienda-modal[hidden] {
+    display: none;
+}
+
+.tienda-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.55);
+}
+
+.tienda-modal__panel {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    max-height: 82vh;
+    overflow-y: auto;
+    background-color: var(--color-bg);
+    border-radius: 18px 18px 0 0;
+    padding: 18px 20px 26px;
+}
+
+.tienda-modal__cerrar {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: var(--color-surface);
+    border: none;
+    color: var(--color-text-muted);
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.tienda-modal__foto {
+    height: 180px;
+    border-radius: 12px;
+    background-color: var(--color-border);
+    background-size: cover;
+    background-position: center;
+    margin: 0 0 14px;
+}
+
+.tienda-modal__titulo {
+    margin: 0 0 4px;
+    font-size: 17px;
+    font-weight: 700;
+    padding-right: 30px;
+}
+
+.tienda-modal__precio {
+    margin: 0 0 12px;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--color-accent);
+}
+
+.tienda-modal__descripcion {
+    margin: 0 0 20px;
+    font-size: 14px;
+    line-height: 1.55;
+    color: var(--color-text-muted);
+}

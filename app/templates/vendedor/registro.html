@@ -1,0 +1,64 @@
+{% extends "vendedor/base.html" %}
+
+{% block title %}Crear mi tienda gratis — eServicios{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a class="breadcrumb__link" href="{{ url_for('health.index') }}">eServicios</a>
+    <span class="breadcrumb__current">Crear tienda gratis (e-link)</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<h1 class="admin-page-title">Crea tu tienda gratis</h1>
+
+<form method="post" class="admin-form" id="form-registro-vendedor">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <label class="admin-form__label" for="nombre_negocio">Nombre de la tienda</label>
+    <input class="admin-form__input" type="text" id="nombre_negocio" name="nombre_negocio" value="{{ valores.nombre_negocio }}" required>
+
+    <label class="admin-form__label" for="slug">Subdominio de tu tienda</label>
+    <div class="admin-form__checkbox-row" style="align-items: center; gap: 0;">
+        <input
+            class="admin-form__input"
+            type="text"
+            id="slug"
+            name="slug"
+            value="{{ valores.slug }}"
+            required
+            pattern="[a-z0-9-]{3,63}"
+            autocomplete="off"
+            style="max-width: 220px;"
+        >
+        <span style="color: var(--color-text-muted); font-size: 14px;">.eservicios.org</span>
+    </div>
+    <p id="slug-estado" style="font-size: 13px; margin: 4px 0 0; color: var(--color-text-muted);"></p>
+
+    <label class="admin-form__label" for="whatsapp_numero">Número de WhatsApp (con código de país, solo dígitos)</label>
+    <input class="admin-form__input" type="text" id="whatsapp_numero" name="whatsapp_numero" value="{{ valores.whatsapp_numero }}" placeholder="584121234567" inputmode="numeric" required>
+
+    <label class="admin-form__label" for="bio">Descripción corta de tu tienda (opcional)</label>
+    <textarea class="admin-form__textarea" id="bio" name="bio" rows="3">{{ valores.bio }}</textarea>
+
+    <label class="admin-form__label" for="email">Correo (para entrar a tu panel)</label>
+    <input class="admin-form__input" type="email" id="email" name="email" value="{{ valores.email }}" required>
+
+    <label class="admin-form__label" for="password">Contraseña (mínimo 8 caracteres)</label>
+    <input class="admin-form__input" type="password" id="password" name="password" minlength="8" required>
+
+    <label class="admin-form__label" for="password_confirmacion">Confirma tu contraseña</label>
+    <input class="admin-form__input" type="password" id="password_confirmacion" name="password_confirmacion" minlength="8" required>
+
+    <div class="admin-form__actions">
+        <button class="admin-btn admin-btn--primary" type="submit">Crear mi tienda</button>
+    </div>
+</form>
+<p class="admin-auth__title" style="font-size: 14px;">
+    ¿Ya tienes tienda? <a class="admin-link" href="{{ url_for('vendedor.login') }}">Inicia sesión</a>.
+</p>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ estatico_v('js/registro_vendedor.js') }}"></script>
+{% endblock %}

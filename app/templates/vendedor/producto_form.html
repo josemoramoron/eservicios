@@ -1,0 +1,55 @@
+{% extends "vendedor/base.html" %}
+
+{% block title %}{{ 'Editar' if producto else 'Nuevo' }} producto — Mi Tienda{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a class="breadcrumb__link" href="{{ url_for('health.index') }}">eServicios</a>
+    <a class="breadcrumb__link" href="{{ url_for('vendedor.dashboard') }}">Mi tienda</a>
+    <span class="breadcrumb__current">{{ 'Editar producto' if producto else 'Nuevo producto' }}</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<h1 class="admin-page-title">{{ 'Editar producto' if producto else 'Nuevo producto' }}</h1>
+
+<form method="post" class="admin-form" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <label class="admin-form__label" for="titulo">Título</label>
+    <input class="admin-form__input" type="text" id="titulo" name="titulo" value="{{ valores.titulo }}" required>
+
+    <label class="admin-form__label" for="descripcion">Descripción</label>
+    <textarea class="admin-form__textarea" id="descripcion" name="descripcion" rows="4" required>{{ valores.descripcion }}</textarea>
+
+    <label class="admin-form__label" for="precio">Precio (USD)</label>
+    <input class="admin-form__input" type="text" id="precio" name="precio" value="{{ valores.precio }}" inputmode="decimal" required>
+
+    <label class="admin-form__label" for="foto">Foto</label>
+    {% if valores.foto_url %}
+    <img src="{{ valores.foto_url }}" alt="Foto actual" style="width: 96px; height: 96px; object-fit: cover; border-radius: 10px; margin-bottom: 8px; display: block;">
+    {% endif %}
+    <input class="admin-form__input" type="file" id="foto" name="foto" accept="image/jpeg,image/png,image/webp">
+    <p style="font-size: 0.8rem; color: var(--color-text-muted); margin: 6px 0 0;">
+        JPG, PNG o WEBP, máximo 5 MB.{% if valores.foto_url %} Sube una imagen nueva para reemplazar la actual.{% endif %}
+    </p>
+    {% if valores.foto_url %}
+    <label class="admin-form__checkbox" style="margin-top: 6px;">
+        <input type="checkbox" name="quitar_foto">
+        Quitar la foto actual
+    </label>
+    {% endif %}
+
+    <div class="admin-form__checkbox-row">
+        <label class="admin-form__checkbox">
+            <input type="checkbox" name="activo" {% if valores.activo %}checked{% endif %}>
+            Activo (visible en tu tienda pública)
+        </label>
+    </div>
+
+    <div class="admin-form__actions">
+        <button class="admin-btn admin-btn--primary" type="submit">Guardar</button>
+        <a class="admin-btn" href="{{ url_for('vendedor.dashboard') }}">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

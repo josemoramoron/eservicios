@@ -1,0 +1,58 @@
+{% extends "vendedor/base.html" %}
+
+{% block title %}Mi tienda — {{ vendor.nombre_negocio }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a class="breadcrumb__link" href="{{ url_for('health.index') }}">eServicios</a>
+    <span class="breadcrumb__current">Mi tienda (e-link)</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="admin-page-header">
+    <h1 class="admin-page-title">Mi tienda</h1>
+    <a class="admin-btn admin-btn--primary" href="{{ url_for('vendedor.producto_nuevo') }}">Nuevo producto</a>
+</div>
+
+<p class="admin-auth__title" style="font-size: 14px; margin: -8px 0 20px;">
+    Tu tienda está en línea en
+    <a class="admin-link" href="https://{{ vendor.slug }}.eservicios.org" target="_blank" rel="noopener">{{ vendor.slug }}.eservicios.org</a>
+</p>
+
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>Producto</th>
+            <th>Precio</th>
+            <th>Activo</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for producto in productos %}
+        <tr>
+            <td>{{ producto.titulo }}</td>
+            <td>${{ "%.2f"|format(producto.precio) }}</td>
+            <td>{{ "Sí" if producto.activo else "No" }}</td>
+            <td class="admin-table__actions">
+                <a class="admin-link" href="{{ url_for('vendedor.producto_editar', producto_id=producto.id) }}">Editar</a>
+                <form
+                    method="post"
+                    action="{{ url_for('vendedor.producto_eliminar', producto_id=producto.id) }}"
+                    class="admin-table__inline-form"
+                    onsubmit="return confirm('¿Eliminar \'{{ producto.titulo }}\'?');"
+                >
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="admin-link admin-link--danger" type="submit">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="4">Todavía no has publicado ningún producto.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

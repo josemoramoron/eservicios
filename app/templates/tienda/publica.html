@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ vendor.nombre_negocio }}</title>
+    <meta name="description" content="{{ vendor.bio or vendor.nombre_negocio }}">
+    <meta property="og:site_name" content="{{ vendor.nombre_negocio }}">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{ vendor.nombre_negocio }}">
+    {% if vendor.bio %}<meta property="og:description" content="{{ vendor.bio }}">{% endif %}
+    <link rel="stylesheet" href="{{ estatico_v('css/style.css') }}">
+    <link rel="stylesheet" href="{{ estatico_v('css/tienda.css') }}">
+</head>
+<body class="tienda-body">
+
+<div class="tienda-banner" {% if vendor.banner_url %}style="background-image: url('{{ vendor.banner_url }}');"{% endif %}></div>
+
+<header class="tienda-header">
+    <div class="tienda-avatar">
+        {% if vendor.logo_url %}
+        <img src="{{ vendor.logo_url }}" alt="{{ vendor.nombre_negocio }}">
+        {% else %}
+        <span>{{ vendor.nombre_negocio[:2] | upper }}</span>
+        {% endif %}
+    </div>
+
+    <h1 class="tienda-nombre">{{ vendor.nombre_negocio }}</h1>
+    <p class="tienda-subdominio">{{ vendor.slug }}.eservicios.org</p>
+    {% if vendor.bio %}<p class="tienda-bio">{{ vendor.bio }}</p>{% endif %}
+
+    <a class="tienda-whatsapp-btn" href="{{ whatsapp_href_tienda }}" target="_blank" rel="noopener">
+        {{ icono_red("whatsapp") | safe }}
+        Escribir por WhatsApp
+    </a>
+</header>
+
+<main class="tienda-main">
+    {% if productos %}
+    <p class="tienda-seccion-titulo">Productos</p>
+    <div class="tienda-grid">
+        {% for producto, wa_href in productos %}
+        <button
+            type="button"
+            class="tienda-card"
+            data-titulo="{{ producto.titulo }}"
+            data-precio="${{ '%.2f' | format(producto.precio) }}"
+            data-descripcion="{{ producto.descripcion }}"
+            data-foto="{{ producto.foto_url or '' }}"
+            data-wa="{{ wa_href }}"
+        >
+            <span class="tienda-card__foto" {% if producto.foto_url %}style="background-image: url('{{ producto.foto_url }}');"{% endif %}>
+                {% if not producto.foto_url %}
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path></svg>
+                {% endif %}
+            </span>
+            <span class="tienda-card__titulo">{{ producto.titulo }}</span>
+            <span class="tienda-card__precio">${{ '%.2f' | format(producto.precio) }}</span>
+        </button>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="tienda-vacio">Todavía no hay productos publicados.</p>
+    {% endif %}
+</main>
+
+<footer class="tienda-footer">
+    <a class="tienda-badge" href="https://eservicios.org" target="_blank" rel="noopener">Creado con eServicios</a>
+</footer>
+
+<div class="tienda-modal" id="tienda-modal" hidden>
+    <div class="tienda-modal__backdrop" data-cerrar></div>
+    <div class="tienda-modal__panel">
+        <button type="button" class="tienda-modal__cerrar" data-cerrar aria-label="Cerrar">&times;</button>
+        <div class="tienda-modal__foto" id="tienda-modal-foto"></div>
+        <p class="tienda-modal__titulo" id="tienda-modal-titulo"></p>
+        <p class="tienda-modal__precio" id="tienda-modal-precio"></p>
+        <p class="tienda-modal__descripcion" id="tienda-modal-descripcion"></p>
+        <a class="tienda-whatsapp-btn" id="tienda-modal-wa" href="#" target="_blank" rel="noopener">
+            {{ icono_red("whatsapp") | safe }}
+            Preguntar por este producto
+        </a>
+    </div>
+</div>
+
+<script src="{{ estatico_v('js/tienda.js') }}"></script>
+</body>
+</html>
