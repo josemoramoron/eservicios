@@ -198,6 +198,25 @@ def obtener_vendor_por_slug_activo(slug: str) -> Vendor | None:
     return Vendor.query.filter_by(slug=slug.lower(), activo=True).first()
 
 
+def obtener_vendor_por_slug(slug: str) -> Vendor | None:
+    """Busca una tienda por su slug, sin filtrar por si está activa.
+
+    A diferencia de `obtener_vendor_por_slug_activo` (usada para
+    resolver la tienda pública), esta se usa cuando justamente interesa
+    saber si existe una tienda inactiva con ese slug — para mostrarle
+    al visitante un aviso claro de "tienda no disponible" en vez de
+    dejar que el subdominio caiga al sitio principal como si nunca
+    hubiera existido.
+
+    Args:
+        slug: Slug del subdominio.
+
+    Returns:
+        El `Vendor` si existe (activo o no), o None.
+    """
+    return Vendor.query.filter_by(slug=slug.lower()).first()
+
+
 def obtener_vendor_por_email(email: str) -> Vendor | None:
     """Busca una tienda por el correo de su dueño.
 

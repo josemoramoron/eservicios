@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 from pathlib import Path
 
-from flask import Flask, flash, g, redirect, request, url_for
+from flask import Flask, flash, g, redirect, render_template, request, url_for
 from werkzeug.exceptions import RequestEntityTooLarge
 
 from app.extensions import db, migrate
@@ -27,6 +27,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     from app import models  # noqa: F401  (registra los modelos para Flask-Migrate)
     from app.routes.admin import admin_bp
     from app.routes.blog import blog_bp
+    from app.routes.clicks import clicks_bp
     from app.routes.health import health_bp
     from app.routes.producto import producto_bp
     from app.routes.servicios import servicios_bp
@@ -34,7 +35,11 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     from app.routes.vendedor import vendedor_bp
     from app.services.iconos_service import obtener_icono_categoria, obtener_icono_red
     from app.services.site_info_service import obtener_info_sitio
-    from app.services.subdominio_service import resolver_redireccion_slug_antiguo, resolver_vendor_por_host
+    from app.services.subdominio_service import (
+        resolver_redireccion_slug_antiguo,
+        resolver_vendor_inactivo_por_host,
+        resolver_vendor_por_host,
+    )
     from app.services.vendor_service import obtener_vendor_por_slug_activo
 
     app.register_blueprint(health_bp)
@@ -43,6 +48,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     app.register_blueprint(blog_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(vendedor_bp)
+    app.register_blueprint(clicks_bp)
     app.jinja_env.globals["icono_categoria"] = obtener_icono_categoria
     app.jinja_env.globals["icono_red"] = obtener_icono_red
 
@@ -132,15 +138,20 @@ def create_app(config_class: type[Config] = Config) -> Flask:
         slug que un vendedor cambió recientemente (ver
         `vendor_service.cambiar_slug`), redirige automáticamente al
         subdominio nuevo en vez de dejar el enlace roto — la redirección
-        dura `vendor_service.DIAS_REDIRECCION_SLUG_ANTERIOR` días.
+        dura `vendor_service.DIAS_REDIRECCION_SLUG_ANTERIOR` días. Si el
+        slug existe pero la tienda está desactivada
+        (`Vendor.activo=False`), se muestra un aviso claro en vez de
+        dejar caer la petición al sitio principal como si el
+        subdominio nunca hubiera existido.
 
         Returns:
             El HTML de la tienda si el host corresponde a un vendedor
             activo, una redirección al subdominio nuevo si el host es un
-            slug anterior todavía vigente, o None para seguir el
+            slug anterior todavía vigente, un aviso 503 si la tienda
+            existe pero está inactiva, o None para seguir el
             enrutamiento normal de Flask.
         """
-        if request.path.startswith("/static/"):
+        if request.path.startswith("/static/") or request.path.startswith("/e-link-click/"):
             return None
 
         slug_preview = request.args.get("preview_vendor")
@@ -157,11 +168,22 @@ def create_app(config_class: type[Config] = Config) -> Flask:
             return renderizar_tienda(vendor)
 
         slug_nuevo = resolver_redireccion_slug_antiguo(request.host, app.config["SITE_DOMAIN"])
-        if slug_nuevo is None:
-            return None
-        puerto = f":{request.host.split(':', 1)[1]}" if ":" in request.host else ""
-        ruta = request.full_path if request.query_string else request.path
-        destino = f"{request.scheme}://{slug_nuevo}.{app.config['SITE_DOMAIN']}{puerto}{ruta}"
-        return redirect(destino, code=302)
+        if slug_nuevo is not None:
+            puerto = f":{request.host.split(':', 1)[1]}" if ":" in request.host else ""
+            ruta = request.full_path if request.query_string else request.path
+            destino = f"{request.scheme}://{slug_nuevo}.{app.config['SITE_DOMAIN']}{puerto}{ruta}"
+            return redirect(destino, code=302)
+
+        vendor_inactivo = resolver_vendor_inactivo_por_host(request.host, app.config["SITE_DOMAIN"])
+        if vendor_inactivo is not None:
+            # URL absoluta al dominio principal a propósito: un `url_for`
+            # normal generaría una ruta relativa que, al hacer clic,
+            # seguiría resolviendo contra este mismo subdominio inactivo
+            # (el before_request la volvería a interceptar acá mismo).
+            puerto = f":{request.host.split(':', 1)[1]}" if ":" in request.host else ""
+            url_login = f"{request.scheme}://{app.config['SITE_DOMAIN']}{puerto}{url_for('vendedor.login')}"
+            return render_template("tienda/no_disponible.html", vendor=vendor_inactivo, url_login=url_login), 503
+
+        return None
 
     return app

@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from app.models import VendorSlugHistorial
-from app.services.vendor_service import obtener_vendor_por_slug_activo
+from app.services.vendor_service import obtener_vendor_por_slug, obtener_vendor_por_slug_activo
 
 
 def extraer_slug_de_host(host: str, dominio_base: str) -> str | None:
@@ -89,3 +89,30 @@ def resolver_redireccion_slug_antiguo(host: str, dominio_base: str) -> str | Non
     if historial is None or not historial.vendor.activo:
         return None
     return historial.vendor.slug
+
+
+def resolver_vendor_inactivo_por_host(host: str, dominio_base: str):
+    """Busca una tienda INACTIVA correspondiente a un host, para mostrar un aviso claro.
+
+    Se usa como último paso del enrutador de subdominios, después de
+    descartar tienda activa y redirección de slug anterior: si el host
+    corresponde a un slug que sí existe pero con `Vendor.activo=False`
+    (ej. el vendedor se dio de baja, o fue desactivado), se distingue
+    ese caso de un subdominio que nunca existió — el primero muestra
+    "esta tienda no está disponible", el segundo cae al sitio principal.
+
+    Args:
+        host: Header Host de la petición.
+        dominio_base: Dominio raíz del sitio.
+
+    Returns:
+        El `Vendor` inactivo si el host corresponde a uno, o None si el
+        slug no existe o si la tienda sí está activa.
+    """
+    slug = extraer_slug_de_host(host, dominio_base)
+    if slug is None:
+        return None
+    vendor = obtener_vendor_por_slug(slug)
+    if vendor is None or vendor.activo:
+        return None
+    return vendor

@@ -24,6 +24,7 @@ from app.services.vendor_auth_service import (
     requiere_vendor,
     vendor_actual,
 )
+from app.services.estadisticas_service import resumen_estadisticas
 from app.services.vendor_service import (
     DIAS_ENTRE_CAMBIOS_SLUG,
     DIAS_REDIRECCION_SLUG_ANTERIOR,
@@ -100,49 +101,92 @@ def _subir_imagen_opcional(campo: str, carpeta: str) -> tuple[str | None, str | 
         return None, str(exc)
 
 
-def _resolver_fotos_producto(vendor, producto: VendorProduct | None) -> tuple[list[str], str | None]:
-    """Resuelve las hasta `MAX_FOTOS_PRODUCTO` fotos del formulario de producto.
+def _parsear_lista_ids(valor: str) -> list[int]:
+    """Convierte un CSV de ids (de un input hidden armado por JS) en una lista de enteros.
 
-    El formulario trae un `<input type="file">` por posición
-    (`foto_1`..`foto_N`) más un checkbox `quitar_foto_N` para vaciar esa
-    posición sin subir nada nuevo. Por cada posición: si llegó un
-    archivo nuevo, se sube a R2 y reemplaza lo que hubiera ahí (borrando
-    en R2 la foto anterior de esa posición, si existía); si se marcó
-    "quitar", se borra en R2 y la posición queda vacía; si no pasó nada
-    de eso, se conserva la foto existente tal cual. Las posiciones
-    vacías se compactan (no dejan huecos) para que el orden final quede
-    siempre sin saltos.
+    Ignora en silencio cualquier token vacío o no numérico — este campo
+    lo arma `producto_fotos.js`, no lo escribe el vendedor directamente,
+    pero igual nunca debe poder tumbar el guardado del producto por un
+    valor inesperado.
+
+    Args:
+        valor: Contenido crudo del input hidden, ej. "3,1,2".
+
+    Returns:
+        Lista de ids como enteros, en el mismo orden que venían.
+    """
+    ids = []
+    for token in valor.split(","):
+        token = token.strip()
+        if token.isdigit():
+            ids.append(int(token))
+    return ids
+
+
+def _resolver_fotos_producto(vendor, producto: VendorProduct | None) -> tuple[list[str], str | None, str | None]:
+    """Resuelve la galería final de fotos de un producto tras guardar el formulario.
+
+    Las fotos existentes se reordenan (o se quitan) según lo que haya
+    armado el drag-and-drop / los botones ‹ › del formulario
+    (`producto_fotos.js`), leído de los inputs hidden `orden_fotos`
+    (ids en el orden final) y `fotos_a_quitar` (ids a borrar). Las fotos
+    nuevas (`foto_nueva_1`..`foto_nueva_N`) se suben a R2 y se agregan
+    al final, hasta completar `MAX_FOTOS_PRODUCTO` — cualquier foto
+    nueva de más allá del máximo se ignora (no se sube) y se avisa con
+    una advertencia no bloqueante, en vez de rechazar todo el guardado.
 
     Args:
         vendor: Tienda dueña del producto (para la carpeta de R2).
         producto: Producto existente (para sus fotos actuales), o None
-            si es un producto nuevo (todas las posiciones parten vacías).
+            si es un producto nuevo (parte sin fotos existentes).
 
     Returns:
-        Tupla `(urls, error)`: `urls` con la lista final de fotos, sin
-        huecos, máximo `MAX_FOTOS_PRODUCTO`; y `error` con el mensaje a
-        mostrar si alguna subida falló por tipo o tamaño inválido (en
-        ese caso `urls` es una lista vacía y no se debe usar).
+        Tupla `(urls, error, advertencia)`: `urls` con la lista final de
+        fotos en orden, máximo `MAX_FOTOS_PRODUCTO`; `error` con el
+        mensaje a mostrar si alguna subida falló por tipo o tamaño
+        inválido (en ese caso `urls` es una lista vacía y no se debe
+        usar, y no se guarda nada); `advertencia` con un mensaje no
+        bloqueante si se ignoraron fotos nuevas por exceso de cantidad.
     """
-    fotos_actuales = [foto.url for foto in producto.fotos] if producto is not None else []
-    fotos_actuales += [None] * (MAX_FOTOS_PRODUCTO - len(fotos_actuales))
+    fotos_existentes = {foto.id: foto.url for foto in producto.fotos} if producto is not None else {}
+    ids_a_quitar = set(_parsear_lista_ids(request.form.get("fotos_a_quitar", "")))
+    orden_ids = _parsear_lista_ids(request.form.get("orden_fotos", ""))
 
     resultado: list[str] = []
+    ids_usados: set[int] = set()
+    for foto_id in orden_ids:
+        if foto_id in ids_a_quitar or foto_id in ids_usados:
+            continue
+        url = fotos_existentes.get(foto_id)
+        if url:
+            resultado.append(url)
+            ids_usados.add(foto_id)
+
+    fotos_omitidas = False
     for i in range(1, MAX_FOTOS_PRODUCTO + 1):
-        url_actual = fotos_actuales[i - 1]
-        url_nueva, error = _subir_imagen_opcional(f"foto_{i}", f"vendors/{vendor.slug}/productos")
+        archivo = request.files.get(f"foto_nueva_{i}")
+        if not archivo or not archivo.filename:
+            continue
+        if len(resultado) >= MAX_FOTOS_PRODUCTO:
+            fotos_omitidas = True
+            continue
+        url_nueva, error = _subir_imagen_opcional(f"foto_nueva_{i}", f"vendors/{vendor.slug}/productos")
         if error:
-            return [], error
+            return [], error, None
         if url_nueva is not None:
-            if url_actual:
-                r2_service.eliminar_imagen(url_actual)
             resultado.append(url_nueva)
-        elif request.form.get(f"quitar_foto_{i}") == "on":
-            if url_actual:
-                r2_service.eliminar_imagen(url_actual)
-        elif url_actual:
-            resultado.append(url_actual)
-    return resultado, None
+
+    urls_finales = set(resultado)
+    for foto_id, url in fotos_existentes.items():
+        if url not in urls_finales:
+            r2_service.eliminar_imagen(url)
+
+    advertencia = (
+        f"Se ignoraron algunas fotos nuevas porque ya llegaste al máximo de {MAX_FOTOS_PRODUCTO}."
+        if fotos_omitidas
+        else None
+    )
+    return resultado, None, advertencia
 
 
 # --- Registro y autenticación ---
@@ -267,6 +311,7 @@ def dashboard():
     return render_template(
         "vendedor/dashboard.html",
         productos=listar_productos_de_vendor(vendor),
+        estadisticas=resumen_estadisticas(vendor),
     )
 
 
@@ -444,22 +489,24 @@ def perfil_slug():
 # --- Productos ---
 
 
-def _fotos_valores(producto: VendorProduct | None) -> list[str | None]:
-    """Fotos actuales de un producto, en una lista de exactamente `MAX_FOTOS_PRODUCTO` posiciones.
+def _fotos_valores(producto: VendorProduct | None) -> list[dict]:
+    """Fotos actuales de un producto, para pintar la lista reordenable del formulario.
 
-    Las posiciones sin foto quedan como `None`, así la plantilla puede
-    pintar un slot vacío (solo el selector de archivo) o uno ocupado
-    (preview + checkbox "quitar") sin tener que contar índices.
+    A diferencia de la versión anterior (lista fija de 5 posiciones con
+    huecos), ahora es una lista de longitud variable con el id de cada
+    foto — el id es lo que `producto_fotos.js` necesita para armar los
+    inputs hidden `orden_fotos`/`fotos_a_quitar` al arrastrar o quitar.
 
     Args:
         producto: Producto existente, o None para un formulario vacío.
 
     Returns:
-        Lista de `MAX_FOTOS_PRODUCTO` elementos: URL de la foto, o None.
+        Lista de dicts `{"id": int, "url": str}`, en el orden guardado
+        (`VendorProductFoto.orden`) — la primera es la portada.
     """
-    fotos = [foto.url for foto in producto.fotos] if producto is not None else []
-    fotos += [None] * (MAX_FOTOS_PRODUCTO - len(fotos))
-    return fotos
+    if producto is None:
+        return []
+    return [{"id": foto.id, "url": foto.url} for foto in producto.fotos]
 
 
 def _producto_a_valores(producto: VendorProduct | None) -> dict:
@@ -529,14 +576,20 @@ def producto_nuevo():
         if error:
             flash(error, "error")
             return render_template(
-                "vendedor/producto_form.html", producto=None, valores={**datos, "fotos": _fotos_valores(None)}
+                "vendedor/producto_form.html",
+                producto=None,
+                valores={**datos, "fotos": _fotos_valores(None)},
+                max_fotos=MAX_FOTOS_PRODUCTO,
             )
 
-        fotos_urls, error_fotos = _resolver_fotos_producto(vendor, None)
+        fotos_urls, error_fotos, advertencia_fotos = _resolver_fotos_producto(vendor, None)
         if error_fotos:
             flash(error_fotos, "error")
             return render_template(
-                "vendedor/producto_form.html", producto=None, valores={**datos, "fotos": _fotos_valores(None)}
+                "vendedor/producto_form.html",
+                producto=None,
+                valores={**datos, "fotos": _fotos_valores(None)},
+                max_fotos=MAX_FOTOS_PRODUCTO,
             )
 
         crear_producto(
@@ -546,9 +599,16 @@ def producto_nuevo():
             precio=datos["precio"],
             fotos_urls=fotos_urls,
         )
+        if advertencia_fotos:
+            flash(advertencia_fotos, "error")
         flash(f'Producto "{datos["titulo"]}" publicado.', "success")
         return redirect(url_for("vendedor.dashboard"))
-    return render_template("vendedor/producto_form.html", producto=None, valores=_producto_a_valores(None))
+    return render_template(
+        "vendedor/producto_form.html",
+        producto=None,
+        valores=_producto_a_valores(None),
+        max_fotos=MAX_FOTOS_PRODUCTO,
+    )
 
 
 @vendedor_bp.route("/productos/<int:producto_id>/editar", methods=["GET", "POST"])
@@ -565,14 +625,20 @@ def producto_editar(producto_id: int):
         if error:
             flash(error, "error")
             return render_template(
-                "vendedor/producto_form.html", producto=producto, valores={**datos, "fotos": _fotos_valores(producto)}
+                "vendedor/producto_form.html",
+                producto=producto,
+                valores={**datos, "fotos": _fotos_valores(producto)},
+                max_fotos=MAX_FOTOS_PRODUCTO,
             )
 
-        fotos_urls, error_fotos = _resolver_fotos_producto(vendor, producto)
+        fotos_urls, error_fotos, advertencia_fotos = _resolver_fotos_producto(vendor, producto)
         if error_fotos:
             flash(error_fotos, "error")
             return render_template(
-                "vendedor/producto_form.html", producto=producto, valores={**datos, "fotos": _fotos_valores(producto)}
+                "vendedor/producto_form.html",
+                producto=producto,
+                valores={**datos, "fotos": _fotos_valores(producto)},
+                max_fotos=MAX_FOTOS_PRODUCTO,
             )
 
         actualizar_producto(
@@ -583,10 +649,15 @@ def producto_editar(producto_id: int):
             fotos_urls=fotos_urls,
             activo=datos["activo"],
         )
+        if advertencia_fotos:
+            flash(advertencia_fotos, "error")
         flash(f'Producto "{datos["titulo"]}" actualizado.', "success")
         return redirect(url_for("vendedor.dashboard"))
     return render_template(
-        "vendedor/producto_form.html", producto=producto, valores=_producto_a_valores(producto)
+        "vendedor/producto_form.html",
+        producto=producto,
+        valores=_producto_a_valores(producto),
+        max_fotos=MAX_FOTOS_PRODUCTO,
     )
 
 

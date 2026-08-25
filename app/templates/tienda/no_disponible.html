@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tienda no disponible</title>
+    <meta name="robots" content="noindex">
+    <link rel="stylesheet" href="{{ estatico_v('css/style.css') }}">
+</head>
+<body>
+<div style="max-width: 420px; margin: 15vh auto 0; padding: 0 20px; text-align: center;">
+    <h1 class="admin-page-title" style="margin-bottom: 12px;">Esta tienda no está disponible</h1>
+    <p style="color: var(--color-text-muted); margin-bottom: 24px;">
+        {{ vendor.nombre_negocio }} no está activa en este momento. Si eres el dueño de esta
+        tienda, inicia sesión en tu panel para reactivarla.
+    </p>
+    <a class="admin-btn admin-btn--primary" href="{{ url_login }}">Ir al panel de vendedor</a>
+</div>
+</body>
+</html>

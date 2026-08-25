@@ -13,7 +13,9 @@
 {% block content %}
 <h1 class="admin-page-title">{{ 'Editar producto' if producto else 'Nuevo producto' }}</h1>
 
-<form method="post" class="admin-form" enctype="multipart/form-data">
+{% set restante = max_fotos - (valores.fotos|length) %}
+
+<form method="post" class="admin-form" enctype="multipart/form-data" id="producto-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
     <label class="admin-form__label" for="titulo">Título</label>
@@ -25,23 +27,41 @@
     <label class="admin-form__label" for="precio">Precio (USD)</label>
     <input class="admin-form__input" type="text" id="precio" name="precio" value="{{ valores.precio }}" inputmode="decimal" required>
 
-    <label class="admin-form__label">Fotos (hasta 5 — la primera es la portada)</label>
-    <p class="admin-form__hint">JPG, PNG o WEBP, máximo 5 MB cada una.</p>
-    {% for i in range(1, 6) %}
-    {% set foto_actual = valores.fotos[i - 1] if valores.fotos and valores.fotos|length >= i else none %}
-    <div style="margin: 10px 0; padding: 10px; border: 1px solid var(--color-border); border-radius: 0.5rem;">
-        {% if foto_actual %}
-        <img src="{{ foto_actual }}" alt="Foto {{ i }} actual" style="width: 72px; height: 72px; object-fit: cover; border-radius: 8px; margin-bottom: 6px; display: block;">
-        {% endif %}
-        <input class="admin-form__input" type="file" name="foto_{{ i }}" accept="image/jpeg,image/png,image/webp">
-        {% if foto_actual %}
-        <label class="admin-form__checkbox" style="margin-top: 6px;">
-            <input type="checkbox" name="quitar_foto_{{ i }}">
-            Quitar esta foto
-        </label>
-        {% endif %}
-    </div>
+    <label class="admin-form__label">Fotos (hasta {{ max_fotos }} — la primera es la portada)</label>
+    <p class="admin-form__hint" id="fotos-contador-hint">
+        {% if valores.fotos %}{{ valores.fotos|length }} de {{ max_fotos }} fotos actuales.{% else %}Todavía no tienes fotos.{% endif %}
+        Arrastra para reordenar, o usa las flechas — la primera queda como portada.
+    </p>
+
+    <input type="hidden" name="orden_fotos" id="orden_fotos" value="{{ valores.fotos|map(attribute='id')|join(',') }}">
+    <input type="hidden" name="fotos_a_quitar" id="fotos_a_quitar" value="">
+
+    <ul class="fotos-actuales-lista" id="fotos-actuales-lista">
+        {% for foto in valores.fotos %}
+        <li class="fotos-actuales-lista__item" draggable="true" data-foto-id="{{ foto.id }}">
+            <span class="fotos-actuales-lista__handle" aria-hidden="true">⠿</span>
+            <img class="fotos-actuales-lista__miniatura" src="{{ foto.url }}" alt="Foto del producto">
+            <span class="fotos-actuales-lista__portada-badge">Portada</span>
+            <span class="fotos-actuales-lista__botones">
+                <button type="button" class="fotos-actuales-lista__mover" data-direccion="arriba" aria-label="Mover antes">‹</button>
+                <button type="button" class="fotos-actuales-lista__mover" data-direccion="abajo" aria-label="Mover después">›</button>
+                <button type="button" class="fotos-actuales-lista__quitar" aria-label="Quitar esta foto">&times;</button>
+            </span>
+        </li>
+        {% endfor %}
+    </ul>
+
+    {% if restante > 0 %}
+    <p class="admin-form__hint">
+        Agregar fotos nuevas (hasta {{ restante }} aquí — si quitas alguna de arriba, guarda y vuelve a
+        editar para liberar más espacio).
+    </p>
+    {% for i in range(1, restante + 1) %}
+    <input class="admin-form__input" type="file" name="foto_nueva_{{ i }}" accept="image/jpeg,image/png,image/webp" style="margin-bottom: 8px;">
     {% endfor %}
+    {% else %}
+    <p class="admin-form__hint">Ya tienes el máximo de {{ max_fotos }} fotos. Quita alguna para poder subir otra.</p>
+    {% endif %}
 
     <div class="admin-form__checkbox-row">
         <label class="admin-form__checkbox">
@@ -55,4 +75,6 @@
         <a class="admin-btn" href="{{ url_for('vendedor.dashboard') }}">Cancelar</a>
     </div>
 </form>
+
+<script src="{{ estatico_v('js/producto_fotos.js') }}"></script>
 {% endblock %}

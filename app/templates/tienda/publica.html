@@ -10,7 +10,7 @@
     <meta property="og:title" content="{{ vendor.nombre_negocio }}">
     <meta property="og:url" content="{{ request.url }}">
     {% if vendor.bio %}<meta property="og:description" content="{{ vendor.bio }}">{% endif %}
-    {% set imagen_og = vendor.banner_url or vendor.logo_url or (productos[0][0].foto_url if productos else none) %}
+    {% set imagen_og = vendor.logo_url or vendor.banner_url or (productos[0][0].foto_url if productos else none) %}
     {% if imagen_og %}
     <meta property="og:image" content="{{ url_absoluta(imagen_og) }}">
     <meta name="twitter:card" content="summary_large_image">

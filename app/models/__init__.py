@@ -18,6 +18,7 @@ from app.models.order import EstadoOrder, Order, OrderItem
 from app.models.reserved_slug import ReservedSlug
 from app.models.testimonial import Testimonial
 from app.models.vendor import PlanVendor, Vendor
+from app.models.vendor_evento import TipoEventoVendor, VendorEvento
 from app.models.vendor_link import VendorLink
 from app.models.vendor_product import VendorProduct
 from app.models.vendor_product_foto import VendorProductFoto
@@ -40,6 +41,8 @@ __all__ = [
     "Testimonial",
     "Vendor",
     "PlanVendor",
+    "TipoEventoVendor",
+    "VendorEvento",
     "VendorLink",
     "VendorProduct",
     "VendorProductFoto",
