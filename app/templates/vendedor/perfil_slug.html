@@ -1,0 +1,97 @@
+{% extends "vendedor/base.html" %}
+
+{% block title %}Cambiar subdominio — {{ vendor.nombre_negocio }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a class="breadcrumb__link" href="{{ url_for('health.index') }}">eServicios</a>
+    <a class="breadcrumb__link" href="{{ url_for('vendedor.dashboard') }}">Mi tienda</a>
+    <a class="breadcrumb__link" href="{{ url_for('vendedor.perfil') }}">Mi perfil</a>
+    <span class="breadcrumb__current">Cambiar subdominio</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<h1 class="admin-page-title">Cambiar subdominio</h1>
+
+<p>Tu tienda es visible ahora mismo en: <strong>{{ vendor.slug }}.eservicios.org</strong></p>
+
+<div class="admin-warning-box">
+    <p class="admin-warning-box__title">Antes de cambiarlo, ten en cuenta</p>
+    <ul>
+        <li>
+            Cualquier enlace, publicación o tarjeta con tu subdominio actual dejará de mostrar tu tienda
+            directamente. Vamos a redirigir automáticamente <strong>{{ vendor.slug }}.eservicios.org</strong>
+            hacia tu subdominio nuevo, pero solo por {{ dias_redireccion }} días — pasado ese tiempo, el
+            enlace viejo deja de funcionar.
+        </li>
+        <li>
+            Puedes cambiar el subdominio como máximo {{ max_cambios }} veces en total para esta tienda.
+            Ya usaste {{ estado.cambios_usados }} de {{ max_cambios }}.
+        </li>
+        <li>
+            Entre un cambio y el siguiente tienen que pasar al menos {{ dias_entre_cambios }} días.
+        </li>
+    </ul>
+</div>
+
+{% if not estado.puede_cambiar_ahora %}
+<p class="admin-form__hint" style="font-size: 0.9rem;">
+    {% if estado.cambios_restantes <= 0 %}
+    Ya usaste los {{ max_cambios }} cambios de subdominio disponibles para esta tienda — no puedes cambiarlo de nuevo.
+    {% else %}
+    Todavía no puedes cambiarlo: vas a poder volver a hacerlo a partir del
+    {{ estado.proxima_fecha_disponible.strftime('%d/%m/%Y') }}.
+    {% endif %}
+</p>
+<div class="admin-form__actions">
+    <a class="admin-btn" href="{{ url_for('vendedor.perfil') }}">Volver a mi perfil</a>
+</div>
+{% else %}
+<form method="post" class="admin-form admin-form--narrow" action="{{ url_for('vendedor.perfil_slug') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <label class="admin-form__label" for="slug">Nuevo subdominio</label>
+    <div style="display: flex; align-items: center; gap: 6px;">
+        <input
+            class="admin-form__input"
+            type="text"
+            id="slug"
+            name="nuevo_slug"
+            value="{{ valor_intentado }}"
+            minlength="3"
+            maxlength="63"
+            autocomplete="off"
+            required
+        >
+        <span style="color: var(--color-text-muted); font-size: 14px;">.eservicios.org</span>
+    </div>
+    <p id="slug-estado" style="font-size: 13px; margin: 4px 0 0; color: var(--color-text-muted);"></p>
+
+    <label class="admin-form__label" for="confirmar_nuevo_slug">Reescribe el nuevo subdominio para confirmar</label>
+    <input
+        class="admin-form__input"
+        type="text"
+        id="confirmar_nuevo_slug"
+        name="confirmar_nuevo_slug"
+        autocomplete="off"
+        required
+    >
+
+    <label class="admin-form__checkbox" style="margin-top: 0.75rem;">
+        <input type="checkbox" required>
+        Entiendo que mi subdominio actual dejará de funcionar directamente (con redirección solo por
+        {{ dias_redireccion }} días).
+    </label>
+
+    <div class="admin-form__actions">
+        <button class="admin-btn admin-btn--primary" type="submit">Cambiar subdominio</button>
+        <a class="admin-btn" href="{{ url_for('vendedor.perfil') }}">Cancelar</a>
+    </div>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ estatico_v('js/registro_vendedor.js') }}"></script>
+{% endblock %}

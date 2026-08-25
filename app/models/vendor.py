@@ -60,6 +60,11 @@ class Vendor(db.Model):
     links: Mapped[list["VendorLink"]] = relationship(  # noqa: F821
         back_populates="vendor", cascade="all, delete-orphan", order_by="VendorLink.orden"
     )
+    slugs_anteriores: Mapped[list["VendorSlugHistorial"]] = relationship(  # noqa: F821
+        back_populates="vendor",
+        cascade="all, delete-orphan",
+        order_by="VendorSlugHistorial.creado_en.desc()",
+    )
 
     def set_password(self, password: str) -> None:
         """Genera y guarda el hash de una contraseña nueva.

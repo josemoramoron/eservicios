@@ -7,9 +7,11 @@ en el dominio principal.
 """
 from __future__ import annotations
 
+import io
 from decimal import Decimal, InvalidOperation
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+import qrcode
+from flask import Blueprint, Response, abort, current_app, flash, redirect, render_template, request, url_for
 from werkzeug.datastructures import ImmutableMultiDict
 
 from app.models import VendorProduct
@@ -23,9 +25,14 @@ from app.services.vendor_auth_service import (
     vendor_actual,
 )
 from app.services.vendor_service import (
+    DIAS_ENTRE_CAMBIOS_SLUG,
+    DIAS_REDIRECCION_SLUG_ANTERIOR,
+    MAX_CAMBIOS_SLUG,
     MAX_FOTOS_PRODUCTO,
+    CambioSlugMuyRecienteError,
     EmailDuplicadoError,
     EmailInvalidoError,
+    LimiteCambiosSlugError,
     LinkInvalidoError,
     PasswordActualIncorrectaError,
     PasswordNuevaInvalidaError,
@@ -37,10 +44,12 @@ from app.services.vendor_service import (
     actualizar_perfil,
     actualizar_producto,
     cambiar_password,
+    cambiar_slug,
     crear_link,
     crear_producto,
     eliminar_link,
     eliminar_producto,
+    estado_cambio_slug,
     listar_links_de_vendor,
     listar_productos_de_vendor,
     mover_link,
@@ -261,6 +270,28 @@ def dashboard():
     )
 
 
+@vendedor_bp.route("/qr.png")
+@requiere_vendor
+def qr_tienda():
+    """PNG del código QR que apunta a la tienda pública del vendedor.
+
+    Se genera al vuelo en cada pedido (no se guarda en R2 ni en ningún
+    otro lado) para que nunca quede desactualizado si el vendedor
+    cambia de subdominio (ver `vendor_service.cambiar_slug`) —
+    regenerarlo es prácticamente gratis, así que no vale la pena cargar
+    con el problema de invalidar una versión guardada.
+
+    Returns:
+        Respuesta con la imagen PNG del QR (`image/png`).
+    """
+    vendor = vendor_actual()
+    url_tienda = f"https://{vendor.slug}.{current_app.config['SITE_DOMAIN']}"
+    imagen_qr = qrcode.make(url_tienda, box_size=10, border=2)
+    buffer = io.BytesIO()
+    imagen_qr.save(buffer, format="PNG")
+    return Response(buffer.getvalue(), mimetype="image/png")
+
+
 # --- Perfil: personalización y seguridad ---
 
 
@@ -339,6 +370,75 @@ def perfil_password():
 
     flash("Contraseña actualizada.", "success")
     return redirect(url_for("vendedor.perfil"))
+
+
+@vendedor_bp.route("/perfil/slug", methods=["GET", "POST"])
+@requiere_vendor
+def perfil_slug():
+    """Pantalla dedicada para cambiar el subdominio de la tienda.
+
+    Separada a propósito de `/vendedor/perfil` (que edita nombre, bio,
+    logo y portada sin fricción): cambiar el slug afecta enlaces que el
+    vendedor ya haya compartido, así que exige reescribir el nuevo
+    subdominio para confirmar, y respeta los límites de seguridad de
+    `vendor_service.cambiar_slug` (máximo `MAX_CAMBIOS_SLUG` cambios,
+    mínimo `DIAS_ENTRE_CAMBIOS_SLUG` días entre uno y otro).
+    """
+    vendor = vendor_actual()
+    if request.method == "POST":
+        _verificar_csrf()
+        nuevo_slug = request.form.get("nuevo_slug", "")
+        confirmacion = request.form.get("confirmar_nuevo_slug", "")
+
+        if nuevo_slug.strip().lower() != confirmacion.strip().lower():
+            flash("Debes reescribir el nuevo subdominio exactamente igual para confirmar.", "error")
+            return render_template(
+                "vendedor/perfil_slug.html",
+                vendor=vendor,
+                estado=estado_cambio_slug(vendor),
+                valor_intentado=nuevo_slug,
+                dias_redireccion=DIAS_REDIRECCION_SLUG_ANTERIOR,
+                dias_entre_cambios=DIAS_ENTRE_CAMBIOS_SLUG,
+                max_cambios=MAX_CAMBIOS_SLUG,
+            )
+
+        try:
+            slug_final = cambiar_slug(vendor, nuevo_slug=nuevo_slug)
+        except (
+            SlugInvalidoError,
+            SlugReservadoError,
+            SlugDuplicadoError,
+            LimiteCambiosSlugError,
+            CambioSlugMuyRecienteError,
+        ) as exc:
+            flash(str(exc), "error")
+            return render_template(
+                "vendedor/perfil_slug.html",
+                vendor=vendor,
+                estado=estado_cambio_slug(vendor),
+                valor_intentado=nuevo_slug,
+                dias_redireccion=DIAS_REDIRECCION_SLUG_ANTERIOR,
+                dias_entre_cambios=DIAS_ENTRE_CAMBIOS_SLUG,
+                max_cambios=MAX_CAMBIOS_SLUG,
+            )
+
+        flash(
+            f"Listo, tu tienda ahora es {slug_final}.eservicios.org. "
+            f"El enlace anterior va a seguir funcionando (redirigiendo al nuevo) por "
+            f"{DIAS_REDIRECCION_SLUG_ANTERIOR} días.",
+            "success",
+        )
+        return redirect(url_for("vendedor.perfil"))
+
+    return render_template(
+        "vendedor/perfil_slug.html",
+        vendor=vendor,
+        estado=estado_cambio_slug(vendor),
+        valor_intentado="",
+        dias_redireccion=DIAS_REDIRECCION_SLUG_ANTERIOR,
+        dias_entre_cambios=DIAS_ENTRE_CAMBIOS_SLUG,
+        max_cambios=MAX_CAMBIOS_SLUG,
+    )
 
 
 # --- Productos ---

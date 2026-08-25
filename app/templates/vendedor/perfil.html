@@ -58,6 +58,15 @@
     </div>
 </form>
 
+<h2 style="font-size: 1.05rem; margin: 2rem 0 0.75rem;">Subdominio de tu tienda</h2>
+<div style="padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 0.5rem; max-width: 420px;">
+    <p style="margin: 0 0 6px;">Tu tienda es visible en: <strong>{{ vendor.slug }}.eservicios.org</strong></p>
+    <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0 0 12px;">
+        Cambiarlo afecta los enlaces que ya hayas compartido — tiene límites de seguridad.
+    </p>
+    <a class="admin-btn" href="{{ url_for('vendedor.perfil_slug') }}">Cambiar subdominio</a>
+</div>
+
 <h2 style="font-size: 1.05rem; margin: 2rem 0 0.75rem;">Seguridad</h2>
 <form method="post" class="admin-form admin-form--narrow" action="{{ url_for('vendedor.perfil_password') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

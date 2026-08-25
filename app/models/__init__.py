@@ -21,6 +21,7 @@ from app.models.vendor import PlanVendor, Vendor
 from app.models.vendor_link import VendorLink
 from app.models.vendor_product import VendorProduct
 from app.models.vendor_product_foto import VendorProductFoto
+from app.models.vendor_slug_historial import VendorSlugHistorial
 
 __all__ = [
     "AdminUser",
@@ -42,4 +43,5 @@ __all__ = [
     "VendorLink",
     "VendorProduct",
     "VendorProductFoto",
+    "VendorSlugHistorial",
 ]

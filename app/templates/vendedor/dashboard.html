@@ -20,6 +20,22 @@
     <a class="admin-link" href="https://{{ vendor.slug }}.eservicios.org" target="_blank" rel="noopener">{{ vendor.slug }}.eservicios.org</a>
 </p>
 
+<div style="display: flex; align-items: center; gap: 16px; margin: 0 0 24px; padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 0.5rem; max-width: 420px;">
+    <img
+        src="{{ url_for('vendedor.qr_tienda') }}"
+        alt="Código QR de tu tienda"
+        width="110"
+        height="110"
+        style="border-radius: 8px; border: 1px solid var(--color-border); flex: 0 0 auto;"
+    >
+    <div>
+        <p style="margin: 0 0 8px; font-size: 0.85rem; color: var(--color-text-muted);">
+            Código QR de tu tienda — imprímelo en tarjetas, empaques o pégalo en tu local.
+        </p>
+        <a class="admin-btn" href="{{ url_for('vendedor.qr_tienda') }}" download="{{ vendor.slug }}-qr.png">Descargar QR</a>
+    </div>
+</div>
+
 <table class="admin-table">
     <thead>
         <tr>

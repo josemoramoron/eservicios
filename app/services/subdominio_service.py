@@ -7,6 +7,9 @@ proyecto para el diseño completo.
 """
 from __future__ import annotations
 
+from datetime import datetime
+
+from app.models import VendorSlugHistorial
 from app.services.vendor_service import obtener_vendor_por_slug_activo
 
 
@@ -55,3 +58,34 @@ def resolver_vendor_por_host(host: str, dominio_base: str):
     if slug is None:
         return None
     return obtener_vendor_por_slug_activo(slug)
+
+
+def resolver_redireccion_slug_antiguo(host: str, dominio_base: str) -> str | None:
+    """Busca si un host corresponde a un slug anterior con redirección vigente.
+
+    Se usa cuando `resolver_vendor_por_host` no encontró ninguna tienda
+    activa con ese slug — antes de darlo por no-existente, se revisa si
+    es un slug que un vendedor cambió recientemente (ver
+    `vendor_service.cambiar_slug`), para redirigir automáticamente al
+    subdominio nuevo en vez de dejar el enlace roto.
+
+    Args:
+        host: Header Host de la petición.
+        dominio_base: Dominio raíz del sitio.
+
+    Returns:
+        El slug ACTUAL de la tienda a la que redirigir, si el host
+        corresponde a un slug anterior todavía dentro de la ventana de
+        redirección y la tienda sigue activa, o None si no aplica.
+    """
+    slug = extraer_slug_de_host(host, dominio_base)
+    if slug is None:
+        return None
+    historial = (
+        VendorSlugHistorial.query.filter_by(slug_anterior=slug)
+        .filter(VendorSlugHistorial.expira_en > datetime.utcnow())
+        .first()
+    )
+    if historial is None or not historial.vendor.activo:
+        return None
+    return historial.vendor.slug

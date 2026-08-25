@@ -11,17 +11,28 @@ módulo solo recibe URLs ya resueltas y las guarda en el modelo. Ver
 from __future__ import annotations
 
 import re
+from datetime import datetime, timedelta
 from decimal import Decimal
 from urllib.parse import quote
 
 from sqlalchemy import func
 
 from app.extensions import db
-from app.models import ReservedSlug, Vendor, VendorLink, VendorProduct
+from app.models import ReservedSlug, Vendor, VendorLink, VendorProduct, VendorSlugHistorial
 
 _SLUG_RE = re.compile(r"^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$")
 
 MAX_FOTOS_PRODUCTO = 5
+
+# Límites de seguridad del cambio de subdominio (ver `cambiar_slug`): un
+# vendedor puede cambiar su slug como máximo `MAX_CAMBIOS_SLUG` veces en
+# toda la vida de la tienda, con al menos `DIAS_ENTRE_CAMBIOS_SLUG` días
+# entre un cambio y el siguiente. Cada vez que cambia, el slug anterior
+# sigue redirigiendo automáticamente al nuevo por
+# `DIAS_REDIRECCION_SLUG_ANTERIOR` días (ver `VendorSlugHistorial`).
+MAX_CAMBIOS_SLUG = 2
+DIAS_ENTRE_CAMBIOS_SLUG = 15
+DIAS_REDIRECCION_SLUG_ANTERIOR = 30
 
 
 class SlugInvalidoError(Exception):
@@ -60,6 +71,14 @@ class LinkInvalidoError(Exception):
     """El título o la URL del enlace no son válidos."""
 
 
+class LimiteCambiosSlugError(Exception):
+    """El vendedor ya usó todos los cambios de subdominio permitidos."""
+
+
+class CambioSlugMuyRecienteError(Exception):
+    """Todavía no pasó el tiempo mínimo desde el último cambio de subdominio."""
+
+
 def validar_formato_slug(slug: str) -> str:
     """Normaliza y valida el formato de un slug de subdominio.
 
@@ -87,15 +106,30 @@ def validar_formato_slug(slug: str) -> str:
 def slug_disponible(slug: str) -> bool:
     """Indica si un slug ya normalizado está libre para usarse.
 
+    Además de la lista de reservados y las tiendas activas, un slug
+    tampoco está disponible mientras esté funcionando como redirección
+    temporal del subdominio anterior de otro vendedor (ver
+    `VendorSlugHistorial` y `cambiar_slug`) — evita que alguien se
+    "robe" el slug viejo de otra tienda mientras esa redirección sigue
+    vigente.
+
     Args:
         slug: Slug ya normalizado (ver `validar_formato_slug`).
 
     Returns:
-        True si no está reservado ni en uso por otra tienda.
+        True si no está reservado, en uso por otra tienda, ni
+        redirigiendo temporalmente hacia otra tienda.
     """
     if ReservedSlug.query.filter_by(palabra=slug).first() is not None:
         return False
-    return Vendor.query.filter_by(slug=slug).first() is None
+    if Vendor.query.filter_by(slug=slug).first() is not None:
+        return False
+    redireccion_vigente = (
+        VendorSlugHistorial.query.filter_by(slug_anterior=slug)
+        .filter(VendorSlugHistorial.expira_en > datetime.utcnow())
+        .first()
+    )
+    return redireccion_vigente is None
 
 
 def registrar_vendor(
@@ -174,6 +208,116 @@ def obtener_vendor_por_email(email: str) -> Vendor | None:
         El `Vendor` encontrado, o None.
     """
     return Vendor.query.filter_by(email=email.strip().lower()).first()
+
+
+def estado_cambio_slug(vendor: Vendor) -> dict:
+    """Resume la situación de un vendedor frente a los límites de `cambiar_slug`.
+
+    Pensado para la pantalla de cambio de subdominio: cuántos cambios le
+    quedan y, si ya no puede cambiar ahora mismo por el límite de
+    frecuencia, desde cuándo va a poder.
+
+    Args:
+        vendor: Tienda a evaluar.
+
+    Returns:
+        Diccionario con `cambios_usados` (int), `cambios_restantes`
+        (int), `puede_cambiar_ahora` (bool), y
+        `proxima_fecha_disponible` (`datetime | None`, solo tiene valor
+        si el único motivo por el que no puede cambiar ahora es el
+        límite de frecuencia — no si ya agotó los cambios permitidos).
+    """
+    cambios_usados = len(vendor.slugs_anteriores)
+    cambios_restantes = max(0, MAX_CAMBIOS_SLUG - cambios_usados)
+    puede_cambiar_ahora = cambios_restantes > 0
+    proxima_fecha_disponible = None
+
+    if puede_cambiar_ahora and vendor.slugs_anteriores:
+        ultimo_cambio = vendor.slugs_anteriores[0].creado_en
+        fecha_habilitado = ultimo_cambio + timedelta(days=DIAS_ENTRE_CAMBIOS_SLUG)
+        if datetime.utcnow() < fecha_habilitado:
+            puede_cambiar_ahora = False
+            proxima_fecha_disponible = fecha_habilitado
+
+    return {
+        "cambios_usados": cambios_usados,
+        "cambios_restantes": cambios_restantes,
+        "puede_cambiar_ahora": puede_cambiar_ahora,
+        "proxima_fecha_disponible": proxima_fecha_disponible,
+    }
+
+
+def cambiar_slug(vendor: Vendor, *, nuevo_slug: str) -> str:
+    """Cambia el subdominio de una tienda, con los límites de seguridad del plan gratis.
+
+    Reglas (ver constantes al inicio del módulo): máximo
+    `MAX_CAMBIOS_SLUG` cambios en toda la vida de la tienda, mínimo
+    `DIAS_ENTRE_CAMBIOS_SLUG` días desde el último cambio, y el slug
+    anterior queda redirigiendo automáticamente al nuevo por
+    `DIAS_REDIRECCION_SLUG_ANTERIOR` días (`VendorSlugHistorial`,
+    resuelto por `subdominio_service.resolver_redireccion_slug_antiguo`)
+    para no romper enlaces que el vendedor ya haya compartido.
+
+    Los chequeos de límite (cantidad y frecuencia) van primero a
+    propósito: si el vendedor ya no puede cambiar de slug, no tiene
+    sentido validarle el formato del que quiera escribir.
+
+    Args:
+        vendor: Tienda que va a cambiar de subdominio.
+        nuevo_slug: Subdominio nuevo, sin normalizar todavía.
+
+    Returns:
+        El slug nuevo, ya normalizado y aplicado a `vendor`.
+
+    Raises:
+        LimiteCambiosSlugError: Si ya se usaron los `MAX_CAMBIOS_SLUG`
+            cambios permitidos.
+        CambioSlugMuyRecienteError: Si no pasaron `DIAS_ENTRE_CAMBIOS_SLUG`
+            días desde el último cambio.
+        SlugInvalidoError: Si el nuevo slug no cumple el formato, o es
+            igual al actual.
+        SlugReservadoError: Si el nuevo slug está en la lista de reservados.
+        SlugDuplicadoError: Si el nuevo slug ya está en uso por otra
+            tienda, o todavía reservado por una redirección vigente.
+    """
+    estado = estado_cambio_slug(vendor)
+    if estado["cambios_restantes"] <= 0:
+        raise LimiteCambiosSlugError(
+            f"Ya usaste los {MAX_CAMBIOS_SLUG} cambios de subdominio disponibles para tu tienda."
+        )
+    if not estado["puede_cambiar_ahora"]:
+        dias_faltantes = max(1, (estado["proxima_fecha_disponible"] - datetime.utcnow()).days + 1)
+        raise CambioSlugMuyRecienteError(
+            f"Todavía tienes que esperar {dias_faltantes} día(s) para volver a cambiar el subdominio "
+            f"(máximo un cambio cada {DIAS_ENTRE_CAMBIOS_SLUG} días)."
+        )
+
+    slug_normalizado = validar_formato_slug(nuevo_slug)
+    if slug_normalizado == vendor.slug:
+        raise SlugInvalidoError("El nuevo subdominio debe ser diferente al actual.")
+    if ReservedSlug.query.filter_by(palabra=slug_normalizado).first() is not None:
+        raise SlugReservadoError("Ese subdominio no está disponible.")
+    if Vendor.query.filter_by(slug=slug_normalizado).first() is not None:
+        raise SlugDuplicadoError("Ese subdominio ya está en uso por otra tienda.")
+    redireccion_vigente = (
+        VendorSlugHistorial.query.filter_by(slug_anterior=slug_normalizado)
+        .filter(VendorSlugHistorial.expira_en > datetime.utcnow())
+        .first()
+    )
+    if redireccion_vigente is not None:
+        raise SlugDuplicadoError("Ese subdominio todavía está reservado — otra tienda lo usó recientemente.")
+
+    slug_anterior = vendor.slug
+    vendor.slug = slug_normalizado
+    db.session.add(
+        VendorSlugHistorial(
+            vendor_id=vendor.id,
+            slug_anterior=slug_anterior,
+            expira_en=datetime.utcnow() + timedelta(days=DIAS_REDIRECCION_SLUG_ANTERIOR),
+        )
+    )
+    db.session.commit()
+    return slug_normalizado
 
 
 def actualizar_perfil(

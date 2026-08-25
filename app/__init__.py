@@ -34,7 +34,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     from app.routes.vendedor import vendedor_bp
     from app.services.iconos_service import obtener_icono_categoria, obtener_icono_red
     from app.services.site_info_service import obtener_info_sitio
-    from app.services.subdominio_service import resolver_vendor_por_host
+    from app.services.subdominio_service import resolver_redireccion_slug_antiguo, resolver_vendor_por_host
     from app.services.vendor_service import obtener_vendor_por_slug_activo
 
     app.register_blueprint(health_bp)
@@ -128,22 +128,40 @@ def create_app(config_class: type[Config] = Config) -> Flask:
         En desarrollo local, como no hay subdominios reales en
         `localhost`, se puede simular con `?preview_vendor=<slug>`.
 
+        Si el host no corresponde a ninguna tienda activa pero sí a un
+        slug que un vendedor cambió recientemente (ver
+        `vendor_service.cambiar_slug`), redirige automáticamente al
+        subdominio nuevo en vez de dejar el enlace roto — la redirección
+        dura `vendor_service.DIAS_REDIRECCION_SLUG_ANTERIOR` días.
+
         Returns:
             El HTML de la tienda si el host corresponde a un vendedor
-            activo, o None para seguir el enrutamiento normal de Flask.
+            activo, una redirección al subdominio nuevo si el host es un
+            slug anterior todavía vigente, o None para seguir el
+            enrutamiento normal de Flask.
         """
         if request.path.startswith("/static/"):
             return None
 
         slug_preview = request.args.get("preview_vendor")
-        vendor = (
-            obtener_vendor_por_slug_activo(slug_preview)
-            if slug_preview
-            else resolver_vendor_por_host(request.host, app.config["SITE_DOMAIN"])
-        )
-        if vendor is None:
+        if slug_preview:
+            vendor = obtener_vendor_por_slug_activo(slug_preview)
+            if vendor is None:
+                return None
+            g.vendor = vendor
+            return renderizar_tienda(vendor)
+
+        vendor = resolver_vendor_por_host(request.host, app.config["SITE_DOMAIN"])
+        if vendor is not None:
+            g.vendor = vendor
+            return renderizar_tienda(vendor)
+
+        slug_nuevo = resolver_redireccion_slug_antiguo(request.host, app.config["SITE_DOMAIN"])
+        if slug_nuevo is None:
             return None
-        g.vendor = vendor
-        return renderizar_tienda(vendor)
+        puerto = f":{request.host.split(':', 1)[1]}" if ":" in request.host else ""
+        ruta = request.full_path if request.query_string else request.path
+        destino = f"{request.scheme}://{slug_nuevo}.{app.config['SITE_DOMAIN']}{puerto}{ruta}"
+        return redirect(destino, code=302)
 
     return app

@@ -11,11 +11,13 @@ al navegador).
 """
 from __future__ import annotations
 
+import io
 import uuid
 
 import boto3
 from botocore.config import Config as BotoConfig
 from flask import current_app
+from PIL import Image, ImageOps, UnidentifiedImageError
 from werkzeug.datastructures import FileStorage
 
 # Mapea el mimetype que reporta el navegador a la extensión guardada en R2.
@@ -23,13 +25,23 @@ from werkzeug.datastructures import FileStorage
 # contenido real — coherente con el resto del sitio, que hoy acepta
 # `imagen_url` de texto libre sin ninguna validación. Suficiente para
 # esta primera versión; una revisión de "magic bytes" queda como mejora
-# futura si se detectan abusos.
+# futura si se detectan abusos. `_comprimir_imagen` sí abre el archivo
+# con Pillow antes de subirlo, así que un archivo con mimetype falseado
+# que no sea una imagen real termina rechazado igual (`ArchivoInvalidoError`).
 _TIPOS_PERMITIDOS = {
     "image/jpeg": "jpg",
     "image/png": "png",
     "image/webp": "webp",
 }
 _TAMANO_MAXIMO_BYTES = 5 * 1024 * 1024  # 5 MB por imagen
+
+# Ningún uso en el sitio (foto de producto, logo, portada) necesita más
+# resolución que esta — limitarla reduce el peso de archivo (menos
+# costo de storage y de banda, tienda pública más rápida) sin pérdida
+# visible en pantalla. `_CALIDAD_JPEG_WEBP` es el punto donde JPG/WEBP
+# ya no pierden calidad perceptible a simple vista.
+_DIMENSION_MAXIMA_PX = 1600
+_CALIDAD_JPEG_WEBP = 85
 
 
 class ArchivoInvalidoError(Exception):
@@ -56,8 +68,56 @@ def _cliente_r2():
     )
 
 
+def _comprimir_imagen(archivo: FileStorage, extension: str) -> tuple[io.BytesIO, str]:
+    """Redimensiona y recomprime una imagen antes de subirla a R2.
+
+    También corrige la orientación EXIF (fotos tomadas con el celular
+    en distintas posiciones se ven "rotadas" si se sirven sin
+    interpretar ese metadato). El formato de salida es siempre el mismo
+    que el de entrada — no se convierte PNG a JPG ni viceversa, para no
+    perder transparencia en un PNG que la use.
+
+    Args:
+        archivo: Archivo original recibido en `request.files`, ya
+            validado por tipo y tamaño en `subir_imagen`.
+        extension: Extensión ya resuelta (`jpg`, `png` o `webp`).
+
+    Returns:
+        Tupla `(buffer, content_type)`: el archivo procesado en
+        memoria, listo para subir, y su `Content-Type` final.
+
+    Raises:
+        ArchivoInvalidoError: Si Pillow no puede abrir el archivo como
+            imagen (el mimetype declarado no coincide con el contenido real).
+    """
+    try:
+        imagen = Image.open(archivo.stream)
+        imagen.load()
+    except UnidentifiedImageError as exc:
+        raise ArchivoInvalidoError("El archivo no es una imagen válida.") from exc
+
+    imagen = ImageOps.exif_transpose(imagen)
+    if imagen.width > _DIMENSION_MAXIMA_PX or imagen.height > _DIMENSION_MAXIMA_PX:
+        imagen.thumbnail((_DIMENSION_MAXIMA_PX, _DIMENSION_MAXIMA_PX), Image.Resampling.LANCZOS)
+
+    buffer = io.BytesIO()
+    if extension == "jpg":
+        if imagen.mode in ("RGBA", "P", "LA"):
+            imagen = imagen.convert("RGB")
+        imagen.save(buffer, format="JPEG", quality=_CALIDAD_JPEG_WEBP, optimize=True)
+        content_type = "image/jpeg"
+    elif extension == "webp":
+        imagen.save(buffer, format="WEBP", quality=_CALIDAD_JPEG_WEBP)
+        content_type = "image/webp"
+    else:  # png
+        imagen.save(buffer, format="PNG", optimize=True)
+        content_type = "image/png"
+    buffer.seek(0)
+    return buffer, content_type
+
+
 def subir_imagen(archivo: FileStorage, *, carpeta: str) -> str:
-    """Sube una imagen a R2 y devuelve su URL pública.
+    """Redimensiona/recomprime una imagen y la sube a R2, devolviendo su URL pública.
 
     Args:
         archivo: Archivo recibido en `request.files` (campo `type="file"`).
@@ -67,7 +127,8 @@ def subir_imagen(archivo: FileStorage, *, carpeta: str) -> str:
         URL pública lista para guardar en el modelo (`foto_url`, `logo_url`, etc.).
 
     Raises:
-        ArchivoInvalidoError: Si el archivo no es una imagen JPG, PNG o WEBP.
+        ArchivoInvalidoError: Si el archivo no es una imagen JPG, PNG o WEBP
+            (por mimetype declarado, o porque Pillow no logra abrirlo).
         ArchivoDemasiadoGrandeError: Si supera los 5 MB.
     """
     extension = _TIPOS_PERMITIDOS.get(archivo.mimetype)
@@ -80,12 +141,14 @@ def subir_imagen(archivo: FileStorage, *, carpeta: str) -> str:
     if tamano > _TAMANO_MAXIMO_BYTES:
         raise ArchivoDemasiadoGrandeError("La imagen no puede superar los 5 MB.")
 
+    buffer, content_type = _comprimir_imagen(archivo, extension)
+
     clave = f"{carpeta}/{uuid.uuid4().hex}.{extension}"
     _cliente_r2().upload_fileobj(
-        archivo.stream,
+        buffer,
         current_app.config["R2_BUCKET"],
         clave,
-        ExtraArgs={"ContentType": archivo.mimetype},
+        ExtraArgs={"ContentType": content_type},
     )
     base = current_app.config["R2_PUBLIC_BASE_URL"].rstrip("/")
     return f"{base}/{clave}"
