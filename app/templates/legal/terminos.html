@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Términos y condiciones — eServicios{% endblock %}
+
+{% block meta %}
+<meta name="description" content="Términos y condiciones y política de uso de eServicios, incluyendo las tiendas de vendedor (e-link).">
+<meta property="og:site_name" content="eServicios">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Términos y condiciones — eServicios">
+<meta property="og:url" content="{{ request.url }}">
+<meta name="twitter:card" content="summary">
+{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb">
+    <a class="breadcrumb__link" href="{{ url_for('health.index') }}">eServicios</a>
+    <span class="breadcrumb__current">Términos y condiciones</span>
+</nav>
+
+<article class="blog-post">
+    <h1 class="blog-post__title">Términos y condiciones y política de uso</h1>
+    <p class="blog-post__meta">Última actualización: 26 de agosto de 2026</p>
+
+    <div class="blog-post__body">
+        <p>
+            Estos términos cubren el uso del sitio de eServicios LLC (el catálogo de productos y
+            servicios, el blog) y de las tiendas de vendedor con subdominio propio (<strong>e-link</strong>,
+            ej. <code>tunombre.eservicios.org</code>). Al usar el sitio o crear una tienda aceptas lo
+            siguiente.
+        </p>
+
+        <h2>1. Qué es eServicios y qué es e-link</h2>
+        <p>
+            eServicios LLC opera un catálogo propio de productos y servicios, y además ofrece
+            <strong>e-link</strong>: un servicio gratuito para que cualquier persona cree su propia
+            tienda con subdominio propio, enlaces personalizados y catálogo de productos, para recibir
+            consultas de sus clientes por WhatsApp. eServicios no interviene en la venta en sí — cada
+            vendedor negocia y cierra sus ventas directamente con sus clientes por su cuenta.
+        </p>
+
+        <h2>2. Registro y responsabilidad de la cuenta</h2>
+        <p>
+            Para crear una tienda en e-link necesitas un correo, una contraseña y un número de
+            WhatsApp. Sos responsable de mantener tu contraseña en privado y de toda la actividad que
+            ocurra desde tu cuenta. Debés darnos información real: el número de WhatsApp que registrás
+            tiene que ser tuyo o de tu negocio — usar el número de otra persona sin su autorización
+            está prohibido (ver sección 4) y es motivo de suspensión inmediata.
+        </p>
+
+        <h2>3. Tu contenido</h2>
+        <p>
+            Vos sos dueño del contenido que subís a tu tienda (nombre, descripciones, fotos de
+            productos, enlaces). Al publicarlo nos das permiso para mostrarlo en tu subdominio y en las
+            vistas previas que se generan automáticamente (por ejemplo, la miniatura que aparece al
+            compartir el link de tu tienda en WhatsApp o redes sociales). Sos responsable de tener los
+            derechos sobre lo que subís — no publiques fotos, marcas o textos que no te pertenezcan sin
+            autorización.
+        </p>
+
+        <h2>4. Uso prohibido</h2>
+        <p>No está permitido usar eServicios ni e-link para:</p>
+        <ul>
+            <li>Registrar el número de WhatsApp de otra persona sin su consentimiento.</li>
+            <li>Publicar productos o servicios ilegales, o contenido engañoso, fraudulento o que suplante a otra persona o negocio.</li>
+            <li>Publicar contenido que incluya discurso de odio, acoso, o material sexual involucrando a menores de edad.</li>
+            <li>Intentar vulnerar la seguridad del sitio o acceder a cuentas que no son tuyas.</li>
+        </ul>
+
+        <h2>5. Moderación: suspensión y eliminación de cuentas</h2>
+        <p>
+            Si detectamos (por reporte de un usuario o por revisión propia) que una tienda incumple
+            estos términos, podemos suspenderla — deja de responder en su subdominio hasta que se
+            resuelva la situación — o, en casos graves o reincidentes, eliminarla de forma permanente
+            junto con sus productos, fotos y enlaces. Vos también podés reportar cualquier tienda desde
+            su propia página pública si sospechás un uso indebido.
+        </p>
+
+        <h2>6. Disponibilidad del servicio</h2>
+        <p>
+            e-link se ofrece de forma gratuita "tal cual está". Hacemos lo posible por mantenerlo
+            disponible, pero no garantizamos que el servicio esté libre de interrupciones o errores.
+            Podemos introducir límites de uso (por ejemplo, cantidad de productos o fotos) según el
+            plan de tu cuenta, con aviso previo razonable.
+        </p>
+
+        <h2>7. Datos personales</h2>
+        <p>
+            Guardamos los datos necesarios para operar tu cuenta (correo, WhatsApp, contenido de tu
+            tienda) y datos agregados de visitas/clics de tu tienda para mostrarte estadísticas
+            básicas. No vendemos tus datos personales a terceros.
+        </p>
+
+        <h2>8. Cambios a estos términos</h2>
+        <p>
+            Podemos actualizar estos términos en cualquier momento; los cambios importantes se avisan
+            en el sitio. El uso continuado del servicio después de un cambio implica que lo aceptás.
+        </p>
+
+        <h2>9. Contacto</h2>
+        <p>
+            Para dudas sobre estos términos o para reportar un problema, escribinos a
+            <a href="mailto:{{ sitio.contacto.email }}">{{ sitio.contacto.email }}</a>
+            o por <a href="{{ sitio.contacto.whatsapp_url }}" target="_blank" rel="noopener">WhatsApp</a>.
+        </p>
+    </div>
+</article>
+{% endblock %}

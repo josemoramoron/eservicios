@@ -22,6 +22,7 @@ from app.models.vendor_evento import TipoEventoVendor, VendorEvento
 from app.models.vendor_link import VendorLink
 from app.models.vendor_product import VendorProduct
 from app.models.vendor_product_foto import VendorProductFoto
+from app.models.vendor_reporte import VendorReporte
 from app.models.vendor_slug_historial import VendorSlugHistorial
 
 __all__ = [
@@ -46,5 +47,6 @@ __all__ = [
     "VendorLink",
     "VendorProduct",
     "VendorProductFoto",
+    "VendorReporte",
     "VendorSlugHistorial",
 ]

@@ -550,6 +550,24 @@ def construir_whatsapp_href(numero: str, mensaje: str) -> str:
     return f"https://wa.me/{numero}?text={quote(mensaje)}"
 
 
+def _membrete_trazabilidad(vendor: Vendor) -> str:
+    """Firma que se agrega al final de todo mensaje de WhatsApp armado desde una tienda.
+
+    Deja un rastro de qué tienda de e-link originó el mensaje — si
+    alguien usa el número de WhatsApp de otra persona sin autorización,
+    esta firma facilita identificar desde qué subdominio salió el
+    contacto (ver también `reportes.enviar`, el "reportar este sitio"
+    de la tienda pública).
+
+    Args:
+        vendor: Tienda desde la que se arma el mensaje.
+
+    Returns:
+        Línea de firma lista para concatenar al mensaje.
+    """
+    return f"\n\n— vía {vendor.slug}.eservicios.org"
+
+
 def href_whatsapp_tienda(vendor: Vendor) -> str:
     """Link de WhatsApp general de la tienda (botón del encabezado).
 
@@ -557,10 +575,11 @@ def href_whatsapp_tienda(vendor: Vendor) -> str:
         vendor: Tienda para la que se arma el link.
 
     Returns:
-        URL `wa.me` con un mensaje genérico.
+        URL `wa.me` con un mensaje genérico y el membrete de trazabilidad.
     """
     return construir_whatsapp_href(
-        vendor.whatsapp_numero, f"Hola, tengo una consulta sobre {vendor.nombre_negocio}."
+        vendor.whatsapp_numero,
+        f"Hola, tengo una consulta sobre {vendor.nombre_negocio}.{_membrete_trazabilidad(vendor)}",
     )
 
 
@@ -572,11 +591,12 @@ def href_whatsapp_producto(vendor: Vendor, producto: VendorProduct) -> str:
         producto: Producto sobre el que se pregunta.
 
     Returns:
-        URL `wa.me` con el nombre del producto en el mensaje.
+        URL `wa.me` con el nombre del producto y el membrete de trazabilidad.
     """
     return construir_whatsapp_href(
         vendor.whatsapp_numero,
-        f'Hola, quiero info sobre "{producto.titulo}" en {vendor.nombre_negocio}.',
+        f'Hola, quiero info sobre "{producto.titulo}" en {vendor.nombre_negocio}.'
+        f"{_membrete_trazabilidad(vendor)}",
     )
 
 

@@ -29,7 +29,9 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     from app.routes.blog import blog_bp
     from app.routes.clicks import clicks_bp
     from app.routes.health import health_bp
+    from app.routes.legal import legal_bp
     from app.routes.producto import producto_bp
+    from app.routes.reportes import reportes_bp
     from app.routes.servicios import servicios_bp
     from app.routes.tienda import renderizar_tienda
     from app.routes.vendedor import vendedor_bp
@@ -49,6 +51,8 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     app.register_blueprint(admin_bp)
     app.register_blueprint(vendedor_bp)
     app.register_blueprint(clicks_bp)
+    app.register_blueprint(legal_bp)
+    app.register_blueprint(reportes_bp)
     app.jinja_env.globals["icono_categoria"] = obtener_icono_categoria
     app.jinja_env.globals["icono_red"] = obtener_icono_red
 
@@ -151,7 +155,11 @@ def create_app(config_class: type[Config] = Config) -> Flask:
             existe pero está inactiva, o None para seguir el
             enrutamiento normal de Flask.
         """
-        if request.path.startswith("/static/") or request.path.startswith("/e-link-click/"):
+        if (
+            request.path.startswith("/static/")
+            or request.path.startswith("/e-link-click/")
+            or request.path.startswith("/e-link-reporte/")
+        ):
             return None
 
         slug_preview = request.args.get("preview_vendor")

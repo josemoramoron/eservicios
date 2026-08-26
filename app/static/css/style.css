@@ -511,6 +511,11 @@ body {
     color: var(--color-accent);
 }
 
+.admin-nav__link--active {
+    color: var(--color-text);
+    font-weight: 700;
+}
+
 .admin-nav__spacer {
     flex: 1;
 }

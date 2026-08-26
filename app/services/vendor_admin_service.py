@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import or_
 
 from app.extensions import db
-from app.models import TipoEventoVendor, Vendor, VendorEvento
+from app.models import TipoEventoVendor, Vendor, VendorEvento, VendorReporte
 from app.services.estadisticas_service import DIAS_VENTANA_ESTADISTICAS
 from app.services.r2_service import eliminar_imagen
 
@@ -148,13 +148,14 @@ def eliminar_vendor_permanente(vendor: Vendor) -> None:
     borrado en R2 falla en silencio por diseño, ver `r2_service.
     eliminar_imagen`, así que un objeto ya ausente en el bucket no
     interrumpe el resto); (2) los eventos de mini-analítica
-    (`VendorEvento`) de la tienda, que hay que borrar a mano porque
-    `Vendor` no declara una relación de cascada hacia ellos (a
-    diferencia de `productos`, `links` y `slugs_anteriores`, que sí
-    tienen `cascade="all, delete-orphan"` y se borran solos al borrar
-    el `Vendor`); y (3) la fila de `Vendor` en sí, que arrastra en
-    cascada sus productos (y las fotos de galería de cada uno),
-    enlaces, e historial de subdominios.
+    (`VendorEvento`) y los reportes de moderación (`VendorReporte`) de
+    la tienda, que hay que borrar a mano porque `Vendor` no declara una
+    relación de cascada hacia ninguno de los dos (a diferencia de
+    `productos`, `links` y `slugs_anteriores`, que sí tienen
+    `cascade="all, delete-orphan"` y se borran solos al borrar el
+    `Vendor`); y (3) la fila de `Vendor` en sí, que arrastra en cascada
+    sus productos (y las fotos de galería de cada uno), enlaces, e
+    historial de subdominios.
 
     El llamador es responsable de pedir una confirmación fuerte antes
     de invocar esta función (ver `admin.vendedor_eliminar`, que exige
@@ -176,5 +177,6 @@ def eliminar_vendor_permanente(vendor: Vendor) -> None:
         eliminar_imagen(url)
 
     VendorEvento.query.filter_by(vendor_id=vendor.id).delete(synchronize_session=False)
+    VendorReporte.query.filter_by(vendor_id=vendor.id).delete(synchronize_session=False)
     db.session.delete(vendor)
     db.session.commit()

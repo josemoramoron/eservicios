@@ -78,6 +78,24 @@
 </table>
 {% endif %}
 
+{% if reportes %}
+<h2 class="admin-section-title">Reportes recibidos ({{ reportes | length }})</h2>
+<table class="admin-table">
+    <thead>
+        <tr><th>Motivo</th><th>Contacto</th><th>Fecha</th></tr>
+    </thead>
+    <tbody>
+        {% for reporte in reportes %}
+        <tr>
+            <td>{{ reporte.motivo }}</td>
+            <td>{{ reporte.contacto or "—" }}</td>
+            <td>{{ reporte.creado_en.strftime("%d/%m/%Y %H:%M") }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
 <h2 class="admin-section-title">Acciones</h2>
 <div class="admin-form__actions">
     {% if vendor.activo %}

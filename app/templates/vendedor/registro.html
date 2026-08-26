@@ -50,6 +50,13 @@
     <label class="admin-form__label" for="password_confirmacion">Confirma tu contraseña</label>
     <input class="admin-form__input" type="password" id="password_confirmacion" name="password_confirmacion" minlength="8" required>
 
+    <div class="admin-form__checkbox-row">
+        <label class="admin-form__checkbox">
+            <input type="checkbox" id="acepta_terminos" required>
+            He leído y acepto los <a class="admin-link" href="{{ url_for('legal.terminos') }}" target="_blank">Términos y condiciones</a>
+        </label>
+    </div>
+
     <div class="admin-form__actions">
         <button class="admin-btn admin-btn--primary" type="submit">Crear mi tienda</button>
     </div>

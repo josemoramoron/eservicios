@@ -13,12 +13,29 @@
 <body>
     <header class="admin-header">
         <nav class="admin-nav">
-            <a class="admin-nav__brand" href="{{ url_for('vendedor.dashboard') if vendor else url_for('vendedor.login') }}">eServicios · e-link</a>
+            {# Identificador de la plataforma — a propósito ya NO es un
+               enlace: antes apuntaba al dashboard y quedaba en negrita
+               siempre, sin importar en qué sección estuviera el
+               vendedor, lo que parecía un estado "activo" fijo y
+               confundía. El nombre de la tienda (abajo) toma ahora ese
+               rol de "volver a mi tienda", con negrita solo cuando
+               corresponde de verdad. #}
+            <span class="admin-nav__brand">eServicios · e-link</span>
             {% if vendor %}
-            <a class="admin-nav__link" href="{{ url_for('vendedor.enlaces') }}">Mis enlaces</a>
-            <a class="admin-nav__link" href="{{ url_for('vendedor.perfil') }}">Mi perfil</a>
+            {% set seccion_activa = request.endpoint.split(".", 1)[1] if request.endpoint and "." in request.endpoint else "" %}
+            <a
+                class="admin-nav__link{% if seccion_activa in ("dashboard", "qr_tienda", "producto_nuevo", "producto_editar", "producto_eliminar") %} admin-nav__link--active{% endif %}"
+                href="{{ url_for('vendedor.dashboard') }}"
+            >{{ vendor.nombre_negocio }}</a>
+            <a
+                class="admin-nav__link{% if seccion_activa.startswith("enlace") %} admin-nav__link--active{% endif %}"
+                href="{{ url_for('vendedor.enlaces') }}"
+            >Mis enlaces</a>
+            <a
+                class="admin-nav__link{% if seccion_activa.startswith("perfil") %} admin-nav__link--active{% endif %}"
+                href="{{ url_for('vendedor.perfil') }}"
+            >Mi perfil</a>
             <span class="admin-nav__spacer"></span>
-            <span class="admin-nav__user">{{ vendor.nombre_negocio }}</span>
             <form method="post" action="{{ url_for('vendedor.logout') }}" class="admin-nav__logout-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button class="admin-nav__logout" type="submit">Salir</button>

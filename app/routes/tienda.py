@@ -8,9 +8,10 @@ no en una sola URL registrada.
 """
 from __future__ import annotations
 
-from flask import make_response, render_template, url_for
+from flask import current_app, make_response, render_template, request, url_for
 
 from app.models import TipoEventoVendor, Vendor
+from app.services.auth_service import generar_csrf_token
 from app.services.estadisticas_service import registrar_evento
 from app.services.iconos_service import detectar_red_social
 from app.services.vendor_service import (
@@ -37,6 +38,26 @@ def _href_click(url_destino: str) -> str:
         URL de `clicks.click_whatsapp` con `destino` como parámetro.
     """
     return url_for("clicks.click_whatsapp", destino=url_destino)
+
+
+def _href_dominio_principal(endpoint: str) -> str:
+    """Arma una URL absoluta al dominio principal para un endpoint dado.
+
+    Un `url_for` normal genera una ruta relativa que, al hacer clic
+    desde el subdominio de una tienda, seguiría resolviendo contra ese
+    mismo subdominio (el `before_request` de subdominios la volvería a
+    interceptar y mostraría la tienda de nuevo en vez de la página
+    pedida) — mismo problema que ya resuelve `url_login` en
+    `enrutar_subdominio_vendedor`.
+
+    Args:
+        endpoint: Nombre del endpoint de Flask (ej. "legal.terminos").
+
+    Returns:
+        URL absoluta al dominio principal.
+    """
+    puerto = f":{request.host.split(':', 1)[1]}" if ":" in request.host else ""
+    return f"{request.scheme}://{current_app.config['SITE_DOMAIN']}{puerto}{url_for(endpoint)}"
 
 
 def renderizar_tienda(vendor: Vendor):
@@ -72,6 +93,8 @@ def renderizar_tienda(vendor: Vendor):
             productos=productos_con_href,
             enlaces=enlaces,
             whatsapp_href_tienda=_href_click(href_whatsapp_tienda(vendor)),
+            terminos_href=_href_dominio_principal("legal.terminos"),
+            csrf_token=generar_csrf_token,
         )
     )
     respuesta.headers["Cache-Control"] = _CACHE_CONTROL_TIENDA
