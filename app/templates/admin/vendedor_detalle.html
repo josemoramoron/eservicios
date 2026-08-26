@@ -1,0 +1,129 @@
+{% extends "admin/base.html" %}
+
+{% block title %}{{ vendor.nombre_negocio }} — Vendedores — eServicios Admin{% endblock %}
+
+{% block content %}
+<p class="breadcrumb">
+    <a class="breadcrumb__link" href="{{ url_for('admin.vendedores_lista') }}">Vendedores (e-link)</a>
+    <span class="breadcrumb__current">{{ vendor.nombre_negocio }}</span>
+</p>
+
+<div class="admin-page-header">
+    <h1 class="admin-page-title">
+        {{ vendor.nombre_negocio }}
+        {% if vendor.activo %}
+        <span class="admin-badge">Activa</span>
+        {% else %}
+        <span class="admin-badge admin-badge--suspendida">Suspendida</span>
+        {% endif %}
+    </h1>
+    <a class="admin-btn" href="https://{{ vendor.slug }}.eservicios.org" target="_blank" rel="noopener">Ver tienda pública</a>
+</div>
+
+<div class="admin-stats">
+    <div class="admin-stat-card">
+        <span class="admin-stat-card__value">{{ estadisticas.vistas }}</span>
+        <span class="admin-stat-card__label">Vistas ({{ estadisticas.dias }} días)</span>
+    </div>
+    <div class="admin-stat-card">
+        <span class="admin-stat-card__value">{{ estadisticas.clics_whatsapp }}</span>
+        <span class="admin-stat-card__label">Clics a WhatsApp ({{ estadisticas.dias }} días)</span>
+    </div>
+    <div class="admin-stat-card">
+        <span class="admin-stat-card__value">{{ vendor.productos | length }}</span>
+        <span class="admin-stat-card__label">Productos</span>
+    </div>
+    <div class="admin-stat-card">
+        <span class="admin-stat-card__value">{{ vendor.links | length }}</span>
+        <span class="admin-stat-card__label">Enlaces</span>
+    </div>
+</div>
+
+<h2 class="admin-section-title">Datos de la cuenta</h2>
+<table class="admin-table">
+    <tbody>
+        <tr><td>Subdominio</td><td><code>{{ vendor.slug }}.eservicios.org</code></td></tr>
+        <tr><td>Email</td><td>{{ vendor.email }}</td></tr>
+        <tr><td>WhatsApp</td><td>{{ vendor.whatsapp_numero }}</td></tr>
+        <tr><td>Plan</td><td>{{ vendor.plan.value | capitalize }}</td></tr>
+        <tr><td>Bio</td><td>{{ vendor.bio or "—" }}</td></tr>
+        <tr><td>Creada</td><td>{{ vendor.creado_en.strftime("%d/%m/%Y %H:%M") }}</td></tr>
+        <tr>
+            <td>Cambios de subdominio</td>
+            <td>
+                {{ estado_slug.cambios_usados }} de {{ estado_slug.cambios_usados + estado_slug.cambios_restantes }} usados
+                {% if not estado_slug.puede_cambiar_ahora and estado_slug.proxima_fecha_disponible %}
+                (podrá volver a cambiar el {{ estado_slug.proxima_fecha_disponible.strftime("%d/%m/%Y") }})
+                {% endif %}
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+{% if vendor.slugs_anteriores %}
+<h2 class="admin-section-title">Subdominios anteriores</h2>
+<table class="admin-table">
+    <thead>
+        <tr><th>Slug anterior</th><th>Cambiado el</th><th>Redirección vigente hasta</th></tr>
+    </thead>
+    <tbody>
+        {% for historial in vendor.slugs_anteriores %}
+        <tr>
+            <td><code>{{ historial.slug_anterior }}</code></td>
+            <td>{{ historial.creado_en.strftime("%d/%m/%Y") }}</td>
+            <td>{{ historial.expira_en.strftime("%d/%m/%Y") }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+<h2 class="admin-section-title">Acciones</h2>
+<div class="admin-form__actions">
+    {% if vendor.activo %}
+    <form
+        method="post"
+        action="{{ url_for('admin.vendedor_suspender', vendor_id=vendor.id) }}"
+        onsubmit="return confirm('¿Suspender esta tienda? Dejará de responder su subdominio hasta que la reactives.');"
+    >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="admin-btn" type="submit">Suspender tienda</button>
+    </form>
+    {% else %}
+    <form method="post" action="{{ url_for('admin.vendedor_reactivar', vendor_id=vendor.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="admin-btn admin-btn--primary" type="submit">Reactivar tienda</button>
+    </form>
+    {% endif %}
+
+    <form
+        method="post"
+        action="{{ url_for('admin.vendedor_restablecer_password', vendor_id=vendor.id) }}"
+        onsubmit="return confirm('¿Generar una contraseña temporal nueva para este vendedor? La actual dejará de funcionar de inmediato.');"
+    >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="admin-btn" type="submit">Restablecer contraseña</button>
+    </form>
+</div>
+
+<div class="admin-warning-box">
+    <p class="admin-warning-box__title">Eliminar cuenta permanentemente</p>
+    <p>
+        Esta acción borra la tienda, todos sus productos, fotos (incluidas las de Cloudflare R2),
+        enlaces e historial de subdominios. No se puede deshacer.
+    </p>
+    <form
+        method="post"
+        action="{{ url_for('admin.vendedor_eliminar', vendor_id=vendor.id) }}"
+        class="admin-form admin-form--narrow"
+        onsubmit="return confirm('Esta acción es irreversible. ¿Continuar?');"
+    >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="admin-form__label" for="confirmacion_slug">Escribe <code>{{ vendor.slug }}</code> para confirmar</label>
+        <input class="admin-form__input" type="text" id="confirmacion_slug" name="confirmacion_slug" autocomplete="off" required>
+        <div class="admin-form__actions">
+            <button class="admin-btn admin-btn--danger" type="submit">Eliminar cuenta permanentemente</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

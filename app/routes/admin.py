@@ -6,7 +6,7 @@ from decimal import Decimal, InvalidOperation
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from werkzeug.datastructures import ImmutableMultiDict
 
-from app.models import Category, EstadoBlogPost, Offering, TipoOffering
+from app.models import Category, EstadoBlogPost, Offering, TipoOffering, Vendor
 from app.services.auth_service import (
     admin_actual,
     autenticar,
@@ -39,6 +39,19 @@ from app.services.catalogo_service import (
     obtener_categoria_por_id,
     obtener_oferta_por_id,
 )
+from app.services.estadisticas_service import resumen_estadisticas
+from app.services.vendor_admin_service import (
+    ESTADO_ACTIVOS,
+    ESTADO_SUSPENDIDOS,
+    eliminar_vendor_permanente,
+    estadisticas_globales,
+    listar_vendors_admin,
+    obtener_vendor_por_id,
+    reactivar_vendor,
+    restablecer_password_vendor,
+    suspender_vendor,
+)
+from app.services.vendor_service import estado_cambio_slug
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -100,6 +113,7 @@ def dashboard():
         total_categorias=len(listar_categorias()),
         total_ofertas=len(listar_todas_las_ofertas()),
         total_posts=len(listar_todos_los_posts()),
+        total_vendedores=Vendor.query.count(),
     )
 
 
@@ -536,3 +550,105 @@ def blog_eliminar(post_id: int):
     eliminar_post(post)
     flash(f'Artículo "{post.titulo}" eliminado.', "success")
     return redirect(url_for("admin.blog_lista"))
+
+
+# --- Vendedores (e-link) ---
+
+
+@admin_bp.route("/vendedores")
+@requiere_admin
+def vendedores_lista():
+    """Lista las tiendas de vendedor (e-link), con búsqueda y filtro por estado."""
+    busqueda = request.args.get("q", "").strip()
+    estado = request.args.get("estado", "")
+    return render_template(
+        "admin/vendedores_lista.html",
+        vendedores=listar_vendors_admin(busqueda=busqueda or None, estado=estado or None),
+        estadisticas=estadisticas_globales(),
+        busqueda=busqueda,
+        estado_seleccionado=estado,
+        estado_activos=ESTADO_ACTIVOS,
+        estado_suspendidos=ESTADO_SUSPENDIDOS,
+    )
+
+
+@admin_bp.route("/vendedores/<int:vendor_id>")
+@requiere_admin
+def vendedor_detalle(vendor_id: int):
+    """Detalle de una tienda de vendedor: perfil, estadísticas e historial de subdominios."""
+    vendor = obtener_vendor_por_id(vendor_id)
+    if vendor is None:
+        abort(404)
+    return render_template(
+        "admin/vendedor_detalle.html",
+        vendor=vendor,
+        estadisticas=resumen_estadisticas(vendor),
+        estado_slug=estado_cambio_slug(vendor),
+    )
+
+
+@admin_bp.route("/vendedores/<int:vendor_id>/suspender", methods=["POST"])
+@requiere_admin
+def vendedor_suspender(vendor_id: int):
+    """Suspende una tienda (`Vendor.activo = False`) — deja de responder su subdominio."""
+    _verificar_csrf()
+    vendor = obtener_vendor_por_id(vendor_id)
+    if vendor is None:
+        abort(404)
+    suspender_vendor(vendor)
+    flash(f'Tienda "{vendor.nombre_negocio}" suspendida.', "success")
+    return redirect(request.referrer or url_for("admin.vendedor_detalle", vendor_id=vendor.id))
+
+
+@admin_bp.route("/vendedores/<int:vendor_id>/reactivar", methods=["POST"])
+@requiere_admin
+def vendedor_reactivar(vendor_id: int):
+    """Reactiva una tienda suspendida (`Vendor.activo = True`)."""
+    _verificar_csrf()
+    vendor = obtener_vendor_por_id(vendor_id)
+    if vendor is None:
+        abort(404)
+    reactivar_vendor(vendor)
+    flash(f'Tienda "{vendor.nombre_negocio}" reactivada.', "success")
+    return redirect(request.referrer or url_for("admin.vendedor_detalle", vendor_id=vendor.id))
+
+
+@admin_bp.route("/vendedores/<int:vendor_id>/restablecer-password", methods=["POST"])
+@requiere_admin
+def vendedor_restablecer_password(vendor_id: int):
+    """Genera una contraseña temporal nueva para el vendedor y la muestra una sola vez."""
+    _verificar_csrf()
+    vendor = obtener_vendor_por_id(vendor_id)
+    if vendor is None:
+        abort(404)
+    password_temporal = restablecer_password_vendor(vendor)
+    flash(
+        f'Contraseña temporal para "{vendor.nombre_negocio}": {password_temporal} — '
+        "compártesela al vendedor por un canal seguro; no queda guardada en ningún otro lado.",
+        "success",
+    )
+    return redirect(url_for("admin.vendedor_detalle", vendor_id=vendor.id))
+
+
+@admin_bp.route("/vendedores/<int:vendor_id>/eliminar", methods=["POST"])
+@requiere_admin
+def vendedor_eliminar(vendor_id: int):
+    """Elimina una tienda de vendedor de forma permanente e irreversible.
+
+    Exige que el admin reescriba el slug exacto de la tienda como
+    confirmación (mismo patrón que usa el propio vendedor para cambiar
+    su subdominio, ver `vendedor/perfil_slug.html`) — evita que un
+    click accidental borre una cuenta real.
+    """
+    _verificar_csrf()
+    vendor = obtener_vendor_por_id(vendor_id)
+    if vendor is None:
+        abort(404)
+    confirmacion = request.form.get("confirmacion_slug", "").strip().lower()
+    if confirmacion != vendor.slug:
+        flash("Escribe el subdominio exacto de la tienda para confirmar la eliminación.", "error")
+        return redirect(url_for("admin.vendedor_detalle", vendor_id=vendor.id))
+    nombre = vendor.nombre_negocio
+    eliminar_vendor_permanente(vendor)
+    flash(f'Tienda "{nombre}" eliminada de forma permanente.', "success")
+    return redirect(url_for("admin.vendedores_lista"))

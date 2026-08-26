@@ -1,0 +1,108 @@
+{% extends "admin/base.html" %}
+
+{% block title %}Vendedores (e-link) — eServicios Admin{% endblock %}
+
+{% block content %}
+<div class="admin-page-header">
+    <h1 class="admin-page-title">Vendedores (e-link)</h1>
+</div>
+
+<div class="admin-stats">
+    <div class="admin-stat-card">
+        <span class="admin-stat-card__value">{{ estadisticas.total }}</span>
+        <span class="admin-stat-card__label">Tiendas totales</span>
+    </div>
+    <div class="admin-stat-card">
+        <span class="admin-stat-card__value">{{ estadisticas.activos }}</span>
+        <span class="admin-stat-card__label">Activas</span>
+    </div>
+    <div class="admin-stat-card">
+        <span class="admin-stat-card__value">{{ estadisticas.suspendidos }}</span>
+        <span class="admin-stat-card__label">Suspendidas</span>
+    </div>
+    <div class="admin-stat-card">
+        <span class="admin-stat-card__value">{{ estadisticas.vistas }}</span>
+        <span class="admin-stat-card__label">Vistas ({{ estadisticas.dias }} días)</span>
+    </div>
+    <div class="admin-stat-card">
+        <span class="admin-stat-card__value">{{ estadisticas.clics_whatsapp }}</span>
+        <span class="admin-stat-card__label">Clics a WhatsApp ({{ estadisticas.dias }} días)</span>
+    </div>
+</div>
+
+<form method="get" class="admin-filter">
+    <label class="admin-filter__label" for="q">Buscar</label>
+    <input class="admin-form__input" type="text" id="q" name="q" value="{{ busqueda }}" placeholder="Nombre, subdominio o email">
+    <label class="admin-filter__label" for="estado">Estado</label>
+    <select class="admin-form__input admin-filter__select" id="estado" name="estado">
+        <option value="" {% if not estado_seleccionado %}selected{% endif %}>Todos</option>
+        <option value="{{ estado_activos }}" {% if estado_seleccionado == estado_activos %}selected{% endif %}>Activos</option>
+        <option value="{{ estado_suspendidos }}" {% if estado_seleccionado == estado_suspendidos %}selected{% endif %}>Suspendidos</option>
+    </select>
+    <button class="admin-btn" type="submit">Filtrar</button>
+</form>
+
+<div class="admin-table-wrap">
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>Tienda</th>
+            <th>Email</th>
+            <th>Estado</th>
+            <th>Productos</th>
+            <th>Enlaces</th>
+            <th>Creada</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for vendor in vendedores %}
+        <tr>
+            <td>
+                <a class="admin-link" href="{{ url_for('admin.vendedor_detalle', vendor_id=vendor.id) }}">{{ vendor.nombre_negocio }}</a>
+                <br><span class="admin-form__hint">{{ vendor.slug }}.eservicios.org</span>
+            </td>
+            <td>{{ vendor.email }}</td>
+            <td>
+                {% if vendor.activo %}
+                <span class="admin-badge">Activa</span>
+                {% else %}
+                <span class="admin-badge admin-badge--suspendida">Suspendida</span>
+                {% endif %}
+            </td>
+            <td>{{ vendor.productos | length }}</td>
+            <td>{{ vendor.links | length }}</td>
+            <td>{{ vendor.creado_en.strftime("%d/%m/%Y") }}</td>
+            <td class="admin-table__actions">
+                <a class="admin-link" href="{{ url_for('admin.vendedor_detalle', vendor_id=vendor.id) }}">Ver</a>
+                {% if vendor.activo %}
+                <form
+                    method="post"
+                    action="{{ url_for('admin.vendedor_suspender', vendor_id=vendor.id) }}"
+                    class="admin-table__inline-form"
+                    onsubmit="return confirm('¿Suspender la tienda \'{{ vendor.nombre_negocio }}\'? Dejará de responder su subdominio.');"
+                >
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="admin-link admin-link--danger" type="submit">Suspender</button>
+                </form>
+                {% else %}
+                <form
+                    method="post"
+                    action="{{ url_for('admin.vendedor_reactivar', vendor_id=vendor.id) }}"
+                    class="admin-table__inline-form"
+                >
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="admin-link" type="submit">Reactivar</button>
+                </form>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="7">No hay tiendas de vendedor para mostrar.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</div>
+{% endblock %}

@@ -17,5 +17,9 @@
         <span class="admin-stat-card__value">{{ total_posts }}</span>
         <span class="admin-stat-card__label">Artículos del blog</span>
     </a>
+    <a class="admin-stat-card" href="{{ url_for('admin.vendedores_lista') }}">
+        <span class="admin-stat-card__value">{{ total_vendedores }}</span>
+        <span class="admin-stat-card__label">Vendedores (e-link)</span>
+    </a>
 </div>
 {% endblock %}

@@ -645,94 +645,6 @@ body {
     font-size: 0.9rem;
 }
 
-.fotos-actuales-lista {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 0;
-    margin: 10px 0;
-    list-style: none;
-}
-
-.fotos-actuales-lista__item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 10px;
-    border: 1px solid var(--color-border);
-    border-radius: 0.5rem;
-    background-color: var(--color-surface);
-    cursor: grab;
-}
-
-.fotos-actuales-lista__item--arrastrando {
-    opacity: 0.4;
-}
-
-.fotos-actuales-lista__handle {
-    color: var(--color-text-muted);
-    font-size: 1.1rem;
-    line-height: 1;
-    user-select: none;
-}
-
-.fotos-actuales-lista__miniatura {
-    width: 56px;
-    height: 56px;
-    object-fit: cover;
-    border-radius: 6px;
-    flex: 0 0 auto;
-}
-
-.fotos-actuales-lista__portada-badge {
-    display: none;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--color-accent);
-    border: 1px solid var(--color-accent);
-    border-radius: 999px;
-    padding: 2px 8px;
-    white-space: nowrap;
-}
-
-.fotos-actuales-lista__item--portada .fotos-actuales-lista__portada-badge {
-    display: inline-block;
-}
-
-.fotos-actuales-lista__botones {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-left: auto;
-}
-
-.fotos-actuales-lista__mover,
-.fotos-actuales-lista__quitar {
-    border: 1px solid var(--color-border);
-    background-color: transparent;
-    border-radius: 0.4rem;
-    width: 32px;
-    height: 32px;
-    font-size: 1rem;
-    line-height: 1;
-    cursor: pointer;
-    color: var(--color-text);
-}
-
-.fotos-actuales-lista__mover:hover {
-    border-color: var(--color-accent);
-}
-
-.fotos-actuales-lista__quitar {
-    color: #b3261e;
-    border-color: #b3261e;
-}
-
-.fotos-actuales-lista__quitar:hover {
-    background-color: #b3261e;
-    color: #fff;
-}
-
 .admin-auth {
     max-width: 360px;
     margin: 3rem auto 0;
@@ -1301,4 +1213,31 @@ body {
 
 .lightbox__nav--next {
     right: 1rem;
+}
+
+/* --- Vendedores (e-link) admin --- */
+
+.admin-table-wrap {
+    overflow-x: auto;
+}
+
+.admin-badge--suspendida {
+    background-color: var(--color-surface);
+    border: 1px solid #b3261e;
+    color: #b3261e;
+}
+
+.admin-section-title {
+    font-size: 1.1rem;
+    margin: 2rem 0 1rem;
+}
+
+.admin-btn--danger {
+    border-color: #b3261e;
+    color: #b3261e;
+}
+
+.admin-btn--danger:hover {
+    background-color: #b3261e;
+    color: #fff;
 }
