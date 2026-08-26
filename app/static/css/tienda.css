@@ -96,27 +96,6 @@
     margin: 0 auto;
 }
 
-.tienda-links__item {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    padding: 13px 20px;
-    border-radius: 999px;
-    border: 1px solid var(--color-border);
-    background-color: var(--color-surface);
-    color: var(--color-text);
-    font-weight: 600;
-    font-size: 14.5px;
-    text-decoration: none;
-    text-align: center;
-}
-
-.tienda-links__item:hover {
-    border-color: var(--color-accent);
-    color: var(--color-accent);
-}
-
 .tienda-links__redes {
     display: flex;
     flex-wrap: wrap;
@@ -140,6 +119,13 @@
 .tienda-links__icono svg {
     width: 22px;
     height: 22px;
+}
+
+.tienda-links__icono-inicial {
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1;
+    color: currentColor;
 }
 
 .tienda-links__icono:hover {

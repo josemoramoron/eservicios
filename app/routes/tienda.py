@@ -58,17 +58,19 @@ def renderizar_tienda(vendor: Vendor):
         (producto, _href_click(href_whatsapp_producto(vendor, producto))) for producto in productos
     ]
 
-    links_con_icono = [(link, detectar_red_social(link.url)) for link in listar_links_activos(vendor)]
-    enlaces_redes = [(link, icono) for link, icono in links_con_icono if icono]
-    enlaces_otros = [link for link, icono in links_con_icono if not icono]
+    # Todos los enlaces se pintan como botón circular: una red reconocida
+    # muestra su ícono de marca (ver `iconos_service.detectar_red_social`);
+    # cualquier otro sitio muestra la inicial del título del enlace en vez
+    # de un ícono (resuelto en el template) — ya no existe la variante
+    # "pastilla" con texto para las no reconocidas.
+    enlaces = [(link, detectar_red_social(link.url)) for link in listar_links_activos(vendor)]
 
     respuesta = make_response(
         render_template(
             "tienda/publica.html",
             vendor=vendor,
             productos=productos_con_href,
-            enlaces_redes=enlaces_redes,
-            enlaces_otros=enlaces_otros,
+            enlaces=enlaces,
             whatsapp_href_tienda=_href_click(href_whatsapp_tienda(vendor)),
         )
     )

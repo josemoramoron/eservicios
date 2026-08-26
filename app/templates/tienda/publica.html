@@ -43,20 +43,19 @@
     </a>
 </header>
 
-{% if enlaces_redes or enlaces_otros %}
+{% if enlaces %}
 <nav class="tienda-links">
-    {% if enlaces_redes %}
     <div class="tienda-links__redes">
-        {% for link, icono in enlaces_redes %}
+        {% for link, icono in enlaces %}
         <a class="tienda-links__icono" href="{{ link.url }}" target="_blank" rel="noopener noreferrer" aria-label="{{ link.titulo }}" title="{{ link.titulo }}">
+            {% if icono %}
             {{ icono_red(icono) | safe }}
+            {% else %}
+            <span class="tienda-links__icono-inicial">{{ link.titulo[:1] | upper }}</span>
+            {% endif %}
         </a>
         {% endfor %}
     </div>
-    {% endif %}
-    {% for link in enlaces_otros %}
-    <a class="tienda-links__item" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.titulo }}</a>
-    {% endfor %}
 </nav>
 {% endif %}
 
@@ -85,7 +84,7 @@
         </button>
         {% endfor %}
     </div>
-    {% elif not enlaces_redes and not enlaces_otros %}
+    {% elif not enlaces %}
     <p class="tienda-vacio">Todavía no hay productos publicados.</p>
     {% endif %}
 </main>

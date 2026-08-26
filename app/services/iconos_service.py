@@ -34,7 +34,25 @@ _DOMINIOS_REDES_SOCIALES: dict[str, str] = {
     "t.me": "telegram",
     "telegram.me": "telegram",
     "telegram.org": "telegram",
+    "onlyfans.com": "onlyfans",
+    "fansly.com": "fansly",
+    "clapperapp.com": "clapper",
+    "reddit.com": "reddit",
+    "redd.it": "reddit",
+    "threads.net": "threads",
+    "threads.com": "threads",
+    "discord.com": "discord",
+    "discord.gg": "discord",
+    "wechat.com": "wechat",
+    "vimeo.com": "vimeo",
+    "snapchat.com": "snapchat",
 }
+
+# Mercado Libre/Mercado Livre usa un dominio de nivel superior distinto por
+# país (mercadolibre.com.ar, mercadolibre.com.mx, mercadolivre.com.br,
+# etc.) — en vez de listar cada TLD a mano en el diccionario de arriba, se
+# reconoce buscando esta etiqueta dentro del dominio completo.
+_ETIQUETAS_MERCADOLIBRE = ("mercadolibre", "mercadolivre")
 
 
 def _leer_svg(ruta: Path) -> str:
@@ -98,4 +116,6 @@ def detectar_red_social(url: str) -> str | None:
     for sufijo, clave in _DOMINIOS_REDES_SOCIALES.items():
         if dominio == sufijo or dominio.endswith(f".{sufijo}"):
             return clave
+    if any(etiqueta in dominio.split(".") for etiqueta in _ETIQUETAS_MERCADOLIBRE):
+        return "mercadolibre"
     return None
