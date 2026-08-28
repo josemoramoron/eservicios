@@ -1,0 +1,45 @@
+{% extends "vendedor/base.html" %}
+
+{% block title %}Verifica tu correo — Mi Tienda{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a class="breadcrumb__link" href="{{ url_for('health.index') }}">eServicios</a>
+    <span class="breadcrumb__current">Verifica tu correo (e-link)</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<section class="admin-auth">
+    <h1 class="admin-auth__title">Verifica tu correo</h1>
+    <p style="color: var(--color-text-muted); font-size: 14px; margin-top: -8px;">
+        Te enviamos un código de 6 dígitos a <strong>{{ email }}</strong>. Escríbelo abajo para
+        activar tu panel.
+    </p>
+
+    <form method="post" class="admin-form admin-form--narrow">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <label class="admin-form__label" for="codigo">Código de verificación</label>
+        <input
+            class="admin-form__input"
+            type="text"
+            id="codigo"
+            name="codigo"
+            inputmode="numeric"
+            pattern="[0-9]{6}"
+            maxlength="6"
+            autocomplete="one-time-code"
+            autofocus
+            required
+        >
+
+        <button class="admin-btn admin-btn--primary admin-btn--block" type="submit">Verificar</button>
+    </form>
+
+    <form method="post" action="{{ url_for('vendedor.verificar_email_reenviar') }}" style="margin-top: 16px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="admin-btn admin-btn--block" type="submit">Reenviar código</button>
+    </form>
+</section>
+{% endblock %}

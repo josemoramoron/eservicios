@@ -11,18 +11,38 @@ import io
 from decimal import Decimal, InvalidOperation
 
 import qrcode
-from flask import Blueprint, Response, abort, current_app, flash, redirect, render_template, request, url_for
+from flask import (
+    Blueprint,
+    Response,
+    abort,
+    current_app,
+    flash,
+    redirect,
+    render_template,
+    request,
+    session,
+    url_for,
+)
 from werkzeug.datastructures import ImmutableMultiDict
 
-from app.models import VendorProduct
+from app.extensions import db
+from app.models import Vendor, VendorProduct
 from app.services import r2_service
 from app.services.auth_service import generar_csrf_token, validar_csrf_token
+from app.services.email_service import EnvioCorreoError
 from app.services.vendor_auth_service import (
     autenticar_vendor,
     cerrar_sesion_vendor,
     iniciar_sesion_vendor,
     requiere_vendor,
     vendor_actual,
+)
+from app.services.vendor_email_verificacion_service import (
+    ReenvioMuyProntoError,
+    asegurar_codigo_vigente,
+    generar_y_enviar_codigo,
+    reenviar_codigo,
+    verificar_codigo,
 )
 from app.services.estadisticas_service import resumen_estadisticas
 from app.services.vendor_service import (
@@ -249,9 +269,13 @@ def registro():
             flash(str(exc), "error")
             return render_template("vendedor/registro.html", valores=valores)
 
-        iniciar_sesion_vendor(vendor)
+        try:
+            generar_y_enviar_codigo(vendor)
+        except EnvioCorreoError as error:
+            flash(str(error), "error")
+        session["vendor_pendiente_id"] = vendor.id
         flash(f'¡Listo! Tu tienda "{vendor.nombre_negocio}" ya está en línea.', "success")
-        return redirect(url_for("vendedor.dashboard"))
+        return redirect(url_for("vendedor.verificar_email"))
 
     return render_template("vendedor/registro.html", valores=valores)
 
@@ -284,11 +308,69 @@ def login():
         vendor = autenticar_vendor(request.form.get("email", ""), request.form.get("password", ""))
         if vendor is None:
             flash("Correo o contraseña incorrectos.", "error")
+        elif not vendor.email_verificado:
+            try:
+                asegurar_codigo_vigente(vendor)
+            except EnvioCorreoError as error:
+                flash(str(error), "error")
+            session["vendor_pendiente_id"] = vendor.id
+            return redirect(url_for("vendedor.verificar_email"))
         else:
             iniciar_sesion_vendor(vendor)
             destino = request.args.get("next") or url_for("vendedor.dashboard")
             return redirect(destino)
     return render_template("vendedor/login.html")
+
+
+@vendedor_bp.route("/verificar-email", methods=["GET", "POST"])
+def verificar_email():
+    """Pantalla de verificación del código de 6 dígitos enviado por correo.
+
+    Depende de `session["vendor_pendiente_id"]`, guardada en el registro
+    o en el login de un vendedor que todavía no verificó su correo — no
+    otorga sesión completa (`iniciar_sesion_vendor`) hasta que el código
+    sea correcto.
+    """
+    vendor_id = session.get("vendor_pendiente_id")
+    if vendor_id is None:
+        return redirect(url_for("vendedor.login"))
+    vendor = db.session.get(Vendor, vendor_id)
+    if vendor is None or vendor.email_verificado:
+        session.pop("vendor_pendiente_id", None)
+        return redirect(url_for("vendedor.login"))
+
+    if request.method == "POST":
+        _verificar_csrf()
+        if verificar_codigo(vendor, request.form.get("codigo", "")):
+            session.pop("vendor_pendiente_id", None)
+            iniciar_sesion_vendor(vendor)
+            flash("¡Correo verificado! Bienvenido a tu panel.", "success")
+            return redirect(url_for("vendedor.dashboard"))
+        flash("Ese código no es correcto o ya venció. Intenta de nuevo o pide uno nuevo.", "error")
+
+    return render_template("vendedor/verificar_email.html", email=vendor.email)
+
+
+@vendedor_bp.route("/verificar-email/reenviar", methods=["POST"])
+def verificar_email_reenviar():
+    """Reenvía el código de verificación al vendedor con sesión pendiente."""
+    _verificar_csrf()
+    vendor_id = session.get("vendor_pendiente_id")
+    if vendor_id is None:
+        return redirect(url_for("vendedor.login"))
+    vendor = db.session.get(Vendor, vendor_id)
+    if vendor is None or vendor.email_verificado:
+        session.pop("vendor_pendiente_id", None)
+        return redirect(url_for("vendedor.login"))
+
+    try:
+        reenviar_codigo(vendor)
+        flash("Te enviamos un código nuevo a tu correo.", "success")
+    except ReenvioMuyProntoError as error:
+        flash(str(error), "error")
+    except EnvioCorreoError as error:
+        flash(str(error), "error")
+    return redirect(url_for("vendedor.verificar_email"))
 
 
 @vendedor_bp.route("/logout", methods=["POST"])

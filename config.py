@@ -27,6 +27,18 @@ class Config:
     R2_BUCKET: str = os.environ.get("R2_BUCKET", "eservicios-vendor-photos")
     R2_PUBLIC_BASE_URL: str = os.environ.get("R2_PUBLIC_BASE_URL", "")
 
+    # Brevo (envío del código de verificación de correo del vendedor — ver
+    # app/services/email_service.py). Se usa el relay SMTP de Brevo en vez
+    # de su API HTTP para no añadir una dependencia nueva a requirements.txt
+    # (smtplib es de la librería estándar). BREVO_SMTP_LOGIN es el correo
+    # de tu cuenta Brevo; BREVO_SMTP_PASSWORD es la "SMTP key" que genera
+    # Brevo (Settings → SMTP & API), no la contraseña de la cuenta.
+    BREVO_SMTP_HOST: str = os.environ.get("BREVO_SMTP_HOST", "smtp-relay.brevo.com")
+    BREVO_SMTP_PORT: int = int(os.environ.get("BREVO_SMTP_PORT", "587"))
+    BREVO_SMTP_LOGIN: str = os.environ.get("BREVO_SMTP_LOGIN", "")
+    BREVO_SMTP_PASSWORD: str = os.environ.get("BREVO_SMTP_PASSWORD", "")
+    BREVO_REMITENTE: str = os.environ.get("BREVO_REMITENTE", "no-responder@eservicios.org")
+
     # Límite de tamaño de request completo (Flask lo rechaza con 413 antes de
     # leer el body si se supera) — cubre con margen los casos con logo +
     # portada + foto de producto en un mismo formulario (5 MB cada una).

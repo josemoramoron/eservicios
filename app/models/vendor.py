@@ -54,6 +54,14 @@ class Vendor(db.Model):
     activo: Mapped[bool] = mapped_column(default=True, nullable=False)
     creado_en: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
 
+    # Verificación de correo (código de 6 dígitos, enviado vía Brevo — ver
+    # app/services/email_service.py y app/services/vendor_email_verificacion_service.py).
+    # Mientras email_verificado sea False, el vendedor no puede entrar al
+    # panel (ver requiere_email_verificado / rutas /vendedor/verificar-email).
+    email_verificado: Mapped[bool] = mapped_column(default=False, nullable=False)
+    codigo_verificacion_email: Mapped[str | None] = mapped_column(String(6), nullable=True)
+    codigo_verificacion_expira_en: Mapped[datetime | None] = mapped_column(nullable=True)
+
     productos: Mapped[list["VendorProduct"]] = relationship(  # noqa: F821
         back_populates="vendor", cascade="all, delete-orphan", order_by="VendorProduct.id.desc()"
     )
