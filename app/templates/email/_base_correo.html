@@ -1,0 +1,66 @@
+{#
+    Plantilla base para correos transaccionales (HTML).
+
+    Convenciones de correo HTML — distintas a las de app/templates/base.html
+    a propósito, porque los clientes de correo son mucho más limitados que
+    un navegador:
+    - Layout con <table role="presentation">, no flexbox/grid (Outlook de
+      escritorio usa el motor de Word para renderizar HTML y no soporta CSS
+      moderno).
+    - Todo el estilo va inline (style="...") en cada elemento — nada de
+      <style> ni de clases CSS, porque muchos webmails (Gmail incluido)
+      eliminan las hojas de estilo en <head>.
+    - Los colores NO se hardcodean aquí: llegan como variables
+      (color_bg, color_surface, color_text, color_text_muted, color_border,
+      color_accent) inyectadas por renderizar_plantilla_correo() en
+      app/services/email_service.py, que a su vez espeja la paleta clara de
+      :root en app/static/css/style.css. Si esa paleta cambia, se actualiza
+      en un solo lugar (email_service.py), no en cada plantilla.
+    - Sin dark mode: los clientes de correo no respetan de forma confiable
+      prefers-color-scheme, así que este correo usa siempre la paleta clara.
+
+    Cada plantilla de correo hace {% extends "email/_base_correo.html" %}
+    y llena {% block contenido %} — el mismo patrón {% extends %}/{% block %}
+    que ya usa el sitio en base.html, vendedor/base.html y admin/base.html.
+#}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block titulo %}eServicios{% endblock %}</title>
+</head>
+<body style="margin:0; padding:0; background-color:{{ color_surface }}; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:{{ color_surface }};">
+  <tr>
+    <td align="center" style="padding:32px 16px;">
+      <table role="presentation" width="480" cellpadding="0" cellspacing="0" border="0" style="width:480px; max-width:100%; background-color:{{ color_bg }}; border:1px solid {{ color_border }}; border-radius:12px; overflow:hidden;">
+
+        <tr>
+          <td style="padding:24px 32px; border-bottom:1px solid {{ color_border }};">
+            <span style="font-size:18px; font-weight:700; color:{{ color_text }};">eServicios</span>
+            <span style="font-size:14px; color:{{ color_text_muted }};">&nbsp;· e-link</span>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:32px;">
+            {% block contenido %}{% endblock %}
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:20px 32px; border-top:1px solid {{ color_border }};">
+            <p style="margin:0; font-size:12px; line-height:1.5; color:{{ color_text_muted }};">
+              Recibiste este correo porque esta dirección está asociada a una cuenta de vendedor en eServicios.
+              Si no reconoces esta actividad, puedes ignorar este mensaje.
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

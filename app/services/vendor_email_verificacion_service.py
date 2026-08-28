@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 
 from app.extensions import db
 from app.models import Vendor
-from app.services.email_service import enviar_correo
+from app.services.email_service import enviar_correo, renderizar_plantilla_correo
 
 LONGITUD_CODIGO = 6
 MINUTOS_VALIDEZ_CODIGO = 15
@@ -43,6 +43,12 @@ def generar_y_enviar_codigo(vendor: Vendor) -> None:
     vendor.codigo_verificacion_expira_en = datetime.utcnow() + timedelta(minutes=MINUTOS_VALIDEZ_CODIGO)
     db.session.commit()
 
+    cuerpo_html = renderizar_plantilla_correo(
+        "email/verificacion_codigo.html",
+        nombre_negocio=vendor.nombre_negocio,
+        codigo=codigo,
+        minutos_validez=MINUTOS_VALIDEZ_CODIGO,
+    )
     enviar_correo(
         destinatario=vendor.email,
         asunto="Tu código de verificación — eServicios",
@@ -52,6 +58,7 @@ def generar_y_enviar_codigo(vendor: Vendor) -> None:
             f"Vence en {MINUTOS_VALIDEZ_CODIGO} minutos. Si tú no creaste esta "
             "cuenta en eServicios, puedes ignorar este correo.\n"
         ),
+        cuerpo_html=cuerpo_html,
     )
 
 

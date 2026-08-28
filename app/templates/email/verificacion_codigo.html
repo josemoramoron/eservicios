@@ -1,0 +1,36 @@
+{#
+    Contenido del correo de verificación (código de 6 dígitos).
+    Ver app/templates/email/_base_correo.html para el layout compartido
+    y app/services/vendor_email_verificacion_service.py para quién llama
+    a esta plantilla (generar_y_enviar_codigo).
+#}
+{% extends "email/_base_correo.html" %}
+
+{% block titulo %}Tu código de verificación — eServicios{% endblock %}
+
+{% block contenido %}
+<p style="margin:0 0 16px; font-size:15px; line-height:1.5; color:{{ color_text }};">
+  Hola {{ nombre_negocio }},
+</p>
+<p style="margin:0 0 24px; font-size:15px; line-height:1.5; color:{{ color_text }};">
+  Usa este código para verificar tu correo y activar tu tienda en eServicios:
+</p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td align="center" style="padding:8px 0 24px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="background-color:{{ color_surface }}; border:1px solid {{ color_border }}; border-radius:8px;">
+        <tr>
+          <td style="padding:16px 32px; font-size:32px; font-weight:700; letter-spacing:8px; color:{{ color_accent }}; font-family:'Courier New',Courier,monospace;">
+            {{ codigo }}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<p style="margin:0; font-size:14px; line-height:1.5; color:{{ color_text_muted }};">
+  Este código vence en {{ minutos_validez }} minutos. Si tú no creaste esta cuenta en eServicios, puedes ignorar este correo.
+</p>
+{% endblock %}
