@@ -41,7 +41,10 @@ class Vendor(db.Model):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
-    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Nullable: una cuenta creada por "Iniciar sesión con Google" (ver
+    # google_id abajo y app/services/google_auth_service.py) no tiene
+    # contraseña propia — check_password() ya contempla este caso.
+    password_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
     slug: Mapped[str] = mapped_column(String(63), unique=True, nullable=False, index=True)
     nombre_negocio: Mapped[str] = mapped_column(String(150), nullable=False)
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -61,6 +64,15 @@ class Vendor(db.Model):
     email_verificado: Mapped[bool] = mapped_column(default=False, nullable=False)
     codigo_verificacion_email: Mapped[str | None] = mapped_column(String(6), nullable=True)
     codigo_verificacion_expira_en: Mapped[datetime | None] = mapped_column(nullable=True)
+
+    # "Iniciar sesión con Google" (ver app/services/google_auth_service.py y
+    # las rutas /vendedor/auth/google*). Guarda el claim "sub" del perfil
+    # de Google — un id estable de la cuenta, distinto del correo (el
+    # correo se puede cambiar en Google; el sub no). Una tienda registrada
+    # con contraseña puede vincular su Google más tarde con el mismo
+    # correo (ver vendor_service.vincular_google) — por eso es nullable:
+    # no toda tienda tiene una cuenta de Google vinculada.
+    google_id: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True, index=True)
 
     productos: Mapped[list["VendorProduct"]] = relationship(  # noqa: F821
         back_populates="vendor", cascade="all, delete-orphan", order_by="VendorProduct.id.desc()"
@@ -89,8 +101,12 @@ class Vendor(db.Model):
             password: Contraseña en texto plano a verificar.
 
         Returns:
-            True si la contraseña coincide con el hash guardado.
+            True si la contraseña coincide con el hash guardado. Siempre
+            False si la cuenta no tiene contraseña (registrada solo con
+            Google — ver `google_id`), sin lanzar ningún error.
         """
+        if not self.password_hash:
+            return False
         return check_password_hash(self.password_hash, password)
 
     def __repr__(self) -> str:

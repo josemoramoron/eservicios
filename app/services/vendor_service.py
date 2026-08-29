@@ -186,6 +186,101 @@ def registrar_vendor(
     return vendor
 
 
+def obtener_vendor_por_google_id(google_id: str) -> Vendor | None:
+    """Busca una tienda por el id de cuenta de Google vinculado.
+
+    Args:
+        google_id: Claim `sub` del perfil de Google (id estable de la cuenta).
+
+    Returns:
+        El `Vendor` encontrado, o None.
+    """
+    return Vendor.query.filter_by(google_id=google_id).first()
+
+
+def vincular_google(vendor: Vendor, google_id: str) -> None:
+    """Vincula una cuenta de Google a una tienda que ya existía con correo y contraseña.
+
+    Se llama cuando alguien inicia sesión con Google usando el mismo
+    correo con el que ya se había registrado por contraseña — Google ya
+    confirmó ese correo, así que de paso se marca `email_verificado`
+    (por si el vendedor nunca terminó de verificarlo con el código de
+    Brevo).
+
+    Args:
+        vendor: Tienda existente a vincular.
+        google_id: Claim `sub` del perfil de Google.
+    """
+    vendor.google_id = google_id
+    vendor.email_verificado = True
+    db.session.commit()
+
+
+def registrar_vendor_google(
+    *,
+    google_id: str,
+    email: str,
+    slug: str,
+    nombre_negocio: str,
+    whatsapp_numero: str,
+    bio: str | None = None,
+) -> Vendor:
+    """Crea una tienda de vendedor nueva a partir de un login con Google.
+
+    A diferencia de `registrar_vendor`, no hay contraseña
+    (`password_hash` queda en `None` — ver `Vendor.check_password`, que
+    ya contempla ese caso) y `email_verificado` empieza en `True`:
+    Google ya confirmó la titularidad del correo (ver
+    `app/routes/vendedor.py::auth_google_callback`, que chequea
+    `email_verified` antes de llegar hasta acá), así que no hace falta
+    pasar por el código de verificación de
+    `vendor_email_verificacion_service`.
+
+    Args:
+        google_id: Claim `sub` del perfil de Google (id estable de la cuenta).
+        email: Correo ya confirmado por Google.
+        slug: Subdominio elegido, sin normalizar todavía.
+        nombre_negocio: Nombre visible de la tienda.
+        whatsapp_numero: Número de WhatsApp con código de país.
+        bio: Descripción corta opcional.
+
+    Returns:
+        El `Vendor` recién creado.
+
+    Raises:
+        EmailDuplicadoError: Si ya existe una tienda con ese correo (no
+            debería pasar en el flujo normal — `auth_google_callback` ya
+            intenta vincular por correo antes de llegar aquí — pero se
+            revalida por si la cuenta se creó por otro medio en el
+            tiempo que el vendedor tardó en completar este formulario).
+        SlugInvalidoError: Si el slug no cumple el formato.
+        SlugReservadoError: Si el slug está reservado.
+        SlugDuplicadoError: Si el slug ya está en uso.
+    """
+    email_normalizado = email.strip().lower()
+    if Vendor.query.filter_by(email=email_normalizado).first() is not None:
+        raise EmailDuplicadoError("Ya existe una tienda registrada con ese correo.")
+
+    slug_normalizado = validar_formato_slug(slug)
+    if ReservedSlug.query.filter_by(palabra=slug_normalizado).first() is not None:
+        raise SlugReservadoError("Ese subdominio no está disponible.")
+    if Vendor.query.filter_by(slug=slug_normalizado).first() is not None:
+        raise SlugDuplicadoError("Ese subdominio ya está en uso por otra tienda.")
+
+    vendor = Vendor(
+        email=email_normalizado,
+        google_id=google_id,
+        slug=slug_normalizado,
+        nombre_negocio=nombre_negocio.strip(),
+        whatsapp_numero=whatsapp_numero.strip(),
+        bio=(bio or "").strip() or None,
+        email_verificado=True,
+    )
+    db.session.add(vendor)
+    db.session.commit()
+    return vendor
+
+
 def obtener_vendor_por_slug_activo(slug: str) -> Vendor | None:
     """Busca una tienda activa por su slug, para la página pública.
 
@@ -598,6 +693,46 @@ def href_whatsapp_producto(vendor: Vendor, producto: VendorProduct) -> str:
         f'Hola, quiero info sobre "{producto.titulo}" en {vendor.nombre_negocio}.'
         f"{_membrete_trazabilidad(vendor)}",
     )
+
+
+def _escapar_texto_vcard(texto: str) -> str:
+    """Escapa los caracteres especiales del formato vCard (backslash, punto y coma, coma, salto de línea).
+
+    Args:
+        texto: Texto sin escapar.
+
+    Returns:
+        El texto listo para insertarse en un campo de una línea vCard.
+    """
+    return texto.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace("\n", "\\n")
+
+
+def construir_vcard(vendor: Vendor) -> str:
+    """Arma el contenido de un archivo vCard (.vcf) con los datos públicos de la tienda.
+
+    Pensado para que el vendedor lo descargue junto al QR (ver
+    `/vendedor/contacto.vcf`) y lo comparta para que sus clientes
+    guarden la tienda como contacto de un toque, sin escribir el
+    número a mano.
+
+    Args:
+        vendor: Tienda cuyo contacto se exporta.
+
+    Returns:
+        Texto en formato vCard 3.0, listo para escribir a un archivo `.vcf`.
+    """
+    lineas = [
+        "BEGIN:VCARD",
+        "VERSION:3.0",
+        f"FN:{_escapar_texto_vcard(vendor.nombre_negocio)}",
+        f"ORG:{_escapar_texto_vcard(vendor.nombre_negocio)}",
+        f"TEL;TYPE=CELL:{vendor.whatsapp_numero}",
+        f"URL:https://{vendor.slug}.eservicios.org",
+    ]
+    if vendor.bio:
+        lineas.append(f"NOTE:{_escapar_texto_vcard(vendor.bio)}")
+    lineas.append("END:VCARD")
+    return "\r\n".join(lineas)
 
 
 # --- Enlaces personalizados (estilo Linktree) ---

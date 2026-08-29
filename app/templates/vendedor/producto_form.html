@@ -19,13 +19,15 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
     <label class="admin-form__label" for="titulo">Título</label>
-    <input class="admin-form__input" type="text" id="titulo" name="titulo" value="{{ valores.titulo }}" required>
+    <input class="admin-form__input" type="text" id="titulo" name="titulo" value="{{ valores.titulo }}" maxlength="150" data-contador required>
 
     <label class="admin-form__label" for="descripcion">Descripción</label>
     <textarea class="admin-form__textarea" id="descripcion" name="descripcion" rows="4" required>{{ valores.descripcion }}</textarea>
+    <p class="admin-form__hint">Recomendado: menos de 500 caracteres, para que se lea cómodo en la ficha del producto.</p>
 
     <label class="admin-form__label" for="precio">Precio (USD)</label>
     <input class="admin-form__input" type="text" id="precio" name="precio" value="{{ valores.precio }}" inputmode="decimal" required>
+    <p class="admin-form__hint">Usa un punto para los centavos, ej. 25.00 (no uses el símbolo $).</p>
 
     <label class="admin-form__label">Fotos (hasta {{ max_fotos }} — la primera es la portada)</label>
     <p class="admin-form__hint" id="fotos-contador-hint">
@@ -77,4 +79,5 @@
 </form>
 
 <script src="{{ estatico_v('js/producto_fotos.js') }}"></script>
+<script src="{{ estatico_v('js/validacion_formulario.js') }}"></script>
 {% endblock %}

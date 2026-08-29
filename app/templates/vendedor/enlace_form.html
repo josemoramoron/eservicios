@@ -18,10 +18,10 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
     <label class="admin-form__label" for="titulo">Título del botón</label>
-    <input class="admin-form__input" type="text" id="titulo" name="titulo" value="{{ valores.titulo }}" placeholder="Ej. Mi Instagram" required>
+    <input class="admin-form__input" type="text" id="titulo" name="titulo" value="{{ valores.titulo }}" placeholder="Ej. Mi Instagram" maxlength="80" data-contador required>
 
     <label class="admin-form__label" for="url">URL</label>
-    <input class="admin-form__input" type="text" id="url" name="url" value="{{ valores.url }}" placeholder="https://..." required>
+    <input class="admin-form__input" type="text" id="url" name="url" value="{{ valores.url }}" placeholder="https://..." maxlength="500" data-formato="url" required>
 
     {% if link %}
     <div class="admin-form__checkbox-row">
@@ -37,4 +37,6 @@
         <a class="admin-btn" href="{{ url_for('vendedor.enlaces') }}">Cancelar</a>
     </div>
 </form>
+
+<script src="{{ estatico_v('js/validacion_formulario.js') }}"></script>
 {% endblock %}

@@ -45,6 +45,7 @@ from app.services.vendor_email_verificacion_service import (
     verificar_codigo,
 )
 from app.services.estadisticas_service import resumen_estadisticas
+from app.services.google_auth_service import oauth, obtener_perfil_google
 from app.services.vendor_service import (
     DIAS_ENTRE_CAMBIOS_SLUG,
     DIAS_REDIRECCION_SLUG_ANTERIOR,
@@ -66,6 +67,7 @@ from app.services.vendor_service import (
     actualizar_producto,
     cambiar_password,
     cambiar_slug,
+    construir_vcard,
     crear_link,
     crear_producto,
     eliminar_link,
@@ -76,9 +78,13 @@ from app.services.vendor_service import (
     mover_link,
     obtener_link_de_vendor,
     obtener_producto_de_vendor,
+    obtener_vendor_por_email,
+    obtener_vendor_por_google_id,
     registrar_vendor,
+    registrar_vendor_google,
     slug_disponible,
     validar_formato_slug,
+    vincular_google,
 )
 
 vendedor_bp = Blueprint("vendedor", __name__, url_prefix="/vendedor")
@@ -322,6 +328,122 @@ def login():
     return render_template("vendedor/login.html")
 
 
+@vendedor_bp.route("/auth/google")
+def auth_google():
+    """Inicia el flujo de "Iniciar sesión con Google" (sirve tanto para registro como para login)."""
+    if vendor_actual() is not None:
+        return redirect(url_for("vendedor.dashboard"))
+    redirect_uri = url_for("vendedor.auth_google_callback", _external=True)
+    return oauth.google.authorize_redirect(redirect_uri)
+
+
+@vendedor_bp.route("/auth/google/callback")
+def auth_google_callback():
+    """Callback de Google: abre sesión si la cuenta ya existe, o manda a completar el registro.
+
+    Si el correo que devuelve Google ya tenía una tienda registrada por
+    contraseña, la vincula (`vincular_google`) en vez de crear una
+    cuenta duplicada. Si no existe ninguna tienda con ese correo ni con
+    ese `google_id`, guarda el perfil en `session["google_pendiente"]`
+    y manda a `registro_completar_google` a pedir los datos que Google
+    no entrega (subdominio, nombre de la tienda, WhatsApp).
+    """
+    try:
+        token = oauth.google.authorize_access_token()
+        perfil = obtener_perfil_google(token)
+    except Exception as exc:  # noqa: BLE001 — cualquier fallo del intercambio OAuth termina igual: de vuelta al login.
+        current_app.logger.warning("Fallo el login con Google: %s", exc)
+        flash("No se pudo completar el inicio de sesión con Google. Intenta de nuevo.", "error")
+        return redirect(url_for("vendedor.login"))
+
+    google_id = perfil.get("sub", "")
+    email = (perfil.get("email") or "").strip().lower()
+    if not google_id or not email or not perfil.get("email_verified"):
+        flash("No se pudo confirmar tu cuenta de Google. Intenta de nuevo.", "error")
+        return redirect(url_for("vendedor.login"))
+
+    vendor = obtener_vendor_por_google_id(google_id)
+    if vendor is None:
+        vendor = obtener_vendor_por_email(email)
+        if vendor is not None:
+            vincular_google(vendor, google_id)
+
+    if vendor is not None:
+        if not vendor.activo:
+            flash("Tu tienda está suspendida. Contacta al soporte de eServicios.", "error")
+            return redirect(url_for("vendedor.login"))
+        iniciar_sesion_vendor(vendor)
+        flash(f'¡Bienvenido de nuevo, {vendor.nombre_negocio}!', "success")
+        return redirect(url_for("vendedor.dashboard"))
+
+    session["google_pendiente"] = {
+        "google_id": google_id,
+        "email": email,
+        "nombre_sugerido": perfil.get("name", ""),
+    }
+    return redirect(url_for("vendedor.registro_completar_google"))
+
+
+@vendedor_bp.route("/registro/completar-google", methods=["GET", "POST"])
+def registro_completar_google():
+    """Último paso del registro con Google: elegir subdominio, nombre de tienda y WhatsApp.
+
+    Depende de `session["google_pendiente"]`, guardada por
+    `auth_google_callback` cuando Google confirmó una cuenta que
+    todavía no existe en eServicios — el correo ya viene verificado por
+    Google, así que este paso no pasa por `verificar_email`.
+    """
+    if vendor_actual() is not None:
+        return redirect(url_for("vendedor.dashboard"))
+    pendiente = session.get("google_pendiente")
+    if not pendiente:
+        return redirect(url_for("vendedor.registro"))
+
+    valores = {
+        "slug": "",
+        "nombre_negocio": pendiente.get("nombre_sugerido", ""),
+        "whatsapp_numero": "",
+        "bio": "",
+    }
+    if request.method == "POST":
+        _verificar_csrf()
+        valores = {
+            "slug": request.form.get("slug", "").strip().lower(),
+            "nombre_negocio": request.form.get("nombre_negocio", "").strip(),
+            "whatsapp_numero": request.form.get("whatsapp_numero", "").strip(),
+            "bio": request.form.get("bio", "").strip(),
+        }
+        if not request.form.get("acepta_terminos"):
+            flash("Debes aceptar los Términos y condiciones.", "error")
+            return render_template("vendedor/registro_completar_google.html", valores=valores, email=pendiente["email"])
+        if not valores["nombre_negocio"]:
+            flash("El nombre de la tienda es obligatorio.", "error")
+            return render_template("vendedor/registro_completar_google.html", valores=valores, email=pendiente["email"])
+        if not valores["whatsapp_numero"]:
+            flash("El número de WhatsApp es obligatorio.", "error")
+            return render_template("vendedor/registro_completar_google.html", valores=valores, email=pendiente["email"])
+
+        try:
+            vendor = registrar_vendor_google(
+                google_id=pendiente["google_id"],
+                email=pendiente["email"],
+                slug=valores["slug"],
+                nombre_negocio=valores["nombre_negocio"],
+                whatsapp_numero=valores["whatsapp_numero"],
+                bio=valores["bio"],
+            )
+        except (SlugInvalidoError, SlugReservadoError, SlugDuplicadoError, EmailDuplicadoError) as exc:
+            flash(str(exc), "error")
+            return render_template("vendedor/registro_completar_google.html", valores=valores, email=pendiente["email"])
+
+        session.pop("google_pendiente", None)
+        iniciar_sesion_vendor(vendor)
+        flash(f'¡Listo! Tu tienda "{vendor.nombre_negocio}" ya está en línea.', "success")
+        return redirect(url_for("vendedor.dashboard"))
+
+    return render_template("vendedor/registro_completar_google.html", valores=valores, email=pendiente["email"])
+
+
 @vendedor_bp.route("/verificar-email", methods=["GET", "POST"])
 def verificar_email():
     """Pantalla de verificación del código de 6 dígitos enviado por correo.
@@ -417,6 +539,25 @@ def qr_tienda():
     buffer = io.BytesIO()
     imagen_qr.save(buffer, format="PNG")
     return Response(buffer.getvalue(), mimetype="image/png")
+
+
+@vendedor_bp.route("/contacto.vcf")
+@requiere_vendor
+def contacto_vcard():
+    """Archivo vCard (.vcf) con los datos de contacto de la tienda, para guardar junto al QR.
+
+    Returns:
+        Respuesta `text/vcard` con el archivo listo para descargar, para
+        que el vendedor lo comparta y sus clientes guarden la tienda
+        como contacto de un toque.
+    """
+    vendor = vendor_actual()
+    contenido = construir_vcard(vendor)
+    return Response(
+        contenido,
+        mimetype="text/vcard",
+        headers={"Content-Disposition": f'attachment; filename="{vendor.slug}.vcf"'},
+    )
 
 
 # --- Perfil: personalización y seguridad ---

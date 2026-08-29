@@ -10,3 +10,5 @@ Markdown==3.7
 boto3==1.35.74
 Pillow==11.0.0
 qrcode==7.4.2
+Authlib==1.7.2
+requests==2.34.2

@@ -23,6 +23,10 @@
 
         <button class="admin-btn admin-btn--primary admin-btn--block" type="submit">Entrar</button>
     </form>
+
+    <div class="admin-auth__divisor">o</div>
+    {% include "vendedor/_boton_google.html" %}
+
     <p class="admin-auth__title" style="font-size: 14px; margin-top: 16px;">
         ¿No tienes tienda todavía? <a class="admin-link" href="{{ url_for('vendedor.registro') }}">Regístrate gratis</a>.
     </p>

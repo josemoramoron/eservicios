@@ -32,7 +32,17 @@
         <p style="margin: 0 0 8px; font-size: 0.85rem; color: var(--color-text-muted);">
             Código QR de tu tienda — imprímelo en tarjetas, empaques o pégalo en tu local.
         </p>
-        <a class="admin-btn" href="{{ url_for('vendedor.qr_tienda') }}" download="{{ vendor.slug }}-qr.png">Descargar QR</a>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <a class="admin-btn" href="{{ url_for('vendedor.qr_tienda') }}" download="{{ vendor.slug }}-qr.png">Descargar QR</a>
+            <a class="admin-btn" href="{{ url_for('vendedor.contacto_vcard') }}" download="{{ vendor.slug }}.vcf">Descargar contacto</a>
+            <button
+                type="button"
+                class="admin-btn"
+                data-compartir-btn
+                data-url="https://{{ vendor.slug }}.eservicios.org"
+                data-titulo="{{ vendor.nombre_negocio }}"
+            >Compartir mi tienda</button>
+        </div>
     </div>
 </div>
 
@@ -82,4 +92,6 @@
         {% endfor %}
     </tbody>
 </table>
+
+<script src="{{ estatico_v('js/compartir.js') }}"></script>
 {% endblock %}

@@ -1,24 +1,21 @@
 {% extends "vendedor/base.html" %}
 
-{% block title %}Crear mi tienda gratis — eServicios{% endblock %}
+{% block title %}Completa tu registro — eServicios{% endblock %}
 
 {% block breadcrumb %}
 <nav class="breadcrumb">
     <a class="breadcrumb__link" href="{{ url_for('health.index') }}">eServicios</a>
-    <span class="breadcrumb__current">Crear tienda gratis (e-link)</span>
+    <span class="breadcrumb__current">Completa tu registro (e-link)</span>
 </nav>
 {% endblock %}
 
 {% block content %}
-<p class="admin-auth__title" style="font-size: 14px; margin: 0 0 0.75rem; text-align: left;">
-    ¿Ya tienes tienda? <a class="admin-link" href="{{ url_for('vendedor.login') }}">Inicia sesión</a>.
+<h1 class="admin-page-title">¡Ya casi! Completa tu tienda</h1>
+<p class="admin-form__hint" style="margin: -0.5rem 0 1rem;">
+    Iniciaste sesión con Google como <strong>{{ email }}</strong>. Solo nos faltan estos datos para crear tu tienda.
 </p>
-<h1 class="admin-page-title">Crea tu tienda gratis</h1>
 
-{% include "vendedor/_boton_google.html" %}
-<div class="admin-auth__divisor">o completa el formulario</div>
-
-<form method="post" class="admin-form" id="form-registro-vendedor">
+<form method="post" class="admin-form" id="form-registro-google">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
     <label class="admin-form__label" for="nombre_negocio">Nombre de la tienda</label>
@@ -46,15 +43,6 @@
 
     <label class="admin-form__label" for="bio">Descripción corta de tu tienda (opcional)</label>
     <textarea class="admin-form__textarea" id="bio" name="bio" rows="3" maxlength="300" data-contador>{{ valores.bio }}</textarea>
-
-    <label class="admin-form__label" for="email">Correo (para entrar a tu panel)</label>
-    <input class="admin-form__input" type="email" id="email" name="email" value="{{ valores.email }}" required>
-
-    <label class="admin-form__label" for="password">Contraseña (mínimo 8 caracteres)</label>
-    <input class="admin-form__input" type="password" id="password" name="password" minlength="8" required>
-
-    <label class="admin-form__label" for="password_confirmacion">Confirma tu contraseña</label>
-    <input class="admin-form__input" type="password" id="password_confirmacion" name="password_confirmacion" minlength="8" data-coincide-con="password" required>
 
     <div class="admin-form__checkbox-row">
         <label class="admin-form__checkbox">

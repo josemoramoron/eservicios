@@ -43,3 +43,13 @@ class Config:
     # leer el body si se supera) — cubre con margen los casos con logo +
     # portada + foto de producto en un mismo formulario (5 MB cada una).
     MAX_CONTENT_LENGTH: int = 16 * 1024 * 1024
+
+    # "Iniciar sesión con Google" del vendedor (ver app/services/google_auth_service.py
+    # y las rutas /vendedor/auth/google*). Se generan en Google Cloud Console
+    # (APIs & Services → Credentials → Create Credentials → OAuth client ID,
+    # tipo "Web application"), con esta URL exacta como "Authorized redirect URI":
+    # https://eservicios.org/vendedor/auth/google/callback (y la variante con
+    # localhost:5000 para probar en local). Vacíos por defecto: el botón de
+    # Google queda ahí pero fallará hasta que se configuren estas dos claves.
+    GOOGLE_CLIENT_ID: str = os.environ.get("GOOGLE_CLIENT_ID", "")
+    GOOGLE_CLIENT_SECRET: str = os.environ.get("GOOGLE_CLIENT_SECRET", "")

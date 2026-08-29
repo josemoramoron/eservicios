@@ -18,13 +18,13 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
     <label class="admin-form__label" for="nombre_negocio">Nombre de la tienda</label>
-    <input class="admin-form__input" type="text" id="nombre_negocio" name="nombre_negocio" value="{{ vendor.nombre_negocio }}" required>
+    <input class="admin-form__input" type="text" id="nombre_negocio" name="nombre_negocio" value="{{ vendor.nombre_negocio }}" maxlength="150" data-contador required>
 
     <label class="admin-form__label" for="whatsapp_numero">Número de WhatsApp (con código de país, solo dígitos)</label>
-    <input class="admin-form__input" type="text" id="whatsapp_numero" name="whatsapp_numero" value="{{ vendor.whatsapp_numero }}" inputmode="numeric" required>
+    <input class="admin-form__input" type="text" id="whatsapp_numero" name="whatsapp_numero" value="{{ vendor.whatsapp_numero }}" inputmode="numeric" maxlength="30" data-formato="whatsapp" required>
 
     <label class="admin-form__label" for="bio">Descripción corta de tu tienda</label>
-    <textarea class="admin-form__textarea" id="bio" name="bio" rows="3">{{ vendor.bio or '' }}</textarea>
+    <textarea class="admin-form__textarea" id="bio" name="bio" rows="3" maxlength="300" data-contador>{{ vendor.bio or '' }}</textarea>
 
     <label class="admin-form__label" for="logo">Logo</label>
     {% if vendor.logo_url %}
@@ -68,6 +68,7 @@
 </div>
 
 <h2 style="font-size: 1.05rem; margin: 2rem 0 0.75rem;">Seguridad</h2>
+{% if vendor.password_hash %}
 <form method="post" class="admin-form admin-form--narrow" action="{{ url_for('vendedor.perfil_password') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
@@ -78,10 +79,20 @@
     <input class="admin-form__input" type="password" id="password_nueva" name="password_nueva" minlength="8" required>
 
     <label class="admin-form__label" for="password_nueva_confirmacion">Confirma la contraseña nueva</label>
-    <input class="admin-form__input" type="password" id="password_nueva_confirmacion" name="password_nueva_confirmacion" minlength="8" required>
+    <input class="admin-form__input" type="password" id="password_nueva_confirmacion" name="password_nueva_confirmacion" minlength="8" data-coincide-con="password_nueva" required>
 
     <div class="admin-form__actions">
         <button class="admin-btn admin-btn--primary" type="submit">Cambiar contraseña</button>
     </div>
 </form>
+{% else %}
+<p class="admin-form__hint" style="max-width: 420px;">
+    Tu tienda se registró con "Iniciar sesión con Google" y no tiene contraseña propia — entra siempre con el botón de Google desde
+    <a class="admin-link" href="{{ url_for('vendedor.login') }}">la pantalla de inicio de sesión</a>.
+</p>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ estatico_v('js/validacion_formulario.js') }}"></script>
 {% endblock %}

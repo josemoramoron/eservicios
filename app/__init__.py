@@ -35,6 +35,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     from app.routes.servicios import servicios_bp
     from app.routes.tienda import renderizar_tienda
     from app.routes.vendedor import vendedor_bp
+    from app.services.google_auth_service import configurar_oauth_google
     from app.services.iconos_service import obtener_icono_categoria, obtener_icono_red
     from app.services.site_info_service import obtener_info_sitio
     from app.services.subdominio_service import (
@@ -53,6 +54,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     app.register_blueprint(clicks_bp)
     app.register_blueprint(legal_bp)
     app.register_blueprint(reportes_bp)
+    configurar_oauth_google(app)
     app.jinja_env.globals["icono_categoria"] = obtener_icono_categoria
     app.jinja_env.globals["icono_red"] = obtener_icono_red
 
