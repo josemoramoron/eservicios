@@ -15,14 +15,8 @@
 </p>
 <h1 class="admin-page-title">Crea tu tienda gratis</h1>
 
-{% include "vendedor/_boton_google.html" %}
-<div class="admin-auth__divisor">o completa el formulario</div>
-
 <form method="post" class="admin-form" id="form-registro-vendedor">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-    <label class="admin-form__label" for="nombre_negocio">Nombre de la tienda</label>
-    <input class="admin-form__input" type="text" id="nombre_negocio" name="nombre_negocio" value="{{ valores.nombre_negocio }}" maxlength="150" data-contador required>
 
     <label class="admin-form__label" for="slug">Subdominio de tu tienda</label>
     <div class="admin-form__checkbox-row" style="align-items: center; gap: 0;">
@@ -41,26 +35,34 @@
     </div>
     <p id="slug-estado" style="font-size: 13px; margin: 4px 0 0; color: var(--color-text-muted);"></p>
 
-    <label class="admin-form__label" for="whatsapp_numero">Número de WhatsApp (con código de país, solo dígitos)</label>
-    <input class="admin-form__input" type="text" id="whatsapp_numero" name="whatsapp_numero" value="{{ valores.whatsapp_numero }}" placeholder="584121234567" inputmode="numeric" maxlength="30" data-formato="whatsapp" required>
+    <label class="admin-form__label" for="nombre_negocio">Nombre de la tienda</label>
+    <input class="admin-form__input" type="text" id="nombre_negocio" name="nombre_negocio" value="{{ valores.nombre_negocio }}" maxlength="150" data-contador required>
 
     <label class="admin-form__label" for="bio">Descripción corta de tu tienda (opcional)</label>
     <textarea class="admin-form__textarea" id="bio" name="bio" rows="3" maxlength="300" data-contador>{{ valores.bio }}</textarea>
 
-    <label class="admin-form__label" for="email">Correo (para entrar a tu panel)</label>
-    <input class="admin-form__input" type="email" id="email" name="email" value="{{ valores.email }}" required>
-
-    <label class="admin-form__label" for="password">Contraseña (mínimo 8 caracteres)</label>
-    <input class="admin-form__input" type="password" id="password" name="password" minlength="8" required>
-
-    <label class="admin-form__label" for="password_confirmacion">Confirma tu contraseña</label>
-    <input class="admin-form__input" type="password" id="password_confirmacion" name="password_confirmacion" minlength="8" data-coincide-con="password" required>
+    <label class="admin-form__label" for="whatsapp_numero">Número de WhatsApp (con código de país, solo dígitos)</label>
+    <input class="admin-form__input" type="text" id="whatsapp_numero" name="whatsapp_numero" value="{{ valores.whatsapp_numero }}" placeholder="584121234567" inputmode="numeric" maxlength="30" data-formato="whatsapp" required>
 
     <div class="admin-form__checkbox-row">
         <label class="admin-form__checkbox">
             <input type="checkbox" id="acepta_terminos" name="acepta_terminos" required>
             He leído y acepto los <a class="admin-link" href="{{ url_for('legal.terminos') }}" target="_blank">Términos y condiciones</a>
         </label>
+    </div>
+
+    <label class="admin-form__label" for="email">Correo (para entrar a tu panel)</label>
+    {% set en_formulario = true %}
+    {% include "vendedor/_boton_google.html" %}
+    <div class="admin-auth__divisor">o escribe tu correo</div>
+    <input class="admin-form__input" type="email" id="email" name="email" value="{{ valores.email }}" placeholder="tu@correo.com">
+
+    <div class="admin-form__grupo-oculto" id="grupo-password" hidden>
+        <label class="admin-form__label" for="password">Contraseña (mínimo 8 caracteres)</label>
+        <input class="admin-form__input" type="password" id="password" name="password" minlength="8">
+
+        <label class="admin-form__label" for="password_confirmacion">Confirma tu contraseña</label>
+        <input class="admin-form__input" type="password" id="password_confirmacion" name="password_confirmacion" minlength="8" data-coincide-con="password">
     </div>
 
     <div class="admin-form__actions">

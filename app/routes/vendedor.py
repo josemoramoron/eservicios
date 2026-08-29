@@ -243,6 +243,9 @@ def registro():
         password = request.form.get("password", "")
         password_confirmacion = request.form.get("password_confirmacion", "")
 
+        if not valores["email"]:
+            flash("Escribe tu correo, o usa \"Continuar con Google\".", "error")
+            return render_template("vendedor/registro.html", valores=valores)
         if len(password) < 8:
             flash("La contraseña debe tener al menos 8 caracteres.", "error")
             return render_template("vendedor/registro.html", valores=valores)
@@ -330,9 +333,26 @@ def login():
 
 @vendedor_bp.route("/auth/google")
 def auth_google():
-    """Inicia el flujo de "Iniciar sesión con Google" (sirve tanto para registro como para login)."""
+    """Inicia el flujo de "Iniciar sesión con Google" (sirve tanto para registro como para login).
+
+    En `registro.html` este endpoint es también el `formaction` del botón
+    "Continuar con Google", que vive dentro del mismo `<form>` que el
+    subdominio/nombre/WhatsApp/bio — al enviarse con `formmethod="get"`,
+    el navegador manda esos campos ya escritos como query string. Se
+    guardan en `session["registro_datos_previos"]` para no perderlos en
+    el ir-y-volver a Google, y `auth_google_callback` los recupera para
+    no volver a pedirlos en `registro_completar_google`.
+    """
     if vendor_actual() is not None:
         return redirect(url_for("vendedor.dashboard"))
+
+    datos_previos = {
+        campo: request.args.get(campo, "").strip()
+        for campo in ("slug", "nombre_negocio", "whatsapp_numero", "bio")
+    }
+    if any(datos_previos.values()):
+        session["registro_datos_previos"] = datos_previos
+
     redirect_uri = url_for("vendedor.auth_google_callback", _external=True)
     return oauth.google.authorize_redirect(redirect_uri)
 
@@ -362,6 +382,11 @@ def auth_google_callback():
         flash("No se pudo confirmar tu cuenta de Google. Intenta de nuevo.", "error")
         return redirect(url_for("vendedor.login"))
 
+    # Se saca de la sesión sin importar qué rama siga después: si el
+    # vendor ya existe (login directo) estos datos ya no aplican, y no
+    # deben quedar arrastrados a un futuro registro con otra cuenta.
+    datos_previos = session.pop("registro_datos_previos", None) or {}
+
     vendor = obtener_vendor_por_google_id(google_id)
     if vendor is None:
         vendor = obtener_vendor_por_email(email)
@@ -379,7 +404,10 @@ def auth_google_callback():
     session["google_pendiente"] = {
         "google_id": google_id,
         "email": email,
-        "nombre_sugerido": perfil.get("name", ""),
+        "nombre_sugerido": datos_previos.get("nombre_negocio") or perfil.get("name", ""),
+        "slug_sugerido": datos_previos.get("slug", ""),
+        "whatsapp_sugerido": datos_previos.get("whatsapp_numero", ""),
+        "bio_sugerida": datos_previos.get("bio", ""),
     }
     return redirect(url_for("vendedor.registro_completar_google"))
 
@@ -400,10 +428,10 @@ def registro_completar_google():
         return redirect(url_for("vendedor.registro"))
 
     valores = {
-        "slug": "",
+        "slug": pendiente.get("slug_sugerido", ""),
         "nombre_negocio": pendiente.get("nombre_sugerido", ""),
-        "whatsapp_numero": "",
-        "bio": "",
+        "whatsapp_numero": pendiente.get("whatsapp_sugerido", ""),
+        "bio": pendiente.get("bio_sugerida", ""),
     }
     if request.method == "POST":
         _verificar_csrf()

@@ -726,6 +726,7 @@ body {
 }
 
 .admin-btn {
+    box-sizing: border-box;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -734,6 +735,7 @@ body {
     padding: 0.55rem 1.1rem;
     color: var(--color-text);
     text-decoration: none;
+    font-family: inherit;
     font-size: 0.9rem;
     background: none;
     cursor: pointer;
@@ -761,10 +763,31 @@ body {
 }
 
 .admin-btn--google {
+    /* Negro fijo a propósito (no usa los tokens --color-*): así lo pidió
+       Jose, para que combine con el logo multicolor de Google igual que
+       en apps de referencia, sin importar el tema claro/oscuro del sitio. */
     width: 100%;
     gap: 0.6rem;
     margin-top: 1rem;
-    background-color: var(--color-bg);
+    background-color: #000000;
+    border-color: #000000;
+    border-radius: 999px;
+    color: #ffffff;
+}
+
+.admin-btn--google:hover {
+    background-color: #262626;
+    border-color: #262626;
+    color: #ffffff;
+}
+
+.admin-form__grupo-oculto:not([hidden]) {
+    /* Permite ocultar/mostrar un grupo de campos (p. ej. contraseña) con
+       el atributo `hidden` sin que sus hijos dejen de ser hijos directos
+       de `.admin-form` — así conservan el ancho completo que les da el
+       `align-items: stretch` del flex del formulario. Reutilizable para
+       cualquier otro revelado progresivo futuro. */
+    display: contents;
 }
 
 .admin-auth__divisor {

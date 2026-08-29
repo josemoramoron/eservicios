@@ -46,3 +46,23 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 400);
     });
 });
+
+/**
+ * Revelado progresivo de los campos de contraseña: se quedan ocultos
+ * hasta que el usuario empieza a escribir su correo. Si en vez de eso
+ * usa "Continuar con Google", nunca los ve ni los necesita.
+ */
+document.addEventListener("DOMContentLoaded", () => {
+    const email = document.getElementById("email");
+    const grupoPassword = document.getElementById("grupo-password");
+    if (!email || !grupoPassword) {
+        return;
+    }
+
+    function actualizar() {
+        grupoPassword.hidden = email.value.trim() === "";
+    }
+
+    email.addEventListener("input", actualizar);
+    actualizar();
+});
