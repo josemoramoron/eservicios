@@ -18,7 +18,14 @@ from urllib.parse import quote
 from sqlalchemy import func
 
 from app.extensions import db
-from app.models import ReservedSlug, Vendor, VendorLink, VendorProduct, VendorSlugHistorial
+from app.models import PlanVendor, ReservedSlug, Vendor, VendorLink, VendorProduct, VendorSlugHistorial
+from app.services.estilos_portada_service import PRESETS_PORTADA
+
+# Formato exigido para Vendor.color_acento — "#" + 6 dígitos hexadecimales,
+# el mismo formato que produce un <input type="color"> nativo del navegador
+# (ver vendedor/perfil.html). Cualquier otro valor se ignora en silencio,
+# mismo criterio que ya se usa con estilo_portada en actualizar_perfil().
+_PATRON_COLOR_HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 _SLUG_RE = re.compile(r"^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$")
 
@@ -442,6 +449,8 @@ def actualizar_perfil(
     bio: str,
     logo_url: str | None,
     banner_url: str | None,
+    estilo_portada: str | None = None,
+    color_acento: str | None = None,
 ) -> None:
     """Actualiza los datos de personalización de la tienda del vendedor.
 
@@ -457,6 +466,28 @@ def actualizar_perfil(
         bio: Nueva descripción corta (puede quedar vacía).
         logo_url: URL del logo ya subido a R2, o None para quitarlo.
         banner_url: URL del banner ya subido a R2, o None para quitarlo.
+        estilo_portada: Clave de un preset de `estilos_portada_service`
+            (ej. "oceano"), o vacío/None para usar el placeholder
+            genérico. Un valor que no exista en `PRESETS_PORTADA` se
+            ignora en silencio (queda en None) en vez de lanzar error —
+            es un `<select>`/radio cerrado, no texto libre del usuario.
+        color_acento: Valor FINAL a guardar como color de acento propio
+            ("#rrggbb", función de e-link Plus — ver
+            `resolver_acento_vendor`), o None para dejarlo sin color
+            propio. A diferencia de los demás parámetros, esto no
+            representa "el campo tal como llegó del formulario" — es
+            responsabilidad del llamador resolver antes de llamar aquí
+            si el vendedor pidió quitar el color, escribió uno nuevo, o
+            el formulario ni siquiera incluía el selector (por no tener
+            Plus vigente), en cuyo caso el llamador debe pasar el valor
+            que ya tenía `vendor.color_acento` para no perderlo (ver
+            `vendedor.perfil`). Un valor que no cumpla el formato se
+            ignora en silencio (queda en None) en vez de lanzar error —
+            no debería ocurrir nunca desde un `<input type="color">`
+            nativo, pero se valida igual por si llega manipulado. Este
+            parámetro NO valida que el vendedor tenga Plus vigente —
+            se guarda igual aunque el plan no esté vigente, para no
+            perder la elección si el vendedor vuelve a Plus más adelante.
 
     Raises:
         PerfilInvalidoError: Si el nombre o el WhatsApp quedan vacíos.
@@ -468,12 +499,89 @@ def actualizar_perfil(
     if not whatsapp_numero:
         raise PerfilInvalidoError("El número de WhatsApp es obligatorio.")
 
+    if estilo_portada and estilo_portada not in PRESETS_PORTADA:
+        estilo_portada = None
+
     vendor.nombre_negocio = nombre_negocio
     vendor.whatsapp_numero = whatsapp_numero
     vendor.bio = bio.strip() or None
     vendor.logo_url = logo_url
     vendor.banner_url = banner_url
+    vendor.estilo_portada = estilo_portada or None
+    vendor.color_acento = color_acento if (color_acento and _PATRON_COLOR_HEX.match(color_acento)) else None
     db.session.commit()
+
+
+def plan_plus_vigente(vendor: Vendor) -> bool:
+    """Indica si la tienda tiene el plan Plus activo y no vencido en este momento.
+
+    Chequeo mínimo de plan del roadmap (Fase 3, punto 22), usado como
+    condición para las funciones exclusivas de Plus (por ahora, el color
+    de acento propio del punto 12).
+
+    Args:
+        vendor: Tienda a evaluar.
+
+    Returns:
+        True si `vendor.plan` es `PlanVendor.PLUS` y, cuando tiene una
+        fecha de vencimiento (`plan_expira_en`), esa fecha todavía no
+        pasó. Un `plan_expira_en` en None junto con plan Plus se
+        considera vigente sin límite de tiempo (caso especial — el alta
+        manual de admin, `vendor_admin_service.cambiar_plan_vendor`,
+        siempre fija una fecha, así que este caso no ocurre desde ahí).
+    """
+    if vendor.plan != PlanVendor.PLUS:
+        return False
+    if vendor.plan_expira_en is None:
+        return True
+    return vendor.plan_expira_en > datetime.utcnow()
+
+
+def _contraste_legible(color_hex: str) -> str:
+    """Elige texto casi negro o blanco según qué tan clara sea `color_hex`.
+
+    Usa la fórmula de luminancia relativa perceptual (coeficientes
+    ITU-R BT.601, sin la corrección gamma completa de la fórmula WCAG
+    exacta) — suficiente para elegir entre dos opciones de contraste, no
+    para certificar una razón de contraste específica.
+
+    Args:
+        color_hex: Color en formato "#rrggbb".
+
+    Returns:
+        "#111111" si `color_hex` es un color claro, "#ffffff" si es oscuro.
+    """
+    r = int(color_hex[1:3], 16) / 255
+    g = int(color_hex[3:5], 16) / 255
+    b = int(color_hex[5:7], 16) / 255
+    luminancia = 0.299 * r + 0.587 * g + 0.114 * b
+    return "#111111" if luminancia > 0.6 else "#ffffff"
+
+
+def resolver_acento_vendor(vendor: Vendor) -> dict[str, str] | None:
+    """Resuelve el color de acento propio efectivo de una tienda, si aplica.
+
+    Punto único de entrada para la función Plus del punto 12 del roadmap
+    — tanto la tienda pública (`routes/tienda.py`) como el panel del
+    propio vendedor (`routes/vendedor.py`, vía el context processor)
+    llaman a esta función en vez de leer `vendor.color_acento`
+    directamente, para que el chequeo de plan nunca se les olvide.
+
+    Args:
+        vendor: Tienda a evaluar.
+
+    Returns:
+        None cuando la tienda no tiene un color de acento propio
+        guardado, o cuando no tiene el plan Plus vigente ahora mismo
+        (ver `plan_plus_vigente`) — en ese caso el valor puede seguir
+        guardado en `vendor.color_acento`, listo para reactivarse solo
+        con volver a Plus. Si aplica, un diccionario con `color` (el hex
+        guardado) y `contraste` (blanco o casi negro, calculado para que
+        el texto sea legible sobre ese color).
+    """
+    if not vendor.color_acento or not plan_plus_vigente(vendor):
+        return None
+    return {"color": vendor.color_acento, "contraste": _contraste_legible(vendor.color_acento)}
 
 
 def cambiar_password(vendor: Vendor, *, password_actual: str, password_nueva: str) -> None:

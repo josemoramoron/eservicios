@@ -48,11 +48,11 @@
 
 <div class="admin-stats" style="margin: 0 0 24px; max-width: 420px;">
     <div class="admin-stat-card">
-        <span class="admin-stat-card__value">{{ estadisticas.vistas }}</span>
+        <span class="admin-stat-card__value{% if acento %} admin-stat-card__value--acento{% endif %}">{{ estadisticas.vistas }}</span>
         <span class="admin-stat-card__label">Vistas de tu tienda (últimos {{ estadisticas.dias }} días)</span>
     </div>
     <div class="admin-stat-card">
-        <span class="admin-stat-card__value">{{ estadisticas.clics_whatsapp }}</span>
+        <span class="admin-stat-card__value{% if acento %} admin-stat-card__value--acento{% endif %}">{{ estadisticas.clics_whatsapp }}</span>
         <span class="admin-stat-card__label">Clics a WhatsApp (últimos {{ estadisticas.dias }} días)</span>
     </div>
 </div>

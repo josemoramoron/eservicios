@@ -13,12 +13,14 @@ from flask import current_app, make_response, render_template, request, url_for
 from app.models import TipoEventoVendor, Vendor
 from app.services.auth_service import generar_csrf_token
 from app.services.estadisticas_service import registrar_evento
+from app.services.estilos_portada_service import obtener_preset_portada
 from app.services.iconos_service import detectar_red_social
 from app.services.vendor_service import (
     href_whatsapp_producto,
     href_whatsapp_tienda,
     listar_links_activos,
     listar_productos_activos,
+    resolver_acento_vendor,
 )
 
 # La tienda pública se sirve con este `Cache-Control` (navegador y
@@ -86,6 +88,14 @@ def renderizar_tienda(vendor: Vendor):
     # "pastilla" con texto para las no reconocidas.
     enlaces = [(link, detectar_red_social(link.url)) for link in listar_links_activos(vendor)]
 
+    # El color de acento propio (e-link Plus, punto 12 del roadmap) gana
+    # sobre la galería de estilos prediseñados (punto 26, gratis) cuando
+    # ambos están elegidos — por eso el preset ni se resuelve si hay
+    # acento activo: el fallback en tienda.css (var(--color-portada-inicio,
+    # var(--color-accent))) ya cae solo en el acento del vendedor.
+    acento = resolver_acento_vendor(vendor)
+    preset_portada = None if acento else obtener_preset_portada(vendor.estilo_portada)
+
     respuesta = make_response(
         render_template(
             "tienda/publica.html",
@@ -95,6 +105,8 @@ def renderizar_tienda(vendor: Vendor):
             whatsapp_href_tienda=_href_click(href_whatsapp_tienda(vendor)),
             terminos_href=_href_dominio_principal("legal.terminos"),
             csrf_token=generar_csrf_token,
+            preset_portada=preset_portada,
+            acento=acento,
         )
     )
     respuesta.headers["Cache-Control"] = _CACHE_CONTROL_TIENDA

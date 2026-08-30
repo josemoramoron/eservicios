@@ -16,9 +16,16 @@ from datetime import datetime, timedelta
 from sqlalchemy import or_
 
 from app.extensions import db
-from app.models import TipoEventoVendor, Vendor, VendorEvento, VendorReporte
+from app.models import PlanVendor, TipoEventoVendor, Vendor, VendorEvento, VendorReporte
 from app.services.estadisticas_service import DIAS_VENTANA_ESTADISTICAS
 from app.services.r2_service import eliminar_imagen
+
+# Duración aproximada de un "mes" de plan Plus, en días. Se usa una
+# constante fija (en vez de dateutil.relativedelta) para no agregar una
+# dependencia nueva solo por esto — la imprecisión (28-31 días reales por
+# mes calendario) es aceptable para un alta manual hecha por el equipo de
+# eServicios, que ya revisa la fecha resultante antes de confirmar.
+DIAS_POR_MES_PLUS = 30
 
 # Valores aceptados en el filtro `estado` de `listar_vendors_admin` y en
 # el query string `?estado=` de la lista del panel.
@@ -116,6 +123,41 @@ def reactivar_vendor(vendor: Vendor) -> None:
         vendor: Tienda a reactivar.
     """
     vendor.activo = True
+    db.session.commit()
+
+
+def cambiar_plan_vendor(vendor: Vendor, *, plan: PlanVendor, meses: int | None = None) -> None:
+    """Cambia el plan de una tienda de forma manual desde el panel de admin.
+
+    Es el checkout manual: el equipo de eServicios confirma un pago (por
+    fuera del sistema, ver `claude/roadmap-monetizacion-e-link.md`) y
+    aplica el cambio aquí — todavía no hay pago automático (PayPal/Stripe)
+    ni generador de códigos promocionales.
+
+    Args:
+        vendor: Tienda a la que se le cambia el plan.
+        plan: Nuevo plan (`PlanVendor.FREE` o `PlanVendor.PLUS`).
+        meses: Cantidad de meses de vigencia a otorgar. Obligatorio (y
+            debe ser un entero positivo) cuando `plan` es `PLUS`;
+            ignorado cuando `plan` es `FREE`. Si la tienda ya tenía Plus
+            vigente, los meses se suman a partir de su fecha de
+            vencimiento actual (no desde hoy), para no descontar tiempo
+            ya pagado en una renovación anticipada; si ya había vencido
+            (o nunca tuvo Plus), se cuentan desde ahora.
+
+    Raises:
+        ValueError: Si `plan` es `PLUS` y `meses` no es un entero positivo.
+    """
+    if plan == PlanVendor.PLUS:
+        if not meses or meses <= 0:
+            raise ValueError("meses debe ser un entero positivo para otorgar el plan Plus.")
+        ahora = datetime.utcnow()
+        vigente = vendor.plan_expira_en if (vendor.plan_expira_en and vendor.plan_expira_en > ahora) else ahora
+        vendor.plan_expira_en = vigente + timedelta(days=DIAS_POR_MES_PLUS * meses)
+        vendor.plan = PlanVendor.PLUS
+    else:
+        vendor.plan = PlanVendor.FREE
+        vendor.plan_expira_en = None
     db.session.commit()
 
 

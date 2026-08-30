@@ -10,7 +10,7 @@
        nombre. Candidato a renombrar a .panel-* en una limpieza futura. #}
     <link rel="stylesheet" href="{{ estatico_v('css/style.css') }}">
 </head>
-<body>
+<body{% if acento %} style="--color-accent: {{ acento.color }}; --color-accent-contrast: {{ acento.contraste }};"{% endif %}>
     <header class="admin-header">
         <nav class="admin-nav">
             {# Identificador de la plataforma — a propósito ya NO es un
@@ -23,16 +23,17 @@
             <span class="admin-nav__brand">eServicios · e-link</span>
             {% if vendor %}
             {% set seccion_activa = request.endpoint.split(".", 1)[1] if request.endpoint and "." in request.endpoint else "" %}
+            {% set clase_acento = " admin-nav__link--acento" if acento else "" %}
             <a
-                class="admin-nav__link{% if seccion_activa in ("dashboard", "qr_tienda", "producto_nuevo", "producto_editar", "producto_eliminar") %} admin-nav__link--active{% endif %}"
+                class="admin-nav__link{% if seccion_activa in ("dashboard", "qr_tienda", "producto_nuevo", "producto_editar", "producto_eliminar") %} admin-nav__link--active{{ clase_acento }}{% endif %}"
                 href="{{ url_for('vendedor.dashboard') }}"
             >{{ vendor.nombre_negocio }}</a>
             <a
-                class="admin-nav__link{% if seccion_activa.startswith("enlace") %} admin-nav__link--active{% endif %}"
+                class="admin-nav__link{% if seccion_activa.startswith("enlace") %} admin-nav__link--active{{ clase_acento }}{% endif %}"
                 href="{{ url_for('vendedor.enlaces') }}"
             >Mis enlaces</a>
             <a
-                class="admin-nav__link{% if seccion_activa.startswith("perfil") %} admin-nav__link--active{% endif %}"
+                class="admin-nav__link{% if seccion_activa.startswith("perfil") %} admin-nav__link--active{{ clase_acento }}{% endif %}"
                 href="{{ url_for('vendedor.perfil') }}"
             >Mi perfil</a>
             <span class="admin-nav__spacer"></span>

@@ -45,6 +45,7 @@ from app.services.vendor_email_verificacion_service import (
     verificar_codigo,
 )
 from app.services.estadisticas_service import resumen_estadisticas
+from app.services.estilos_portada_service import listar_presets_portada
 from app.services.google_auth_service import oauth, obtener_perfil_google
 from app.services.vendor_service import (
     DIAS_ENTRE_CAMBIOS_SLUG,
@@ -80,8 +81,10 @@ from app.services.vendor_service import (
     obtener_producto_de_vendor,
     obtener_vendor_por_email,
     obtener_vendor_por_google_id,
+    plan_plus_vigente,
     registrar_vendor,
     registrar_vendor_google,
+    resolver_acento_vendor,
     slug_disponible,
     validar_formato_slug,
     vincular_google,
@@ -92,12 +95,21 @@ vendedor_bp = Blueprint("vendedor", __name__, url_prefix="/vendedor")
 
 @vendedor_bp.context_processor
 def inyectar_vendor_actual() -> dict:
-    """Expone el vendedor autenticado y el generador de CSRF a las plantillas.
+    """Expone el vendedor autenticado, su acento Plus y el generador de CSRF a las plantillas.
+
+    `acento` se calcula acá (no en cada ruta) porque el color de acento
+    del vendedor debe verse en todo el panel — nav, botones, tarjetas de
+    estadísticas —, no solo en la pantalla de perfil donde se elige.
 
     Returns:
-        Diccionario con las claves `vendor` y `csrf_token` para Jinja.
+        Diccionario con las claves `vendor`, `acento` y `csrf_token` para Jinja.
     """
-    return {"vendor": vendor_actual(), "csrf_token": generar_csrf_token}
+    vendor = vendor_actual()
+    return {
+        "vendor": vendor,
+        "acento": resolver_acento_vendor(vendor) if vendor else None,
+        "csrf_token": generar_csrf_token,
+    }
 
 
 def _verificar_csrf() -> None:
@@ -594,18 +606,34 @@ def contacto_vcard():
 @vendedor_bp.route("/perfil", methods=["GET", "POST"])
 @requiere_vendor
 def perfil():
-    """Personalización de la tienda: nombre, WhatsApp, bio, logo y portada."""
+    """Personalización de la tienda: nombre, WhatsApp, bio, logo, portada, estilo y acento."""
     vendor = vendor_actual()
+    plan_plus_activo = plan_plus_vigente(vendor)
     if request.method == "POST":
         _verificar_csrf()
         nombre_negocio = request.form.get("nombre_negocio", "")
         whatsapp_numero = request.form.get("whatsapp_numero", "")
         bio = request.form.get("bio", "")
+        estilo_portada = request.form.get("estilo_portada", "")
+
+        # El selector de color solo se envía (y solo puede cambiarse) si el
+        # vendedor tiene Plus vigente — ver plan_plus_activo/plantilla. Si el
+        # campo no llega (input deshabilitado/ausente) se conserva el valor
+        # actual en vez de borrarlo; el checkbox "quitar" es la única forma
+        # de limpiarlo, y solo aparece en el formulario cuando hay Plus.
+        if request.form.get("quitar_color_acento") == "on":
+            color_acento = None
+        elif "color_acento" in request.form and plan_plus_activo:
+            color_acento = request.form.get("color_acento", "").strip()
+        else:
+            color_acento = vendor.color_acento
 
         logo_url, error_logo = _subir_imagen_opcional("logo", f"vendors/{vendor.slug}/logo")
         if error_logo:
             flash(error_logo, "error")
-            return render_template("vendedor/perfil.html", vendor=vendor)
+            return render_template(
+                "vendedor/perfil.html", vendor=vendor, presets=listar_presets_portada(), plan_plus_activo=plan_plus_activo
+            )
         if logo_url is not None:
             r2_service.eliminar_imagen(vendor.logo_url)
         elif request.form.get("quitar_logo") == "on":
@@ -617,7 +645,9 @@ def perfil():
         banner_url, error_banner = _subir_imagen_opcional("banner", f"vendors/{vendor.slug}/banner")
         if error_banner:
             flash(error_banner, "error")
-            return render_template("vendedor/perfil.html", vendor=vendor)
+            return render_template(
+                "vendedor/perfil.html", vendor=vendor, presets=listar_presets_portada(), plan_plus_activo=plan_plus_activo
+            )
         if banner_url is not None:
             r2_service.eliminar_imagen(vendor.banner_url)
         elif request.form.get("quitar_banner") == "on":
@@ -634,14 +664,20 @@ def perfil():
                 bio=bio,
                 logo_url=logo_url,
                 banner_url=banner_url,
+                estilo_portada=estilo_portada,
+                color_acento=color_acento,
             )
         except PerfilInvalidoError as exc:
             flash(str(exc), "error")
-            return render_template("vendedor/perfil.html", vendor=vendor)
+            return render_template(
+                "vendedor/perfil.html", vendor=vendor, presets=listar_presets_portada(), plan_plus_activo=plan_plus_activo
+            )
 
         flash("Perfil actualizado.", "success")
         return redirect(url_for("vendedor.perfil"))
-    return render_template("vendedor/perfil.html", vendor=vendor)
+    return render_template(
+        "vendedor/perfil.html", vendor=vendor, presets=listar_presets_portada(), plan_plus_activo=plan_plus_activo
+    )
 
 
 @vendedor_bp.route("/perfil/password", methods=["POST"])

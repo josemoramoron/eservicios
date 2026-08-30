@@ -44,13 +44,6 @@
     <label class="admin-form__label" for="whatsapp_numero">Número de WhatsApp (con código de país, solo dígitos)</label>
     <input class="admin-form__input" type="text" id="whatsapp_numero" name="whatsapp_numero" value="{{ valores.whatsapp_numero }}" placeholder="584121234567" inputmode="numeric" maxlength="30" data-formato="whatsapp" required>
 
-    <div class="admin-form__checkbox-row">
-        <label class="admin-form__checkbox">
-            <input type="checkbox" id="acepta_terminos" name="acepta_terminos" required>
-            He leído y acepto los <a class="admin-link" href="{{ url_for('legal.terminos') }}" target="_blank">Términos y condiciones</a>
-        </label>
-    </div>
-
     <label class="admin-form__label" for="email">Correo (para entrar a tu panel)</label>
     {% set en_formulario = true %}
     {% include "vendedor/_boton_google.html" %}
@@ -63,6 +56,13 @@
 
         <label class="admin-form__label" for="password_confirmacion">Confirma tu contraseña</label>
         <input class="admin-form__input" type="password" id="password_confirmacion" name="password_confirmacion" minlength="8" data-coincide-con="password">
+    </div>
+
+    <div class="admin-form__checkbox-row">
+        <label class="admin-form__checkbox">
+            <input type="checkbox" id="acepta_terminos" name="acepta_terminos" required>
+            He leído y acepto los <a class="admin-link" href="{{ url_for('legal.terminos') }}" target="_blank">Términos y condiciones</a>
+        </label>
     </div>
 
     <div class="admin-form__actions">

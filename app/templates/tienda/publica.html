@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="{{ estatico_v('css/style.css') }}">
     <link rel="stylesheet" href="{{ estatico_v('css/tienda.css') }}">
 </head>
-<body class="tienda-body">
+<body class="tienda-body{% if acento %} tienda-body--acento{% endif %}"{% if acento %} style="--color-accent: {{ acento.color }}; --color-accent-contrast: {{ acento.contraste }};"{% elif preset_portada %} style="--color-portada-inicio: {{ preset_portada.color_inicio }}; --color-portada-fin: {{ preset_portada.color_fin }}; --color-portada-contraste: #ffffff;"{% endif %}>
 
 <div class="tienda-banner" {% if vendor.banner_url %}style="background-image: url('{{ vendor.banner_url }}');"{% endif %}></div>
 

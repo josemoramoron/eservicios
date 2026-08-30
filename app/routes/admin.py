@@ -6,7 +6,7 @@ from decimal import Decimal, InvalidOperation
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from werkzeug.datastructures import ImmutableMultiDict
 
-from app.models import Category, EstadoBlogPost, Offering, TipoOffering, Vendor
+from app.models import Category, EstadoBlogPost, Offering, PlanVendor, TipoOffering, Vendor
 from app.services.auth_service import (
     admin_actual,
     autenticar,
@@ -43,6 +43,7 @@ from app.services.estadisticas_service import resumen_estadisticas
 from app.services.vendor_admin_service import (
     ESTADO_ACTIVOS,
     ESTADO_SUSPENDIDOS,
+    cambiar_plan_vendor,
     eliminar_vendor_permanente,
     estadisticas_globales,
     listar_vendors_admin,
@@ -629,6 +630,42 @@ def vendedor_restablecer_password(vendor_id: int):
         "compártesela al vendedor por un canal seguro; no queda guardada en ningún otro lado.",
         "success",
     )
+    return redirect(url_for("admin.vendedor_detalle", vendor_id=vendor.id))
+
+
+@admin_bp.route("/vendedores/<int:vendor_id>/cambiar-plan", methods=["POST"])
+@requiere_admin
+def vendedor_cambiar_plan(vendor_id: int):
+    """Cambia el plan de una tienda de forma manual (alta/renovación de Plus, o baja a gratis).
+
+    Checkout manual: todavía no hay pago automático (PayPal/Stripe) ni
+    generador de códigos promocionales — el equipo de eServicios confirma
+    el pago por fuera del sistema y aplica el cambio aquí.
+    """
+    _verificar_csrf()
+    vendor = obtener_vendor_por_id(vendor_id)
+    if vendor is None:
+        abort(404)
+    plan_solicitado = request.form.get("plan", "")
+    if plan_solicitado == PlanVendor.PLUS.value:
+        try:
+            meses = int(request.form.get("meses", "0"))
+        except ValueError:
+            meses = 0
+        if meses <= 0:
+            flash("Indica una cantidad de meses válida para otorgar el plan Plus.", "error")
+            return redirect(url_for("admin.vendedor_detalle", vendor_id=vendor.id))
+        cambiar_plan_vendor(vendor, plan=PlanVendor.PLUS, meses=meses)
+        flash(
+            f'Tienda "{vendor.nombre_negocio}" pasó a Plus, vigente hasta el '
+            f'{vendor.plan_expira_en.strftime("%d/%m/%Y")}.',
+            "success",
+        )
+    elif plan_solicitado == PlanVendor.FREE.value:
+        cambiar_plan_vendor(vendor, plan=PlanVendor.FREE)
+        flash(f'Tienda "{vendor.nombre_negocio}" volvió al plan gratis.', "success")
+    else:
+        flash("Plan no reconocido.", "error")
     return redirect(url_for("admin.vendedor_detalle", vendor_id=vendor.id))
 
 

@@ -45,7 +45,15 @@
         <tr><td>Subdominio</td><td><code>{{ vendor.slug }}.eservicios.org</code></td></tr>
         <tr><td>Email</td><td>{{ vendor.email }}</td></tr>
         <tr><td>WhatsApp</td><td>{{ vendor.whatsapp_numero }}</td></tr>
-        <tr><td>Plan</td><td>{{ vendor.plan.value | capitalize }}</td></tr>
+        <tr>
+            <td>Plan</td>
+            <td>
+                {{ vendor.plan.value | capitalize }}
+                {% if vendor.plan.value == "plus" and vendor.plan_expira_en %}
+                (vigente hasta el {{ vendor.plan_expira_en.strftime("%d/%m/%Y") }})
+                {% endif %}
+            </td>
+        </tr>
         <tr><td>Bio</td><td>{{ vendor.bio or "—" }}</td></tr>
         <tr><td>Creada</td><td>{{ vendor.creado_en.strftime("%d/%m/%Y %H:%M") }}</td></tr>
         <tr>
@@ -122,6 +130,46 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="admin-btn" type="submit">Restablecer contraseña</button>
     </form>
+</div>
+
+<h2 class="admin-section-title">Plan</h2>
+<div style="padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 0.5rem; max-width: 420px;">
+    <p class="admin-form__hint" style="margin: 0 0 12px;">
+        Alta manual: confirma el pago por fuera del sistema (transferencia, reporte de pago, etc.)
+        y luego otorga o renueva el plan Plus aquí. Renovar antes del vencimiento suma los meses a
+        partir de la fecha en la que ya vencía, no desde hoy.
+    </p>
+    <form
+        method="post"
+        action="{{ url_for('admin.vendedor_cambiar_plan', vendor_id=vendor.id) }}"
+        class="admin-form admin-form--narrow"
+    >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="plan" value="plus">
+        <label class="admin-form__label" for="meses">Otorgar/renovar Plus por</label>
+        <select class="admin-form__input" id="meses" name="meses" required>
+            <option value="1">1 mes</option>
+            <option value="3">3 meses</option>
+            <option value="6">6 meses</option>
+            <option value="12">1 año</option>
+        </select>
+        <div class="admin-form__actions">
+            <button class="admin-btn admin-btn--primary" type="submit">Confirmar Plus</button>
+        </div>
+    </form>
+
+    {% if vendor.plan.value == "plus" %}
+    <form
+        method="post"
+        action="{{ url_for('admin.vendedor_cambiar_plan', vendor_id=vendor.id) }}"
+        style="margin-top: 10px;"
+        onsubmit="return confirm('¿Volver esta tienda al plan gratis? Pierde de inmediato los beneficios de Plus.');"
+    >
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="plan" value="free">
+        <button class="admin-btn" type="submit">Volver a plan gratis</button>
+    </form>
+    {% endif %}
 </div>
 
 <div class="admin-warning-box">

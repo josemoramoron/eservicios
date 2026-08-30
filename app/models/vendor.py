@@ -23,8 +23,12 @@ class PlanVendor(str, enum.Enum):
     """Plan de la tienda del vendedor."""
 
     FREE = "free"
-    # Planes de pago pendientes de definir (ej. PLUS = "plus") — el
-    # plan gratis no tiene límites de productos ni fotos por ahora.
+    # "e-link Plus": plan de pago (ver claude/roadmap-monetizacion-e-link.md,
+    # Fase 2). Su vigencia se controla con `Vendor.plan_expira_en`, no con
+    # este enum — una tienda puede quedar con `plan == PLUS` mientras un
+    # proceso de vencimiento programado (aún no implementado) la baja a
+    # FREE cuando `plan_expira_en` ya pasó.
+    PLUS = "plus"
 
 
 class Vendor(db.Model):
@@ -51,9 +55,29 @@ class Vendor(db.Model):
     whatsapp_numero: Mapped[str] = mapped_column(String(30), nullable=False)
     logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     banner_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Preset de color elegido para el banner/avatar de respaldo cuando no
+    # hay logo_url/banner_url propios (ver app/services/estilos_portada_service.py).
+    # None = usa el placeholder genérico de siempre (acento compartido).
+    estilo_portada: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    # Color de acento propio de la tienda ("#rrggbb"), función de e-link
+    # Plus (roadmap, Fase 2, punto 12) — reemplaza el --color-accent
+    # compartido en la tienda pública y en el panel del propio vendedor
+    # cuando el plan Plus está vigente (ver vendor_service.resolver_acento_vendor).
+    # Se guarda aunque el plan no esté vigente en este momento (ej. Plus
+    # vencido), para que el vendedor no tenga que volver a elegirlo si
+    # renueva — la aplicación real siempre se resuelve en tiempo de
+    # render, nunca solo por la presencia de este valor.
+    color_acento: Mapped[str | None] = mapped_column(String(7), nullable=True)
     plan: Mapped[PlanVendor] = mapped_column(
         SqlEnum(PlanVendor, name="plan_vendor"), default=PlanVendor.FREE, nullable=False
     )
+    # Fecha hasta la que el plan Plus está vigente. None cuando el plan es
+    # FREE, o cuando Plus se otorgó sin fecha de vencimiento (caso especial,
+    # no usado por el alta manual de admin — ver
+    # vendor_admin_service.cambiar_plan_vendor). No se usa para decidir el
+    # plan actual en tiempo real: `plan` es la fuente de verdad hasta que
+    # exista el proceso de vencimiento automático (roadmap, Fase 2-bis).
+    plan_expira_en: Mapped[datetime | None] = mapped_column(nullable=True)
     activo: Mapped[bool] = mapped_column(default=True, nullable=False)
     creado_en: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
 
