@@ -25,9 +25,13 @@
     <textarea class="admin-form__textarea" id="descripcion" name="descripcion" rows="4" required>{{ valores.descripcion }}</textarea>
     <p class="admin-form__hint">Recomendado: menos de 500 caracteres, para que se lea cómodo en la ficha del producto.</p>
 
-    <label class="admin-form__label" for="precio">Precio (USD)</label>
+    {% set moneda_actual = moneda_de(vendor.moneda) %}
+    <label class="admin-form__label" for="precio">Precio ({{ moneda_actual.nombre }} — {{ moneda_actual.simbolo }})</label>
     <input class="admin-form__input" type="text" id="precio" name="precio" value="{{ valores.precio }}" inputmode="decimal" required>
-    <p class="admin-form__hint">Usa un punto para los centavos, ej. 25.00 (no uses el símbolo $).</p>
+    <p class="admin-form__hint">
+        Usa un punto para los centavos, ej. 25.00 (no uses el símbolo). Se muestra en la moneda de tu tienda — cámbiala desde
+        <a class="admin-link" href="{{ url_for('vendedor.perfil') }}">tu perfil</a> si hace falta.
+    </p>
 
     <label class="admin-form__label">Fotos (hasta {{ max_fotos }} — la primera es la portada)</label>
     <p class="admin-form__hint" id="fotos-contador-hint">

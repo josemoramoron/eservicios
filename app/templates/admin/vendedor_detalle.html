@@ -48,6 +48,7 @@
         <tr><td>Subdominio</td><td><code>{{ vendor.slug }}.eservicios.org</code></td></tr>
         <tr><td>Email</td><td>{{ vendor.email }}</td></tr>
         <tr><td>WhatsApp</td><td>{{ vendor.whatsapp_numero }}</td></tr>
+        <tr><td>Moneda</td><td>{{ moneda_de(vendor.moneda).bandera }} {{ moneda_de(vendor.moneda).nombre }} ({{ moneda_de(vendor.moneda).codigo }})</td></tr>
         <tr>
             <td>Plan</td>
             <td>

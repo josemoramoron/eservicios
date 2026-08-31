@@ -75,7 +75,7 @@
             type="button"
             class="tienda-card"
             data-titulo="{{ producto.titulo }}"
-            data-precio="${{ '%.2f' | format(producto.precio) }}"
+            data-precio="{{ formatear_precio(producto.precio, vendor.moneda) }}"
             data-descripcion="{{ producto.descripcion }}"
             data-fotos='{{ fotos_producto | tojson }}'
             data-wa="{{ wa_href }}"
@@ -94,7 +94,7 @@
             </span>
             <span class="tienda-card__titulo">{{ producto.titulo }}</span>
             <span class="tienda-card__precio">
-                ${{ '%.2f' | format(producto.precio) }}
+                {{ formatear_precio(producto.precio, vendor.moneda) }}
                 {% if estado_stock %}
                 <span class="tienda-estado-stock tienda-estado-stock--{{ estado_stock.clave }}">{{ estado_stock.nombre }}</span>
                 {% endif %}

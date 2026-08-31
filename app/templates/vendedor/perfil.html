@@ -27,6 +27,17 @@
     <textarea class="admin-form__textarea" id="bio" name="bio" rows="3" maxlength="300" data-contador>{{ vendor.bio or '' }}</textarea>
 
     <hr class="admin-form__separador">
+    <label class="admin-form__label" for="moneda">Moneda de tu tienda</label>
+    <select class="admin-form__input" id="moneda" name="moneda" required>
+        {% for m in monedas %}
+        <option value="{{ m.clave }}" {% if vendor.moneda == m.clave %}selected{% endif %}>{{ m.bandera }} {{ m.nombre }} ({{ m.codigo }})</option>
+        {% endfor %}
+    </select>
+    <p class="admin-form__hint">
+        Gratis, para cualquier plan. Se usa para mostrar el precio de tus productos en tu tienda pública — no convierte montos entre monedas: el número que cargas en cada producto se muestra tal cual, con el símbolo de la moneda que elijas aquí.
+    </p>
+
+    <hr class="admin-form__separador">
     <label class="admin-form__label" for="logo">Logo</label>
     {% if vendor.logo_url %}
     <img src="{{ vendor.logo_url }}" alt="Logo actual" style="width: 72px; height: 72px; object-fit: cover; border-radius: 50%; margin-bottom: 8px; display: block;">

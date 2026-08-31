@@ -31,6 +31,7 @@ from app.models import (
 from app.services.badges_producto_service import BADGES_PRODUCTO, obtener_badge_producto
 from app.services.estados_stock_service import ESTADOS_STOCK, obtener_estado_stock
 from app.services.estilos_portada_service import PRESETS_PORTADA
+from app.services.monedas_service import MONEDAS, detectar_moneda_por_whatsapp
 from app.services.plantillas_tienda_service import PLANTILLAS_TIENDA, obtener_plantilla_tienda
 
 # Formato exigido para Vendor.color_acento — "#" + 6 dígitos hexadecimales,
@@ -183,7 +184,10 @@ def registrar_vendor(
         bio: Descripción corta opcional de la tienda.
 
     Returns:
-        El `Vendor` recién creado (ya guardado en la base de datos).
+        El `Vendor` recién creado (ya guardado en la base de datos), con
+        `moneda` sugerida a partir del código de país de `whatsapp_numero`
+        (ver `monedas_service.detectar_moneda_por_whatsapp`) — el
+        vendedor puede cambiarla después desde `/vendedor/perfil`.
 
     Raises:
         EmailInvalidoError: Si el correo no tiene formato válido.
@@ -204,12 +208,14 @@ def registrar_vendor(
     if Vendor.query.filter_by(slug=slug_normalizado).first() is not None:
         raise SlugDuplicadoError("Ese subdominio ya está en uso por otra tienda.")
 
+    whatsapp_numero_normalizado = whatsapp_numero.strip()
     vendor = Vendor(
         email=email_normalizado,
         slug=slug_normalizado,
         nombre_negocio=nombre_negocio.strip(),
-        whatsapp_numero=whatsapp_numero.strip(),
+        whatsapp_numero=whatsapp_numero_normalizado,
         bio=(bio or "").strip() or None,
+        moneda=detectar_moneda_por_whatsapp(whatsapp_numero_normalizado),
     )
     vendor.set_password(password)
     db.session.add(vendor)
@@ -298,14 +304,16 @@ def registrar_vendor_google(
     if Vendor.query.filter_by(slug=slug_normalizado).first() is not None:
         raise SlugDuplicadoError("Ese subdominio ya está en uso por otra tienda.")
 
+    whatsapp_numero_normalizado = whatsapp_numero.strip()
     vendor = Vendor(
         email=email_normalizado,
         google_id=google_id,
         slug=slug_normalizado,
         nombre_negocio=nombre_negocio.strip(),
-        whatsapp_numero=whatsapp_numero.strip(),
+        whatsapp_numero=whatsapp_numero_normalizado,
         bio=(bio or "").strip() or None,
         email_verificado=True,
+        moneda=detectar_moneda_por_whatsapp(whatsapp_numero_normalizado),
     )
     db.session.add(vendor)
     db.session.commit()
@@ -477,6 +485,7 @@ def actualizar_perfil(
     color_acento: str | None = None,
     plantilla: str | None = None,
     disponible_ahora: bool = True,
+    moneda: str | None = None,
 ) -> None:
     """Actualiza los datos de personalización de la tienda del vendedor.
 
@@ -530,6 +539,13 @@ def actualizar_perfil(
             nuevo cuando el formulario ni siquiera mostraba el
             interruptor (por no tener Plus vigente), igual que ya hace
             con `color_acento` (ver `vendedor.perfil`).
+        moneda: Clave de una moneda de `monedas_service` (ej. "cop"), o
+            vacío/None/inválida para conservar la moneda que la tienda
+            ya tenía (nunca queda sin moneda — a diferencia de
+            `estilo_portada`/`plantilla`, no existe un "sin moneda" para
+            resetear). Sin relación con el plan: gratis para cualquier
+            tienda, no se gatea en ningún resolver (ver
+            `monedas_service` para el porqué).
 
     Raises:
         PerfilInvalidoError: Si el nombre o el WhatsApp quedan vacíos.
@@ -555,6 +571,8 @@ def actualizar_perfil(
     vendor.color_acento = color_acento if (color_acento and _PATRON_COLOR_HEX.match(color_acento)) else None
     vendor.plantilla = plantilla or None
     vendor.disponible_ahora = disponible_ahora
+    if moneda and moneda in MONEDAS:
+        vendor.moneda = moneda
     db.session.commit()
 
 
@@ -974,7 +992,8 @@ def crear_producto(
         vendor: Tienda dueña del producto nuevo.
         titulo: Nombre del producto.
         descripcion: Descripción del producto.
-        precio: Precio en USD.
+        precio: Precio en la moneda de la tienda (`vendor.moneda`) — sin
+            conversión, se muestra tal cual (ver `monedas_service`).
         fotos_urls: URLs de las fotos del producto ya subidas a R2 (hasta
             `MAX_FOTOS_PRODUCTO`, en orden — la primera queda como portada).
         badge: Clave de un badge de `badges_producto_service` (ej.
@@ -1030,7 +1049,7 @@ def actualizar_producto(
         producto: Producto a actualizar.
         titulo: Nuevo nombre del producto.
         descripcion: Nueva descripción.
-        precio: Nuevo precio en USD.
+        precio: Nuevo precio en la moneda de la tienda (`vendor.moneda`).
         fotos_urls: URLs finales de las fotos del producto (hasta
             `MAX_FOTOS_PRODUCTO`, en orden — la primera queda como portada;
             lista vacía si se quitaron todas).

@@ -15,8 +15,12 @@ class VendorProduct(db.Model):
     """Producto que un vendedor sube a su propia tienda (`Vendor`).
 
     Sin moderación por ahora: se publica de inmediato al crearse
-    (`activo=True` por defecto). Precio siempre en USD — no hay
-    selector de moneda en esta primera versión.
+    (`activo=True` por defecto). El precio es un número simple, sin
+    moneda propia — toda la tienda cotiza en la moneda elegida por el
+    vendedor (`Vendor.moneda`, roadmap Fase 2 punto 20, gratis para
+    cualquier plan), no hay selector de moneda por producto. Ver
+    `app/services/monedas_service.formatear_precio` para el formato de
+    despliegue — no hay conversión automática entre monedas.
     """
 
     __tablename__ = "vendor_products"

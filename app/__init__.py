@@ -38,6 +38,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     from app.routes.vendedor import vendedor_bp
     from app.services.google_auth_service import configurar_oauth_google
     from app.services.iconos_service import obtener_icono_categoria, obtener_icono_red
+    from app.services.monedas_service import formatear_precio, obtener_moneda
     from app.services.site_info_service import obtener_info_sitio
     from app.services.subdominio_service import (
         resolver_redireccion_slug_antiguo,
@@ -59,6 +60,8 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     configurar_oauth_google(app)
     app.jinja_env.globals["icono_categoria"] = obtener_icono_categoria
     app.jinja_env.globals["icono_red"] = obtener_icono_red
+    app.jinja_env.globals["formatear_precio"] = formatear_precio
+    app.jinja_env.globals["moneda_de"] = obtener_moneda
 
     def estatico_v(nombre_archivo: str) -> str:
         """URL de un archivo estático con un parámetro `?v=` de cache-busting.

@@ -70,7 +70,7 @@
         {% for producto in productos %}
         <tr>
             <td>{{ producto.titulo }}</td>
-            <td>${{ "%.2f"|format(producto.precio) }}</td>
+            <td>{{ formatear_precio(producto.precio, vendor.moneda) }}</td>
             <td>{{ "Sí" if producto.activo else "No" }}</td>
             <td class="admin-table__actions">
                 <a class="admin-link" href="{{ url_for('vendedor.producto_editar', producto_id=producto.id) }}">Editar</a>

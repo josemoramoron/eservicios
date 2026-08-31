@@ -48,6 +48,7 @@ from app.services.badges_producto_service import listar_badges_producto
 from app.services.estadisticas_service import resumen_estadisticas
 from app.services.estados_stock_service import listar_estados_stock
 from app.services.estilos_portada_service import listar_presets_portada
+from app.services.monedas_service import listar_monedas
 from app.services.plantillas_tienda_service import listar_plantillas_tienda
 from app.services.google_auth_service import oauth, obtener_perfil_google
 from app.services.vendor_service import (
@@ -619,7 +620,7 @@ def contacto_vcard():
 @vendedor_bp.route("/perfil", methods=["GET", "POST"])
 @requiere_vendor
 def perfil():
-    """Personalización de la tienda: nombre, WhatsApp, bio, logo, portada, estilo, acento y plantilla."""
+    """Personalización de la tienda: nombre, WhatsApp, bio, moneda, logo, portada, estilo, acento y plantilla."""
     vendor = vendor_actual()
     plan_plus_activo = plan_plus_vigente(vendor)
     if request.method == "POST":
@@ -627,6 +628,10 @@ def perfil():
         nombre_negocio = request.form.get("nombre_negocio", "")
         whatsapp_numero = request.form.get("whatsapp_numero", "")
         bio = request.form.get("bio", "")
+        # Gratis para cualquier plan (a diferencia de plantilla/color_acento/
+        # disponible_ahora abajo) — siempre viene del <select> cerrado del
+        # formulario, sin gateo por plan_plus_activo (ver monedas_service).
+        moneda = request.form.get("moneda", "")
         estilo_portada = request.form.get("estilo_portada", "")
         # Igual que estilo_portada: un radio cerrado, no texto libre — el
         # gateo real por plan Plus ocurre en tiempo de render
@@ -665,6 +670,7 @@ def perfil():
                 plantillas=listar_plantillas_tienda(),
                 paleta_acento=listar_paleta_acento_sugerida(),
                 plan_plus_activo=plan_plus_activo,
+                monedas=listar_monedas(),
             )
         if logo_url is not None:
             r2_service.eliminar_imagen(vendor.logo_url)
@@ -684,6 +690,7 @@ def perfil():
                 plantillas=listar_plantillas_tienda(),
                 paleta_acento=listar_paleta_acento_sugerida(),
                 plan_plus_activo=plan_plus_activo,
+                monedas=listar_monedas(),
             )
         if banner_url is not None:
             r2_service.eliminar_imagen(vendor.banner_url)
@@ -705,6 +712,7 @@ def perfil():
                 color_acento=color_acento,
                 plantilla=plantilla,
                 disponible_ahora=disponible_ahora,
+                moneda=moneda,
             )
         except PerfilInvalidoError as exc:
             flash(str(exc), "error")
@@ -715,6 +723,7 @@ def perfil():
                 plantillas=listar_plantillas_tienda(),
                 paleta_acento=listar_paleta_acento_sugerida(),
                 plan_plus_activo=plan_plus_activo,
+                monedas=listar_monedas(),
             )
 
         flash("Perfil actualizado.", "success")
@@ -726,6 +735,7 @@ def perfil():
         plantillas=listar_plantillas_tienda(),
         paleta_acento=listar_paleta_acento_sugerida(),
         plan_plus_activo=plan_plus_activo,
+        monedas=listar_monedas(),
     )
 
 

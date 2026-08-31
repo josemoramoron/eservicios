@@ -110,6 +110,22 @@ class Vendor(db.Model):
     solicitud_verificacion_mensaje: Mapped[str | None] = mapped_column(Text, nullable=True)
     solicitud_verificacion_documento_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     solicitud_verificacion_en: Mapped[datetime | None] = mapped_column(nullable=True)
+    # Moneda en la que se muestran los precios de los productos de la
+    # tienda (código en minúsculas — "usd", "ves", "cop", "mxn", "pen",
+    # "eur" — ver app/services/monedas_service.py para las claves
+    # válidas). A diferencia de color_acento/plantilla/badge/
+    # disponible_ahora (Fase 2, e-link Plus), esta función es GRATIS
+    # para cualquier plan (decisión explícita de Jose, roadmap Fase 2,
+    # punto 20) — no depende de plan_plus_vigente, se lee directo en las
+    # plantillas de la tienda pública y del panel, sin ningún resolver
+    # de gating. Al registrarse se sugiere una moneda a partir del
+    # código de país del WhatsApp (ver vendor_service.registrar_vendor /
+    # monedas_service.detectar_moneda_por_whatsapp); "usd" si no hay
+    # coincidencia. El vendedor la cambia libremente después desde
+    # /vendedor/perfil. No implica conversión automática de precios: el
+    # número cargado en cada producto se muestra tal cual, solo cambia
+    # el símbolo.
+    moneda: Mapped[str] = mapped_column(String(3), default="usd", nullable=False)
     plan: Mapped[PlanVendor] = mapped_column(
         SqlEnum(PlanVendor, name="plan_vendor"), default=PlanVendor.FREE, nullable=False
     )
