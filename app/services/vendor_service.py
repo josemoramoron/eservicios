@@ -18,7 +18,18 @@ from urllib.parse import quote
 from sqlalchemy import func
 
 from app.extensions import db
-from app.models import PlanVendor, ReservedSlug, Vendor, VendorLink, VendorProduct, VendorSlugHistorial
+from app.models import (
+    PlanVendor,
+    ReservedSlug,
+    Vendor,
+    VendorCategoria,
+    VendorLink,
+    VendorProduct,
+    VendorProductAviso,
+    VendorSlugHistorial,
+)
+from app.services.badges_producto_service import BADGES_PRODUCTO, obtener_badge_producto
+from app.services.estados_stock_service import ESTADOS_STOCK, obtener_estado_stock
 from app.services.estilos_portada_service import PRESETS_PORTADA
 from app.services.plantillas_tienda_service import PLANTILLAS_TIENDA, obtener_plantilla_tienda
 
@@ -77,6 +88,18 @@ class PasswordNuevaInvalidaError(Exception):
 
 class LinkInvalidoError(Exception):
     """El título o la URL del enlace no son válidos."""
+
+
+class CategoriaInvalidaError(Exception):
+    """El nombre de la categoría no es válido (vacío, o duplicado dentro de la misma tienda)."""
+
+
+class AvisoInvalidoError(Exception):
+    """El nombre o el contacto del aviso "avísame cuando vuelva" no son válidos."""
+
+
+class SolicitudVerificacionInvalidaError(Exception):
+    """El mensaje de la solicitud de verificación viene vacío, o la tienda ya está verificada."""
 
 
 class LimiteCambiosSlugError(Exception):
@@ -453,6 +476,7 @@ def actualizar_perfil(
     estilo_portada: str | None = None,
     color_acento: str | None = None,
     plantilla: str | None = None,
+    disponible_ahora: bool = True,
 ) -> None:
     """Actualiza los datos de personalización de la tienda del vendedor.
 
@@ -497,6 +521,15 @@ def actualizar_perfil(
             vez de lanzar error. Tampoco valida el plan Plus aquí —esa
             función de e-link Plus se gatea en tiempo de render (ver
             `resolver_plantilla_vendor`), no al guardar.
+        disponible_ahora: Estado del interruptor manual "Disponible
+            ahora" / "Fuera de horario" (función de e-link Plus, punto
+            15 del roadmap). A diferencia de `estilo_portada`/`plantilla`,
+            no hay valor inválido posible (siempre es `True` o `False`),
+            así que se guarda tal cual — es responsabilidad del llamador
+            conservar `vendor.disponible_ahora` en vez de pasar un valor
+            nuevo cuando el formulario ni siquiera mostraba el
+            interruptor (por no tener Plus vigente), igual que ya hace
+            con `color_acento` (ver `vendedor.perfil`).
 
     Raises:
         PerfilInvalidoError: Si el nombre o el WhatsApp quedan vacíos.
@@ -521,6 +554,70 @@ def actualizar_perfil(
     vendor.estilo_portada = estilo_portada or None
     vendor.color_acento = color_acento if (color_acento and _PATRON_COLOR_HEX.match(color_acento)) else None
     vendor.plantilla = plantilla or None
+    vendor.disponible_ahora = disponible_ahora
+    db.session.commit()
+
+
+def solicitar_verificacion_vendedor(
+    vendor: Vendor, *, mensaje: str, documento_url: str | None = None
+) -> None:
+    """Envía (o actualiza) la solicitud de la insignia "Vendedor verificado por eServicios".
+
+    El vendedor explica por qué debería verificarse su tienda y, de
+    forma opcional, adjunta una foto de un documento de respaldo
+    (cédula, RUC/registro de negocio, factura de servicios, etc.). La
+    subida a R2 ya se resuelve en la ruta antes de llamar aquí (mismo
+    patrón que logo/portada/fotos de producto — ver
+    `routes/vendedor.py._subir_imagen_opcional`); esta función solo
+    recibe la URL ya resuelta, nunca un archivo. El equipo de eServicios
+    revisa la solicitud desde `/admin/vendedores/<id>` y la aprueba
+    (`vendor_admin_service.marcar_verificado`) o la rechaza
+    (`vendor_admin_service.rechazar_solicitud_verificacion`) — no hay
+    verificación automática todavía.
+
+    Reenviar mientras una solicitud sigue pendiente simplemente la
+    reemplaza (mensaje nuevo, fecha actualizada, y el documento solo si
+    se adjuntó uno nuevo) — no hace falta que el vendedor espere una
+    respuesta para corregir o completar lo que ya mandó.
+
+    Solicitarla requiere plan Plus vigente (decisión de Jose, 2026-08-31)
+    — a diferencia del badge en sí, que sigue siendo gratis para
+    cualquier plan una vez otorgado (`Vendor.verificado` no tiene ningún
+    resolver de gating, se lee directo en las plantillas). Es decir: el
+    plan Plus es la puerta para *pedir* la verificación, no una
+    condición para conservarla — una tienda ya verificada la mantiene
+    aunque su Plus venza después.
+
+    Args:
+        vendor: Tienda que solicita la verificación.
+        mensaje: Explicación breve de por qué debería verificarse. No
+            puede venir vacío.
+        documento_url: URL en R2 de la foto de respaldo, si el vendedor
+            adjuntó una en este envío. None si no adjuntó ninguna en
+            este envío — en ese caso se conserva el documento ya
+            guardado de un envío anterior, si había uno.
+
+    Raises:
+        SolicitudVerificacionInvalidaError: Si `mensaje` viene vacío, si
+            la tienda ya está verificada (no tiene sentido volver a
+            solicitarlo), o si el plan Plus no está vigente.
+    """
+    mensaje = (mensaje or "").strip()
+    if not mensaje:
+        raise SolicitudVerificacionInvalidaError(
+            "Contanos brevemente por qué debería verificarse tu tienda."
+        )
+    if vendor.verificado:
+        raise SolicitudVerificacionInvalidaError("Tu tienda ya está verificada.")
+    if not plan_plus_vigente(vendor):
+        raise SolicitudVerificacionInvalidaError(
+            "Solicitar la verificación es una función de e-link Plus."
+        )
+
+    vendor.solicitud_verificacion_mensaje = mensaje
+    if documento_url is not None:
+        vendor.solicitud_verificacion_documento_url = documento_url
+    vendor.solicitud_verificacion_en = datetime.utcnow()
     db.session.commit()
 
 
@@ -596,6 +693,31 @@ def resolver_acento_vendor(vendor: Vendor) -> dict[str, str] | None:
     return {"color": vendor.color_acento, "contraste": _contraste_legible(vendor.color_acento)}
 
 
+# Paleta curada de colores de acento sugeridos — atajo de un clic en
+# /vendedor/perfil (círculos), inspirada en el mismo mockup aprobado por
+# Jose para las plantillas del punto 13. No reemplaza el selector de
+# color nativo (`<input type="color">`), que sigue disponible para
+# cualquier hex personalizado que el vendedor quiera usar.
+PALETA_ACENTO_SUGERIDA: list[str] = [
+    "#2563eb",  # azul (el mismo --color-accent compartido por defecto)
+    "#e11d48",  # rosa/rojo
+    "#059669",  # verde esmeralda
+    "#7c3aed",  # violeta
+    "#ea580c",  # naranja
+    "#0f172a",  # grafito casi negro
+]
+
+
+def listar_paleta_acento_sugerida() -> list[str]:
+    """Devuelve la paleta curada de colores de acento sugeridos.
+
+    Returns:
+        Lista de colores en formato "#rrggbb", en el orden en que deben
+        mostrarse los círculos en `/vendedor/perfil`.
+    """
+    return list(PALETA_ACENTO_SUGERIDA)
+
+
 PLANTILLA_POR_DEFECTO = "clasica"
 
 
@@ -626,6 +748,105 @@ def resolver_plantilla_vendor(vendor: Vendor) -> str:
     if obtener_plantilla_tienda(vendor.plantilla) is None:
         return PLANTILLA_POR_DEFECTO
     return vendor.plantilla
+
+
+def resolver_badge_producto(vendor: Vendor, producto: VendorProduct) -> dict[str, str] | None:
+    """Resuelve el badge efectivo de un producto ("Más vendido", "Oferta", "Nuevo"), si aplica.
+
+    Punto único de entrada para la función Plus del punto 14 del roadmap
+    — `routes/tienda.py` la usa para decidir si pinta un badge sobre la
+    tarjeta del producto en la tienda pública, en vez de leer
+    `producto.badge` directamente.
+
+    Args:
+        vendor: Tienda dueña del producto (para chequear su plan).
+        producto: Producto a evaluar.
+
+    Returns:
+        None cuando el producto no tiene badge guardado, cuando la
+        tienda no tiene el plan Plus vigente ahora mismo (ver
+        `plan_plus_vigente`), o cuando la clave guardada ya no es válida
+        — en cualquiera de esos casos el valor puede seguir guardado en
+        `producto.badge`, listo para reactivarse solo con volver a Plus.
+        Si aplica, un diccionario con `clave` y `nombre` (ver
+        `badges_producto_service.obtener_badge_producto`).
+    """
+    if not producto.badge or not plan_plus_vigente(vendor):
+        return None
+    return obtener_badge_producto(producto.badge)
+
+
+def resolver_disponibilidad_vendor(vendor: Vendor) -> bool | None:
+    """Resuelve si debe mostrarse el indicador "Disponible ahora" / "Fuera de horario".
+
+    Punto único de entrada para la función Plus del punto 15 del roadmap
+    — un interruptor manual (`Vendor.disponible_ahora`, sin horarios ni
+    zona horaria calculados) que el vendedor prende/apaga desde
+    `/vendedor/perfil`.
+
+    Args:
+        vendor: Tienda a evaluar.
+
+    Returns:
+        None cuando la tienda no tiene el plan Plus vigente ahora mismo
+        (ver `plan_plus_vigente`) — en ese caso la tienda pública no
+        debe mostrar ningún indicador, aunque `vendor.disponible_ahora`
+        siga guardado. Si el plan está vigente, `True` o `False` según
+        el interruptor guardado.
+    """
+    if not plan_plus_vigente(vendor):
+        return None
+    return vendor.disponible_ahora
+
+
+def resolver_estado_stock_producto(vendor: Vendor, producto: VendorProduct) -> dict[str, str] | None:
+    """Resuelve el estado de stock efectivo de un producto ("Pocas unidades", "Agotado"), si aplica.
+
+    Punto único de entrada para la función Plus del punto 17 del roadmap
+    — `routes/tienda.py` la usa para decidir si muestra el indicador de
+    stock (y si ofrece el mini-formulario "avísame cuando vuelva") en la
+    tienda pública, en vez de leer `producto.estado_stock` directamente.
+    Mismo criterio que `resolver_badge_producto`.
+
+    Args:
+        vendor: Tienda dueña del producto (para chequear su plan).
+        producto: Producto a evaluar.
+
+    Returns:
+        None cuando el producto está en stock normal, cuando la tienda
+        no tiene el plan Plus vigente ahora mismo (ver
+        `plan_plus_vigente`), o cuando la clave guardada ya no es válida
+        — en cualquiera de esos casos el valor puede seguir guardado en
+        `producto.estado_stock`, listo para reactivarse solo con volver
+        a Plus. Si aplica, un diccionario con `clave` y `nombre` (ver
+        `estados_stock_service.obtener_estado_stock`).
+    """
+    if not producto.estado_stock or not plan_plus_vigente(vendor):
+        return None
+    return obtener_estado_stock(producto.estado_stock)
+
+
+def resolver_categorias_producto(vendor: Vendor) -> list[VendorCategoria]:
+    """Resuelve las categorías que deben ofrecerse como filtro en la tienda pública.
+
+    Punto único de entrada para la función Plus del punto 18 del roadmap
+    — igual que `resolver_badge_producto`/`resolver_estado_stock_producto`,
+    las categorías se guardan siempre pero solo se aplican (acá, se
+    muestran como filtro) mientras el plan Plus esté vigente.
+
+    Args:
+        vendor: Tienda a evaluar.
+
+    Returns:
+        Lista vacía cuando la tienda no tiene el plan Plus vigente ahora
+        mismo (ver `plan_plus_vigente`) — en ese caso la tienda pública
+        no debe mostrar el filtro de categorías, aunque sigan guardadas.
+        Si el plan está vigente, todas las categorías de la tienda (ver
+        `listar_categorias_de_vendor`).
+    """
+    if not plan_plus_vigente(vendor):
+        return []
+    return listar_categorias_de_vendor(vendor)
 
 
 def cambiar_password(vendor: Vendor, *, password_actual: str, password_nueva: str) -> None:
@@ -714,8 +935,38 @@ def _establecer_fotos_producto(producto: VendorProduct, urls: list[str]) -> None
     producto.foto_url = urls[0] if urls else None
 
 
+def _categoria_id_valida(vendor: Vendor, categoria_id: int | None) -> int | None:
+    """Verifica que un `categoria_id` pertenezca a la tienda dada antes de guardarlo.
+
+    Mismo trato de "silenciosamente inválido" que `badge`/`estado_stock`
+    en `crear_producto`/`actualizar_producto`: evita guardar un id de
+    categoría de otra tienda (formulario manipulado) sin tener que
+    lanzar un error — el producto simplemente queda sin categoría.
+
+    Args:
+        vendor: Tienda dueña del producto.
+        categoria_id: Id propuesto, o None.
+
+    Returns:
+        `categoria_id` si corresponde a una categoría de `vendor`, o None.
+    """
+    if categoria_id is None:
+        return None
+    if VendorCategoria.query.filter_by(id=categoria_id, vendor_id=vendor.id).first() is None:
+        return None
+    return categoria_id
+
+
 def crear_producto(
-    vendor: Vendor, *, titulo: str, descripcion: str, precio: Decimal, fotos_urls: list[str] | None = None
+    vendor: Vendor,
+    *,
+    titulo: str,
+    descripcion: str,
+    precio: Decimal,
+    fotos_urls: list[str] | None = None,
+    badge: str | None = None,
+    estado_stock: str | None = None,
+    categoria_id: int | None = None,
 ) -> VendorProduct:
     """Crea un producto nuevo para una tienda. Sin moderación: queda activo de inmediato.
 
@@ -726,6 +977,22 @@ def crear_producto(
         precio: Precio en USD.
         fotos_urls: URLs de las fotos del producto ya subidas a R2 (hasta
             `MAX_FOTOS_PRODUCTO`, en orden — la primera queda como portada).
+        badge: Clave de un badge de `badges_producto_service` (ej.
+            "oferta"), o vacío/None para no mostrar ninguno. Un valor que
+            no exista en `BADGES_PRODUCTO` se ignora en silencio (queda
+            en None) — mismo trato que `estilo_portada`/`plantilla` en
+            `Vendor`. No valida el plan Plus aquí — esa función se gatea
+            en tiempo de render (ver `resolver_badge_producto`).
+        estado_stock: Clave de un estado de `estados_stock_service` (ej.
+            "agotado"), o vacío/None para "Normal". Mismo trato que
+            `badge`: una clave inválida se ignora en silencio, y el plan
+            Plus se gatea en tiempo de render (ver
+            `resolver_estado_stock_producto`).
+        categoria_id: Id de una `VendorCategoria` de esta misma tienda, o
+            None para dejar el producto sin categorizar. Un id que no
+            pertenezca a `vendor` se ignora en silencio (queda en None)
+            — mismo trato que `badge`/`estado_stock`, para no depender
+            de que el formulario haya sido manipulado con un id ajeno.
 
     Returns:
         El `VendorProduct` recién creado.
@@ -735,6 +1002,9 @@ def crear_producto(
         titulo=titulo.strip(),
         descripcion=descripcion.strip(),
         precio=precio,
+        badge=badge if badge in BADGES_PRODUCTO else None,
+        estado_stock=estado_stock if estado_stock in ESTADOS_STOCK else None,
+        categoria_id=_categoria_id_valida(vendor, categoria_id),
     )
     _establecer_fotos_producto(producto, fotos_urls or [])
     db.session.add(producto)
@@ -750,6 +1020,9 @@ def actualizar_producto(
     precio: Decimal,
     fotos_urls: list[str] | None,
     activo: bool,
+    badge: str | None = None,
+    estado_stock: str | None = None,
+    categoria_id: int | None = None,
 ) -> None:
     """Actualiza los datos de un producto existente.
 
@@ -762,12 +1035,22 @@ def actualizar_producto(
             `MAX_FOTOS_PRODUCTO`, en orden — la primera queda como portada;
             lista vacía si se quitaron todas).
         activo: Si el producto debe seguir visible en la tienda pública.
+        badge: Clave de un badge de `badges_producto_service`, o
+            vacío/None para quitarlo. Mismo trato que en `crear_producto`.
+        estado_stock: Clave de un estado de `estados_stock_service`, o
+            vacío/None para volver a "Normal". Mismo trato que en `crear_producto`.
+        categoria_id: Id de una `VendorCategoria` de la misma tienda que
+            el producto, o None para quitarle la categoría. Mismo trato
+            que en `crear_producto`.
     """
     producto.titulo = titulo.strip()
     producto.descripcion = descripcion.strip()
     producto.precio = precio
     _establecer_fotos_producto(producto, fotos_urls or [])
     producto.activo = activo
+    producto.badge = badge if badge in BADGES_PRODUCTO else None
+    producto.estado_stock = estado_stock if estado_stock in ESTADOS_STOCK else None
+    producto.categoria_id = _categoria_id_valida(producto.vendor, categoria_id)
     db.session.commit()
 
 
@@ -1048,3 +1331,168 @@ def mover_link(vendor: Vendor, link: VendorLink, *, direccion: str) -> None:
 
     link.orden, vecino.orden = vecino.orden, link.orden
     db.session.commit()
+
+
+def listar_categorias_de_vendor(vendor: Vendor) -> list[VendorCategoria]:
+    """Devuelve todas las categorías de una tienda, para el panel y el filtro público.
+
+    Args:
+        vendor: Tienda dueña de las categorías.
+
+    Returns:
+        Lista de `VendorCategoria` ordenada por el campo `orden`.
+    """
+    return VendorCategoria.query.filter_by(vendor_id=vendor.id).order_by(VendorCategoria.orden).all()
+
+
+def obtener_categoria_de_vendor(vendor: Vendor, categoria_id: int) -> VendorCategoria | None:
+    """Busca una categoría por id, verificando que pertenezca a la tienda dada.
+
+    Evita que un vendedor edite o borre categorías de otra tienda
+    adivinando ids en la URL — mismo criterio que `obtener_link_de_vendor`.
+
+    Args:
+        vendor: Tienda que debería ser dueña de la categoría.
+        categoria_id: Id de la categoría buscada.
+
+    Returns:
+        La `VendorCategoria` si existe y pertenece a `vendor`, o None.
+    """
+    return VendorCategoria.query.filter_by(id=categoria_id, vendor_id=vendor.id).first()
+
+
+def crear_categoria(vendor: Vendor, *, nombre: str) -> VendorCategoria:
+    """Crea una categoría nueva para una tienda.
+
+    Se agrega al final del orden actual, mismo criterio que `crear_link`.
+
+    Args:
+        vendor: Tienda dueña de la categoría nueva.
+        nombre: Nombre visible de la categoría (ej. "Electrodomésticos").
+
+    Returns:
+        La `VendorCategoria` recién creada.
+
+    Raises:
+        CategoriaInvalidaError: Si el nombre queda vacío, o ya existe
+            otra categoría con el mismo nombre (sin distinguir mayúsculas)
+            en esta misma tienda.
+    """
+    nombre = nombre.strip()
+    if not nombre:
+        raise CategoriaInvalidaError("El nombre de la categoría es obligatorio.")
+    ya_existe = VendorCategoria.query.filter(
+        VendorCategoria.vendor_id == vendor.id, func.lower(VendorCategoria.nombre) == nombre.lower()
+    ).first()
+    if ya_existe is not None:
+        raise CategoriaInvalidaError("Ya existe una categoría con ese nombre.")
+
+    orden_maximo = (
+        db.session.query(func.max(VendorCategoria.orden))
+        .filter(VendorCategoria.vendor_id == vendor.id)
+        .scalar()
+    )
+    siguiente_orden = (orden_maximo + 1) if orden_maximo is not None else 0
+
+    categoria = VendorCategoria(vendor_id=vendor.id, nombre=nombre, orden=siguiente_orden)
+    db.session.add(categoria)
+    db.session.commit()
+    return categoria
+
+
+def actualizar_categoria(categoria: VendorCategoria, *, nombre: str) -> None:
+    """Renombra una categoría existente.
+
+    Args:
+        categoria: Categoría a actualizar.
+        nombre: Nuevo nombre visible.
+
+    Raises:
+        CategoriaInvalidaError: Si el nombre queda vacío, o ya existe
+            otra categoría con el mismo nombre (sin distinguir mayúsculas)
+            en la misma tienda.
+    """
+    nombre = nombre.strip()
+    if not nombre:
+        raise CategoriaInvalidaError("El nombre de la categoría es obligatorio.")
+    ya_existe = VendorCategoria.query.filter(
+        VendorCategoria.vendor_id == categoria.vendor_id,
+        VendorCategoria.id != categoria.id,
+        func.lower(VendorCategoria.nombre) == nombre.lower(),
+    ).first()
+    if ya_existe is not None:
+        raise CategoriaInvalidaError("Ya existe una categoría con ese nombre.")
+    categoria.nombre = nombre
+    db.session.commit()
+
+
+def eliminar_categoria(categoria: VendorCategoria) -> None:
+    """Elimina una categoría de forma permanente.
+
+    Antes de borrar la fila, pone `categoria_id` en None a mano en cada
+    producto que la tuviera asignada — limpieza manual explícita en vez
+    de depender de un `ON DELETE` a nivel de base de datos, mismo
+    criterio que `vendor_admin_service.eliminar_vendor_permanente` usa
+    para `VendorEvento`/`VendorReporte`. Los productos en sí NO se
+    borran, solo quedan sin categoría.
+
+    Args:
+        categoria: Categoría a eliminar.
+    """
+    VendorProduct.query.filter_by(categoria_id=categoria.id).update({"categoria_id": None})
+    db.session.delete(categoria)
+    db.session.commit()
+
+
+def crear_aviso_producto(producto: VendorProduct, *, nombre: str, contacto: str) -> VendorProductAviso:
+    """Guarda un pedido de "avísame cuando vuelva" sobre un producto agotado.
+
+    El producto (y por lo tanto la tienda dueña) se resuelve del lado
+    del servidor a partir del `product_id` recibido por la ruta pública
+    — nunca de un campo oculto del formulario — mismo criterio de
+    seguridad que `vendor_reporte_service.crear_reporte` usa para el
+    `vendor_id`. Esta función en sí no vuelve a validar eso: asume que
+    el llamador (la ruta) ya resolvió `producto` de forma confiable.
+
+    Args:
+        producto: Producto sobre el que se pide el aviso.
+        nombre: Nombre de quien pide el aviso.
+        contacto: Email o WhatsApp de quien pide el aviso, para avisarle.
+
+    Returns:
+        El `VendorProductAviso` creado.
+
+    Raises:
+        AvisoInvalidoError: Si el nombre o el contacto quedan vacíos.
+    """
+    nombre = nombre.strip()
+    contacto = contacto.strip()
+    if not nombre:
+        raise AvisoInvalidoError("El nombre es obligatorio.")
+    if not contacto:
+        raise AvisoInvalidoError("El contacto es obligatorio.")
+    aviso = VendorProductAviso(vendor_product_id=producto.id, nombre=nombre, contacto=contacto)
+    db.session.add(aviso)
+    db.session.commit()
+    return aviso
+
+
+def listar_avisos_de_vendor(vendor: Vendor) -> list[VendorProductAviso]:
+    """Lista los avisos "avísame cuando vuelva" recibidos por todos los productos de una tienda.
+
+    Visible solo en el panel del propio vendedor (no en `/admin`) — es
+    información comercial del vendedor, no un asunto de moderación.
+
+    Args:
+        vendor: Tienda cuyos avisos se listan.
+
+    Returns:
+        Lista de `VendorProductAviso` de todos los productos de `vendor`,
+        más recientes primero.
+    """
+    return (
+        VendorProductAviso.query.join(VendorProduct)
+        .filter(VendorProduct.vendor_id == vendor.id)
+        .order_by(VendorProductAviso.creado_en.desc())
+        .all()
+    )

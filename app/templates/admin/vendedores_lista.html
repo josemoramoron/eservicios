@@ -21,6 +21,10 @@
         <span class="admin-stat-card__label">Suspendidas</span>
     </div>
     <div class="admin-stat-card">
+        <span class="admin-stat-card__value">{{ estadisticas.solicitudes_verificacion_pendientes }}</span>
+        <span class="admin-stat-card__label">Solicitudes de verificación pendientes</span>
+    </div>
+    <div class="admin-stat-card">
         <span class="admin-stat-card__value">{{ estadisticas.vistas }}</span>
         <span class="admin-stat-card__label">Vistas ({{ estadisticas.dias }} días)</span>
     </div>
@@ -68,6 +72,11 @@
                 <span class="admin-badge">Activa</span>
                 {% else %}
                 <span class="admin-badge admin-badge--suspendida">Suspendida</span>
+                {% endif %}
+                {% if vendor.verificado %}
+                <span class="admin-badge">Verificada</span>
+                {% elif vendor.solicitud_verificacion_en %}
+                <span class="admin-badge admin-badge--pendiente">Verificación pendiente</span>
                 {% endif %}
             </td>
             <td>{{ vendor.productos | length }}</td>

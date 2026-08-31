@@ -21,6 +21,10 @@ from app.services.vendor_service import (
     listar_links_activos,
     listar_productos_activos,
     resolver_acento_vendor,
+    resolver_badge_producto,
+    resolver_categorias_producto,
+    resolver_disponibilidad_vendor,
+    resolver_estado_stock_producto,
     resolver_plantilla_vendor,
 )
 
@@ -93,8 +97,17 @@ def renderizar_tienda(vendor: Vendor):
 
     productos = listar_productos_activos(vendor)
     productos_con_href = [
-        (producto, _href_click(href_whatsapp_producto(vendor, producto))) for producto in productos
+        (
+            producto,
+            _href_click(href_whatsapp_producto(vendor, producto)),
+            resolver_badge_producto(vendor, producto),
+            resolver_estado_stock_producto(vendor, producto),
+        )
+        for producto in productos
     ]
+    # Filtro de categorías (punto 18 del roadmap) — lista vacía cuando no
+    # hay Plus vigente, y el template simplemente no pinta el filtro.
+    categorias = resolver_categorias_producto(vendor)
 
     # Todos los enlaces se pintan como botón circular: una red reconocida
     # muestra su ícono de marca (ver `iconos_service.detectar_red_social`);
@@ -111,6 +124,10 @@ def renderizar_tienda(vendor: Vendor):
     acento = resolver_acento_vendor(vendor)
     preset_portada = None if acento else obtener_preset_portada(vendor.estilo_portada)
     plantilla = resolver_plantilla_vendor(vendor)
+    # None cuando no hay Plus vigente (el indicador simplemente no se
+    # muestra) — True/False es el valor real que el vendedor eligió a
+    # mano (ver vendor_service.resolver_disponibilidad_vendor, punto 15).
+    disponibilidad = resolver_disponibilidad_vendor(vendor)
 
     respuesta = make_response(
         render_template(
@@ -123,6 +140,8 @@ def renderizar_tienda(vendor: Vendor):
             csrf_token=generar_csrf_token,
             preset_portada=preset_portada,
             acento=acento,
+            disponibilidad=disponibilidad,
+            categorias=categorias,
         )
     )
     respuesta.headers["Cache-Control"] = _CACHE_CONTROL_TIENDA

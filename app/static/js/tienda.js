@@ -20,6 +20,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const precio = document.getElementById("tienda-modal-precio");
     const descripcion = document.getElementById("tienda-modal-descripcion");
     const botonWhatsapp = document.getElementById("tienda-modal-wa");
+    const estadoStock = document.getElementById("tienda-modal-estado-stock");
+    const formAviso = document.getElementById("tienda-aviso-form");
+    const avisoProductoId = document.getElementById("tienda-aviso-producto-id");
 
     function mostrarFotoPrincipal(url) {
         foto.style.backgroundImage = url ? `url('${url}')` : "";
@@ -52,6 +55,27 @@ document.addEventListener("DOMContentLoaded", () => {
         precio.textContent = tarjeta.dataset.precio;
         descripcion.textContent = tarjeta.dataset.descripcion;
         botonWhatsapp.href = tarjeta.dataset.wa;
+
+        // Estado de stock (punto 17) — data-estado-stock viene vacío
+        // ("") para "Normal", así que el texto y el mini-formulario
+        // "avísame cuando vuelva" quedan ocultos salvo que el producto
+        // tenga un estado guardado (y, para el formulario, que además
+        // sea "agotado" en particular).
+        const claveEstadoStock = tarjeta.dataset.estadoStock || "";
+        if (claveEstadoStock) {
+            estadoStock.textContent = tarjeta.dataset.estadoStockNombre || "";
+            estadoStock.className = `tienda-estado-stock tienda-estado-stock--${claveEstadoStock}`;
+            estadoStock.hidden = false;
+        } else {
+            estadoStock.hidden = true;
+        }
+
+        if (claveEstadoStock === "agotado" && formAviso && avisoProductoId) {
+            avisoProductoId.value = tarjeta.dataset.productoId || "";
+            formAviso.hidden = false;
+        } else if (formAviso) {
+            formAviso.hidden = true;
+        }
 
         let fotos = [];
         try {

@@ -16,6 +16,9 @@
         {% else %}
         <span class="admin-badge admin-badge--suspendida">Suspendida</span>
         {% endif %}
+        {% if vendor.verificado %}
+        <span class="admin-badge">Verificada</span>
+        {% endif %}
     </h1>
     <a class="admin-btn" href="https://{{ vendor.slug }}.eservicios.org" target="_blank" rel="noopener">Ver tienda pública</a>
 </div>
@@ -130,6 +133,38 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="admin-btn" type="submit">Restablecer contraseña</button>
     </form>
+
+    {% if vendor.verificado %}
+    <form method="post" action="{{ url_for('admin.vendedor_quitar_verificacion', vendor_id=vendor.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="admin-btn" type="submit">Quitar verificación</button>
+    </form>
+    {% elif vendor.solicitud_verificacion_en %}
+    <div style="padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 0.5rem; max-width: 480px;">
+        <p style="margin: 0 0 6px;"><strong>Solicitud de verificación pendiente</strong> — enviada el {{ vendor.solicitud_verificacion_en.strftime('%d/%m/%Y') }}.</p>
+        <p style="margin: 0 0 12px; white-space: pre-wrap;">{{ vendor.solicitud_verificacion_mensaje }}</p>
+        {% if vendor.solicitud_verificacion_documento_url %}
+        <p style="margin: 0 0 12px;">
+            <a href="{{ vendor.solicitud_verificacion_documento_url }}" target="_blank" rel="noopener">Ver documento adjunto</a>
+        </p>
+        {% endif %}
+        <div style="display: flex; gap: 8px;">
+            <form method="post" action="{{ url_for('admin.vendedor_verificar', vendor_id=vendor.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="admin-btn admin-btn--primary" type="submit">Aprobar</button>
+            </form>
+            <form method="post" action="{{ url_for('admin.vendedor_rechazar_verificacion', vendor_id=vendor.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="admin-btn" type="submit">Rechazar</button>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <form method="post" action="{{ url_for('admin.vendedor_verificar', vendor_id=vendor.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="admin-btn admin-btn--primary" type="submit">Marcar como verificada</button>
+    </form>
+    {% endif %}
 </div>
 
 <h2 class="admin-section-title">Plan</h2>

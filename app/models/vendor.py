@@ -76,6 +76,40 @@ class Vendor(db.Model):
     # momento; la aplicación real siempre se resuelve en tiempo de render
     # (ver vendor_service.resolver_plantilla_vendor).
     plantilla: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Indicador manual "Disponible ahora" / "Fuera de horario", función de
+    # e-link Plus (roadmap, Fase 2, punto 15) — el vendedor lo prende/apaga
+    # a mano desde /vendedor/perfil (sin horarios ni zona horaria
+    # calculados automáticamente, decisión explícita de Jose). True por
+    # defecto (una tienda nueva empieza mostrándose disponible). El
+    # indicador solo se muestra en la tienda pública mientras el plan Plus
+    # esté vigente (ver vendor_service.resolver_disponibilidad_vendor) —
+    # el valor igual se conserva si el plan vence, listo para reactivarse.
+    disponible_ahora: Mapped[bool] = mapped_column(default=True, nullable=False)
+    # Insignia "Vendedor verificado por eServicios" — señal de confianza,
+    # no de personalización visual, así que a diferencia de color_acento/
+    # plantilla/badge/disponible_ahora NO depende del plan Plus: gratis
+    # para cualquier tienda (roadmap, Fase 2, punto 21 — clasificación
+    # explícita de Jose, distinta de la de los demás puntos de esa fase).
+    # Se activa/desactiva a mano por el equipo de eServicios desde el
+    # panel de admin (ver vendor_admin_service.marcar_verificado /
+    # quitar_verificacion) — no hay verificación automática todavía.
+    verificado: Mapped[bool] = mapped_column(default=False, nullable=False)
+    # Solicitud de verificación pendiente de revisión — el vendedor la
+    # envía desde /vendedor/perfil/verificacion con un mensaje y,
+    # opcionalmente, una foto de un documento de respaldo subida a R2
+    # (ver vendor_service.solicitar_verificacion_vendedor). Los 3 campos
+    # son nullable a propósito: None/None/None = sin solicitud activa.
+    # solicitud_verificacion_en no-None = hay una solicitud pendiente de
+    # revisión. El equipo de eServicios la aprueba (vendor_admin_service.
+    # marcar_verificado, que limpia estos 3 campos y otorga `verificado`)
+    # o la rechaza (vendor_admin_service.rechazar_solicitud_verificacion,
+    # que los limpia igual pero sin tocar `verificado`) desde
+    # /admin/vendedores/<id>. Reenviar mientras hay una pendiente
+    # simplemente la reemplaza — no hace falta esperar una respuesta
+    # para corregir o completar lo ya enviado.
+    solicitud_verificacion_mensaje: Mapped[str | None] = mapped_column(Text, nullable=True)
+    solicitud_verificacion_documento_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    solicitud_verificacion_en: Mapped[datetime | None] = mapped_column(nullable=True)
     plan: Mapped[PlanVendor] = mapped_column(
         SqlEnum(PlanVendor, name="plan_vendor"), default=PlanVendor.FREE, nullable=False
     )
@@ -111,6 +145,9 @@ class Vendor(db.Model):
     )
     links: Mapped[list["VendorLink"]] = relationship(  # noqa: F821
         back_populates="vendor", cascade="all, delete-orphan", order_by="VendorLink.orden"
+    )
+    categorias: Mapped[list["VendorCategoria"]] = relationship(  # noqa: F821
+        back_populates="vendor", cascade="all, delete-orphan", order_by="VendorCategoria.orden"
     )
     slugs_anteriores: Mapped[list["VendorSlugHistorial"]] = relationship(  # noqa: F821
         back_populates="vendor",

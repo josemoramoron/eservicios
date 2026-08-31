@@ -26,6 +26,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
 
     from app import models  # noqa: F401  (registra los modelos para Flask-Migrate)
     from app.routes.admin import admin_bp
+    from app.routes.avisos import avisos_bp
     from app.routes.blog import blog_bp
     from app.routes.clicks import clicks_bp
     from app.routes.health import health_bp
@@ -54,6 +55,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     app.register_blueprint(clicks_bp)
     app.register_blueprint(legal_bp)
     app.register_blueprint(reportes_bp)
+    app.register_blueprint(avisos_bp)
     configurar_oauth_google(app)
     app.jinja_env.globals["icono_categoria"] = obtener_icono_categoria
     app.jinja_env.globals["icono_red"] = obtener_icono_red
@@ -161,6 +163,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
             request.path.startswith("/static/")
             or request.path.startswith("/e-link-click/")
             or request.path.startswith("/e-link-reporte/")
+            or request.path.startswith("/e-link-aviso/")
         ):
             return None
 

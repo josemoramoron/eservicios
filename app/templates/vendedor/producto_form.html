@@ -72,6 +72,92 @@
         </label>
     </div>
 
+    <hr class="admin-form__separador">
+    <label class="admin-form__label">Badge (etiqueta destacada)</label>
+    {% if plan_plus_activo %}
+    <div class="admin-plantillas">
+        <label class="admin-plantillas__opcion">
+            <input type="radio" name="badge" value="" {% if not valores.badge %}checked{% endif %}>
+            <span class="admin-plantillas__caja">
+                <span class="admin-plantillas__nombre">Ninguno</span>
+                <span class="admin-plantillas__desc">El producto se muestra sin ninguna etiqueta.</span>
+            </span>
+        </label>
+        {% for badge in badges %}
+        <label class="admin-plantillas__opcion">
+            <input type="radio" name="badge" value="{{ badge.clave }}" {% if valores.badge == badge.clave %}checked{% endif %}>
+            <span class="admin-plantillas__caja">
+                <span class="admin-plantillas__nombre">{{ badge.nombre }}</span>
+            </span>
+        </label>
+        {% endfor %}
+    </div>
+    <p class="admin-form__hint">
+        Función de e-link Plus. Resalta este producto en tu tienda pública con una etiqueta corta.
+    </p>
+    {% else %}
+    <p class="admin-form__hint">
+        Destacar un producto con un badge ("Más vendido", "Oferta", "Nuevo") es una función de <strong>e-link Plus</strong> — contáctanos para activarlo en tu cuenta.
+    </p>
+    {% endif %}
+
+    <hr class="admin-form__separador">
+    <label class="admin-form__label">Estado de stock</label>
+    {% if plan_plus_activo %}
+    <div class="admin-plantillas">
+        <label class="admin-plantillas__opcion">
+            <input type="radio" name="estado_stock" value="" {% if not valores.estado_stock %}checked{% endif %}>
+            <span class="admin-plantillas__caja">
+                <span class="admin-plantillas__nombre">Normal</span>
+                <span class="admin-plantillas__desc">No se muestra ningún indicador de stock.</span>
+            </span>
+        </label>
+        {% for estado in estados_stock %}
+        <label class="admin-plantillas__opcion">
+            <input type="radio" name="estado_stock" value="{{ estado.clave }}" {% if valores.estado_stock == estado.clave %}checked{% endif %}>
+            <span class="admin-plantillas__caja">
+                <span class="admin-plantillas__nombre">{{ estado.nombre }}</span>
+            </span>
+        </label>
+        {% endfor %}
+    </div>
+    <p class="admin-form__hint">
+        Función de e-link Plus. Aviso manual, sin conteo exacto — vos decidís cuándo marcarlo.
+        Cuando está en "Agotado", tu tienda pública ofrece un mini-formulario para que tus
+        clientes pidan que les avises cuando vuelva (revisa los pedidos en
+        <a href="{{ url_for('vendedor.avisos') }}">Avisos</a>).
+    </p>
+    {% else %}
+    <p class="admin-form__hint">
+        Marcar "Pocas unidades" o "Agotado" (y recibir pedidos de "avísame cuando vuelva") es una función de <strong>e-link Plus</strong> — contáctanos para activarlo en tu cuenta.
+    </p>
+    {% endif %}
+
+    <hr class="admin-form__separador">
+    <label class="admin-form__label" for="categoria_id">Categoría</label>
+    {% if plan_plus_activo %}
+    <select class="admin-form__input" id="categoria_id" name="categoria_id">
+        <option value="">Sin categoría</option>
+        {% for categoria in categorias %}
+        <option value="{{ categoria.id }}" {% if valores.categoria_id == categoria.id %}selected{% endif %}>{{ categoria.nombre }}</option>
+        {% endfor %}
+    </select>
+    <p class="admin-form__hint">
+        Función de e-link Plus.
+        {% if not categorias %}
+        Todavía no tienes categorías —
+        <a href="{{ url_for('vendedor.categoria_nueva') }}">crea la primera</a>.
+        {% else %}
+        Se muestra como filtro en tu tienda pública. Administra tus categorías en
+        <a href="{{ url_for('vendedor.categorias') }}">Categorías</a>.
+        {% endif %}
+    </p>
+    {% else %}
+    <p class="admin-form__hint">
+        Agrupar tus productos en categorías propias es una función de <strong>e-link Plus</strong> — contáctanos para activarlo en tu cuenta.
+    </p>
+    {% endif %}
+
     <div class="admin-form__actions">
         <button class="admin-btn admin-btn--primary" type="submit">Guardar</button>
         <a class="admin-btn" href="{{ url_for('vendedor.dashboard') }}">Cancelar</a>

@@ -47,8 +47,11 @@ from app.services.vendor_admin_service import (
     eliminar_vendor_permanente,
     estadisticas_globales,
     listar_vendors_admin,
+    marcar_verificado,
     obtener_vendor_por_id,
+    quitar_verificacion,
     reactivar_vendor,
+    rechazar_solicitud_verificacion,
     restablecer_password_vendor,
     suspender_vendor,
 )
@@ -613,6 +616,45 @@ def vendedor_reactivar(vendor_id: int):
         abort(404)
     reactivar_vendor(vendor)
     flash(f'Tienda "{vendor.nombre_negocio}" reactivada.', "success")
+    return redirect(request.referrer or url_for("admin.vendedor_detalle", vendor_id=vendor.id))
+
+
+@admin_bp.route("/vendedores/<int:vendor_id>/verificar", methods=["POST"])
+@requiere_admin
+def vendedor_verificar(vendor_id: int):
+    """Otorga la insignia "Vendedor verificado por eServicios" (gratis, cualquier plan)."""
+    _verificar_csrf()
+    vendor = obtener_vendor_por_id(vendor_id)
+    if vendor is None:
+        abort(404)
+    marcar_verificado(vendor)
+    flash(f'Tienda "{vendor.nombre_negocio}" marcada como verificada.', "success")
+    return redirect(request.referrer or url_for("admin.vendedor_detalle", vendor_id=vendor.id))
+
+
+@admin_bp.route("/vendedores/<int:vendor_id>/quitar-verificacion", methods=["POST"])
+@requiere_admin
+def vendedor_quitar_verificacion(vendor_id: int):
+    """Retira la insignia "Vendedor verificado por eServicios"."""
+    _verificar_csrf()
+    vendor = obtener_vendor_por_id(vendor_id)
+    if vendor is None:
+        abort(404)
+    quitar_verificacion(vendor)
+    flash(f'Se quitó la verificación de "{vendor.nombre_negocio}".', "success")
+    return redirect(request.referrer or url_for("admin.vendedor_detalle", vendor_id=vendor.id))
+
+
+@admin_bp.route("/vendedores/<int:vendor_id>/rechazar-verificacion", methods=["POST"])
+@requiere_admin
+def vendedor_rechazar_verificacion(vendor_id: int):
+    """Rechaza la solicitud de verificación pendiente, sin otorgar la insignia."""
+    _verificar_csrf()
+    vendor = obtener_vendor_por_id(vendor_id)
+    if vendor is None:
+        abort(404)
+    rechazar_solicitud_verificacion(vendor)
+    flash(f'Se rechazó la solicitud de verificación de "{vendor.nombre_negocio}".', "success")
     return redirect(request.referrer or url_for("admin.vendedor_detalle", vendor_id=vendor.id))
 
 

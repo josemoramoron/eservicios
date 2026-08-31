@@ -16,8 +16,19 @@
         {% endif %}
     </div>
 
-    <h1 class="tienda-nombre">{{ vendor.nombre_negocio }}</h1>
+    <h1 class="tienda-nombre">
+        {{ vendor.nombre_negocio }}
+        {% if vendor.verificado %}
+        {% include "tienda/_insignia_verificado.html" %}
+        {% endif %}
+    </h1>
     <p class="tienda-subdominio">{{ vendor.slug }}.eservicios.org</p>
+    {% if disponibilidad is not none %}
+    <p class="tienda-disponibilidad{% if disponibilidad %} tienda-disponibilidad--activa{% endif %}">
+        <span class="tienda-disponibilidad__punto" aria-hidden="true"></span>
+        {{ "Disponible ahora" if disponibilidad else "Fuera de horario" }}
+    </p>
+    {% endif %}
     {% if vendor.bio %}<p class="tienda-bio">{{ vendor.bio }}</p>{% endif %}
 
     <a class="tienda-whatsapp-btn" href="{{ whatsapp_href_tienda }}" target="_blank" rel="noopener">
@@ -56,8 +67,9 @@
 <main class="tienda-main">
     {% if productos %}
     <p class="tienda-seccion-titulo">Productos</p>
+    {% include "tienda/_filtro_categorias.html" %}
     <div class="tienda-grid">
-        {% for producto, wa_href in productos %}
+        {% for producto, wa_href, badge, estado_stock in productos %}
         {% set fotos_producto = (producto.fotos | map(attribute='url') | list) if producto.fotos else ([producto.foto_url] if producto.foto_url else []) %}
         <button
             type="button"
@@ -67,14 +79,26 @@
             data-descripcion="{{ producto.descripcion }}"
             data-fotos='{{ fotos_producto | tojson }}'
             data-wa="{{ wa_href }}"
+            data-producto-id="{{ producto.id }}"
+            data-estado-stock="{{ estado_stock.clave if estado_stock else '' }}"
+            data-estado-stock-nombre="{{ estado_stock.nombre if estado_stock else '' }}"
+            {% if categorias %}data-categoria="{{ producto.categoria.nombre if producto.categoria else '' }}"{% endif %}
         >
             <span class="tienda-card__foto" {% if producto.foto_url %}style="background-image: url('{{ producto.foto_url }}');"{% endif %}>
+                {% if badge %}
+                <span class="tienda-badge-producto tienda-badge-producto--{{ badge.clave }}">{{ badge.nombre }}</span>
+                {% endif %}
                 {% if not producto.foto_url %}
                 <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><path d="m21 15-5-5L5 21"></path></svg>
                 {% endif %}
             </span>
             <span class="tienda-card__titulo">{{ producto.titulo }}</span>
-            <span class="tienda-card__precio">${{ '%.2f' | format(producto.precio) }}</span>
+            <span class="tienda-card__precio">
+                ${{ '%.2f' | format(producto.precio) }}
+                {% if estado_stock %}
+                <span class="tienda-estado-stock tienda-estado-stock--{{ estado_stock.clave }}">{{ estado_stock.nombre }}</span>
+                {% endif %}
+            </span>
         </button>
         {% endfor %}
     </div>
@@ -89,5 +113,6 @@
 
 <script src="{{ estatico_v('js/tienda.js') }}"></script>
 <script src="{{ estatico_v('js/compartir.js') }}"></script>
+{% if categorias %}<script src="{{ estatico_v('js/categoria_filtro.js') }}"></script>{% endif %}
 </body>
 </html>

@@ -1,0 +1,30 @@
+{% extends "vendedor/base.html" %}
+
+{% block title %}{{ 'Editar' if categoria else 'Nueva' }} categoría — Mis categorías{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a class="breadcrumb__link" href="{{ url_for('health.index') }}">eServicios</a>
+    <a class="breadcrumb__link" href="{{ url_for('vendedor.dashboard') }}">Mi tienda</a>
+    <a class="breadcrumb__link" href="{{ url_for('vendedor.categorias') }}">Mis categorías</a>
+    <span class="breadcrumb__current">{{ 'Editar categoría' if categoria else 'Nueva categoría' }}</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<h1 class="admin-page-title">{{ 'Editar categoría' if categoria else 'Nueva categoría' }}</h1>
+
+<form method="post" class="admin-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <label class="admin-form__label" for="nombre">Nombre</label>
+    <input class="admin-form__input" type="text" id="nombre" name="nombre" value="{{ valores.nombre }}" placeholder="Ej. Electrodomésticos" maxlength="60" data-contador required>
+
+    <div class="admin-form__actions">
+        <button class="admin-btn admin-btn--primary" type="submit">Guardar</button>
+        <a class="admin-btn" href="{{ url_for('vendedor.categorias') }}">Cancelar</a>
+    </div>
+</form>
+
+<script src="{{ estatico_v('js/validacion_formulario.js') }}"></script>
+{% endblock %}

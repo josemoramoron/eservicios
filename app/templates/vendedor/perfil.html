@@ -26,6 +26,7 @@
     <label class="admin-form__label" for="bio">Descripción corta de tu tienda</label>
     <textarea class="admin-form__textarea" id="bio" name="bio" rows="3" maxlength="300" data-contador>{{ vendor.bio or '' }}</textarea>
 
+    <hr class="admin-form__separador">
     <label class="admin-form__label" for="logo">Logo</label>
     {% if vendor.logo_url %}
     <img src="{{ vendor.logo_url }}" alt="Logo actual" style="width: 72px; height: 72px; object-fit: cover; border-radius: 50%; margin-bottom: 8px; display: block;">
@@ -53,7 +54,8 @@
         JPG, PNG o WEBP, máximo 5 MB cada imagen.
     </p>
 
-    <label class="admin-form__label" style="margin-top: 14px;">Diseño de portada y avatar (mientras no subas tus propias imágenes)</label>
+    <hr class="admin-form__separador">
+    <label class="admin-form__label">Diseño de portada y avatar (mientras no subas tus propias imágenes)</label>
     <div class="admin-galeria-estilos">
         <label class="admin-galeria-estilos__opcion">
             <input type="radio" name="estilo_portada" value="" {% if not vendor.estilo_portada %}checked{% endif %}>
@@ -69,11 +71,23 @@
         {% endfor %}
     </div>
     <p class="admin-form__hint">
-        Se usa en el banner y el círculo de tu tienda pública mientras no subas tu propio logo o portada.
+        Se usa en el banner y el círculo de tu tienda pública mientras no subas tu propio logo o portada — se nota en las 3 plantillas (abajo), no solo en la Clásica.
     </p>
 
-    <label class="admin-form__label" style="margin-top: 14px;">Color de acento propio</label>
+    <hr class="admin-form__separador">
+    <label class="admin-form__label">Color de acento propio</label>
     {% if plan_plus_activo %}
+    <div class="admin-paleta-acento">
+        {% for color in paleta_acento %}
+        <button
+            type="button"
+            class="admin-paleta-acento__circulo{% if vendor.color_acento == color %} admin-paleta-acento__circulo--activo{% endif %}"
+            data-color="{{ color }}"
+            style="background-color: {{ color }};"
+            aria-label="Usar el color {{ color }}"
+        ></button>
+        {% endfor %}
+    </div>
     <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
         <input
             type="color"
@@ -82,11 +96,12 @@
             value="{{ vendor.color_acento or '#2563eb' }}"
             style="width: 48px; height: 38px; padding: 2px; border: 1px solid var(--color-border); border-radius: 8px; cursor: pointer; background: none;"
         >
-        <label class="admin-form__checkbox" style="margin: 0;">
-            <input type="checkbox" name="quitar_color_acento">
-            Usar el azul de eServicios (quitar mi color)
-        </label>
+        <span style="font-size: 0.8rem; color: var(--color-text-muted);">o elige un color personalizado</span>
     </div>
+    <label class="admin-form__checkbox" style="margin-top: 8px;">
+        <input type="checkbox" name="quitar_color_acento">
+        Usar el azul de eServicios (quitar mi color)
+    </label>
     <p class="admin-form__hint">
         Función de e-link Plus. Se aplica en tu tienda pública (banner, avatar, precios, botones, fondo) y en este panel — gana sobre el diseño prediseñado de arriba si tienes ambos elegidos.
     </p>
@@ -96,28 +111,49 @@
     </p>
     {% endif %}
 
-    <label class="admin-form__label" style="margin-top: 14px;">Plantilla de tu tienda</label>
+    <hr class="admin-form__separador">
+    <label class="admin-form__label">Plantilla de tu tienda</label>
     {% if plan_plus_activo %}
-    <div class="admin-galeria-estilos">
-        <label class="admin-galeria-estilos__opcion">
+    <div class="admin-plantillas">
+        <label class="admin-plantillas__opcion">
             <input type="radio" name="plantilla" value="" {% if not vendor.plantilla %}checked{% endif %}>
-            <span class="admin-galeria-estilos__nombre">Clásica</span>
+            <span class="admin-plantillas__caja">
+                <span class="admin-plantillas__nombre">Clásica</span>
+                <span class="admin-plantillas__desc">El diseño de siempre, gratis para todos.</span>
+            </span>
         </label>
         {% for plantilla in plantillas %}
-        <label class="admin-galeria-estilos__opcion">
+        <label class="admin-plantillas__opcion">
             <input type="radio" name="plantilla" value="{{ plantilla.clave }}" {% if vendor.plantilla == plantilla.clave %}checked{% endif %}>
-            <span class="admin-galeria-estilos__nombre">{{ plantilla.nombre }}</span>
+            <span class="admin-plantillas__caja">
+                <span class="admin-plantillas__nombre">{{ plantilla.nombre }}</span>
+                <span class="admin-plantillas__desc">{{ plantilla.descripcion }}</span>
+            </span>
         </label>
         {% endfor %}
     </div>
     <p class="admin-form__hint">
-        Función de e-link Plus. Cada plantilla trae su propia tipografía y organización de productos —
-        {% for plantilla in plantillas %}{{ plantilla.nombre }}: {{ plantilla.descripcion }}{% if not loop.last %} · {% endif %}{% endfor %}.
-        Tu color de acento y diseño de portada elegidos arriba se aplican en las tres.
+        Función de e-link Plus. Cada plantilla trae su propia tipografía y organización de productos — tu color de acento y diseño de portada elegidos arriba se aplican en las tres.
     </p>
     {% else %}
     <p class="admin-form__hint">
         Elegir una plantilla prediseñada para tu tienda es una función de <strong>e-link Plus</strong> — contáctanos para activarlo en tu cuenta.
+    </p>
+    {% endif %}
+
+    <hr class="admin-form__separador">
+    <label class="admin-form__label">Disponibilidad</label>
+    {% if plan_plus_activo %}
+    <label class="admin-form__checkbox">
+        <input type="checkbox" name="disponible_ahora" {% if vendor.disponible_ahora %}checked{% endif %}>
+        Mostrar mi tienda como "Disponible ahora"
+    </label>
+    <p class="admin-form__hint">
+        Función de e-link Plus. Actívalo cuando estés atendiendo pedidos y desactívalo cuando no — tú decides cuándo, no hay horarios automáticos.
+    </p>
+    {% else %}
+    <p class="admin-form__hint">
+        Mostrar un indicador de "Disponible ahora" / "Fuera de horario" en tu tienda es una función de <strong>e-link Plus</strong> — contáctanos para activarlo en tu cuenta.
     </p>
     {% endif %}
 
@@ -133,6 +169,32 @@
         Cambiarlo afecta los enlaces que ya hayas compartido — tiene límites de seguridad.
     </p>
     <a class="admin-btn" href="{{ url_for('vendedor.perfil_slug') }}">Cambiar subdominio</a>
+</div>
+
+<h2 style="font-size: 1.05rem; margin: 2rem 0 0.75rem;">Insignia "Vendedor verificado"</h2>
+<div style="padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 0.5rem; max-width: 420px;">
+    {% if vendor.verificado %}
+    <p style="margin: 0;">Tu tienda ya está <strong>verificada</strong> — el ícono se muestra junto al nombre de tu tienda.</p>
+    {% elif vendor.solicitud_verificacion_en %}
+    <p style="margin: 0 0 6px;">Tienes una solicitud <strong>pendiente de revisión</strong>.</p>
+    <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0 0 12px;">
+        {% if plan_plus_activo %}
+        Puedes reenviarla para corregirla o completarla mientras esperas respuesta.
+        {% else %}
+        Sigue en revisión con normalidad. Necesitas e-link Plus vigente para reenviarla.
+        {% endif %}
+    </p>
+    <a class="admin-btn" href="{{ url_for('vendedor.perfil_verificacion') }}">Ver{% if plan_plus_activo %}/editar{% endif %} solicitud</a>
+    {% elif plan_plus_activo %}
+    <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0 0 12px;">
+        Cuéntale al equipo de eServicios por qué debería verificarse tu tienda — una vez otorgada, la insignia queda gratis para siempre, sin importar tu plan después.
+    </p>
+    <a class="admin-btn" href="{{ url_for('vendedor.perfil_verificacion') }}">Solicitar verificación</a>
+    {% else %}
+    <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0;">
+        Solicitarla es una función de <strong>e-link Plus</strong> — contáctanos para activarlo en tu cuenta. Una vez otorgada, la insignia queda gratis para siempre.
+    </p>
+    {% endif %}
 </div>
 
 <h2 style="font-size: 1.05rem; margin: 2rem 0 0.75rem;">Seguridad</h2>
@@ -163,4 +225,5 @@
 
 {% block scripts %}
 <script src="{{ estatico_v('js/validacion_formulario.js') }}"></script>
+<script src="{{ estatico_v('js/paleta_acento.js') }}"></script>
 {% endblock %}

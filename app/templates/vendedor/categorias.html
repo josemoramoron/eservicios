@@ -1,0 +1,57 @@
+{% extends "vendedor/base.html" %}
+
+{% block title %}Mis categorías — {{ vendor.nombre_negocio }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a class="breadcrumb__link" href="{{ url_for('health.index') }}">eServicios</a>
+    <a class="breadcrumb__link" href="{{ url_for('vendedor.dashboard') }}">Mi tienda</a>
+    <span class="breadcrumb__current">Mis categorías</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="admin-page-header">
+    <h1 class="admin-page-title">Mis categorías</h1>
+    <a class="admin-btn admin-btn--primary" href="{{ url_for('vendedor.categoria_nueva') }}">Nueva categoría</a>
+</div>
+
+<p class="admin-auth__title" style="font-size: 14px; margin: -8px 0 20px;">
+    Agrupa tus productos en categorías propias (ej. "Electrodomésticos", "Ofertas") —
+    se muestran como filtro en tu tienda pública. Función de e-link Plus.
+</p>
+
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>Categoría</th>
+            <th>Productos</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for categoria in categorias %}
+        <tr>
+            <td>{{ categoria.nombre }}</td>
+            <td>{{ categoria.productos | length }}</td>
+            <td class="admin-table__actions">
+                <a class="admin-link" href="{{ url_for('vendedor.categoria_editar', categoria_id=categoria.id) }}">Editar</a>
+                <form
+                    method="post"
+                    action="{{ url_for('vendedor.categoria_eliminar', categoria_id=categoria.id) }}"
+                    class="admin-table__inline-form"
+                    onsubmit="return confirm('¿Eliminar \'{{ categoria.nombre }}\'? Los productos que la tengan quedarán sin categoría.');"
+                >
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="admin-link admin-link--danger" type="submit">Eliminar</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="3">Todavía no has creado ninguna categoría.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

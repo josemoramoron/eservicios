@@ -1,0 +1,13 @@
+{# Filtro de categorías — compartido por las 3 plantillas. Punto 18 del
+   roadmap (e-link Plus): `categorias` llega vacía cuando la tienda no
+   tiene el plan Plus vigente (ver vendor_service.resolver_categorias_producto),
+   así que el filtro simplemente no se pinta en ese caso. Puramente
+   client-side (categoria_filtro.js), sin recargar la página. #}
+{% if categorias %}
+<div class="tienda-categorias" data-categoria-filtro-grupo>
+    <button type="button" class="tienda-categorias__pill tienda-categorias__pill--activa" data-categoria-pill="">Todas</button>
+    {% for categoria in categorias %}
+    <button type="button" class="tienda-categorias__pill" data-categoria-pill="{{ categoria.nombre }}">{{ categoria.nombre }}</button>
+    {% endfor %}
+</div>
+{% endif %}

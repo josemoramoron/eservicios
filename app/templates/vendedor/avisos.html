@@ -1,0 +1,45 @@
+{% extends "vendedor/base.html" %}
+
+{% block title %}Avisos "avísame cuando vuelva" — {{ vendor.nombre_negocio }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a class="breadcrumb__link" href="{{ url_for('health.index') }}">eServicios</a>
+    <a class="breadcrumb__link" href="{{ url_for('vendedor.dashboard') }}">Mi tienda</a>
+    <span class="breadcrumb__current">Avisos</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<h1 class="admin-page-title">Avisos "avísame cuando vuelva"</h1>
+
+<p class="admin-auth__title" style="font-size: 14px; margin: -8px 0 20px;">
+    Personas que pidieron que les avises cuando un producto marcado como "Agotado" vuelva a
+    tener stock — contáctalas directamente por el medio que dejaron. Función de e-link Plus.
+</p>
+
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>Producto</th>
+            <th>Nombre</th>
+            <th>Contacto</th>
+            <th>Fecha</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for aviso in avisos %}
+        <tr>
+            <td>{{ aviso.producto.titulo }}</td>
+            <td>{{ aviso.nombre }}</td>
+            <td>{{ aviso.contacto }}</td>
+            <td>{{ aviso.creado_en.strftime("%d/%m/%Y %H:%M") }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="4">Todavía no recibiste ningún aviso.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

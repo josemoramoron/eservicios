@@ -44,7 +44,9 @@ from app.services.vendor_email_verificacion_service import (
     reenviar_codigo,
     verificar_codigo,
 )
+from app.services.badges_producto_service import listar_badges_producto
 from app.services.estadisticas_service import resumen_estadisticas
+from app.services.estados_stock_service import listar_estados_stock
 from app.services.estilos_portada_service import listar_presets_portada
 from app.services.plantillas_tienda_service import listar_plantillas_tienda
 from app.services.google_auth_service import oauth, obtener_perfil_google
@@ -54,6 +56,7 @@ from app.services.vendor_service import (
     MAX_CAMBIOS_SLUG,
     MAX_FOTOS_PRODUCTO,
     CambioSlugMuyRecienteError,
+    CategoriaInvalidaError,
     EmailDuplicadoError,
     EmailInvalidoError,
     LimiteCambiosSlugError,
@@ -64,22 +67,30 @@ from app.services.vendor_service import (
     SlugDuplicadoError,
     SlugInvalidoError,
     SlugReservadoError,
+    SolicitudVerificacionInvalidaError,
+    actualizar_categoria,
     actualizar_link,
     actualizar_perfil,
     actualizar_producto,
     cambiar_password,
     cambiar_slug,
     construir_vcard,
+    crear_categoria,
     crear_link,
     crear_producto,
+    eliminar_categoria,
     eliminar_link,
     eliminar_producto,
     estado_cambio_slug,
+    listar_avisos_de_vendor,
+    listar_categorias_de_vendor,
     listar_links_de_vendor,
     listar_productos_de_vendor,
     mover_link,
+    obtener_categoria_de_vendor,
     obtener_link_de_vendor,
     obtener_producto_de_vendor,
+    listar_paleta_acento_sugerida,
     obtener_vendor_por_email,
     obtener_vendor_por_google_id,
     plan_plus_vigente,
@@ -87,6 +98,7 @@ from app.services.vendor_service import (
     registrar_vendor_google,
     resolver_acento_vendor,
     slug_disponible,
+    solicitar_verificacion_vendedor,
     validar_formato_slug,
     vincular_google,
 )
@@ -634,6 +646,15 @@ def perfil():
         else:
             color_acento = vendor.color_acento
 
+        # El interruptor de disponibilidad (punto 15) solo se muestra en
+        # el formulario si hay Plus vigente — mismo criterio que
+        # color_acento/plantilla: si no está en el formulario, se
+        # conserva el valor actual en vez de resetearlo a False.
+        if plan_plus_activo:
+            disponible_ahora = request.form.get("disponible_ahora") == "on"
+        else:
+            disponible_ahora = vendor.disponible_ahora
+
         logo_url, error_logo = _subir_imagen_opcional("logo", f"vendors/{vendor.slug}/logo")
         if error_logo:
             flash(error_logo, "error")
@@ -642,6 +663,7 @@ def perfil():
                 vendor=vendor,
                 presets=listar_presets_portada(),
                 plantillas=listar_plantillas_tienda(),
+                paleta_acento=listar_paleta_acento_sugerida(),
                 plan_plus_activo=plan_plus_activo,
             )
         if logo_url is not None:
@@ -660,6 +682,7 @@ def perfil():
                 vendor=vendor,
                 presets=listar_presets_portada(),
                 plantillas=listar_plantillas_tienda(),
+                paleta_acento=listar_paleta_acento_sugerida(),
                 plan_plus_activo=plan_plus_activo,
             )
         if banner_url is not None:
@@ -681,6 +704,7 @@ def perfil():
                 estilo_portada=estilo_portada,
                 color_acento=color_acento,
                 plantilla=plantilla,
+                disponible_ahora=disponible_ahora,
             )
         except PerfilInvalidoError as exc:
             flash(str(exc), "error")
@@ -689,6 +713,7 @@ def perfil():
                 vendor=vendor,
                 presets=listar_presets_portada(),
                 plantillas=listar_plantillas_tienda(),
+                paleta_acento=listar_paleta_acento_sugerida(),
                 plan_plus_activo=plan_plus_activo,
             )
 
@@ -699,6 +724,7 @@ def perfil():
         vendor=vendor,
         presets=listar_presets_portada(),
         plantillas=listar_plantillas_tienda(),
+        paleta_acento=listar_paleta_acento_sugerida(),
         plan_plus_activo=plan_plus_activo,
     )
 
@@ -796,6 +822,69 @@ def perfil_slug():
     )
 
 
+@vendedor_bp.route("/perfil/verificacion", methods=["GET", "POST"])
+@requiere_vendor
+def perfil_verificacion():
+    """Pantalla dedicada para solicitar (o revisar el estado de) la insignia "Vendedor verificado".
+
+    Separada de `/vendedor/perfil` por el mismo motivo que
+    `/vendedor/perfil/slug`: es un flujo propio (explicación + documento
+    opcional de respaldo), no una casilla más del formulario de
+    personalización.
+
+    **Solicitarla requiere plan Plus vigente** (decisión de Jose,
+    2026-08-31) — a diferencia del badge en sí, que sigue siendo gratis
+    para cualquier plan una vez otorgado (`vendor.verificado` se lee
+    directo en las plantillas, sin ningún resolver de gating). Si la
+    tienda ya está verificada, se muestra ese estado sin importar el
+    plan. Si tiene una solicitud pendiente, se muestra igual aunque el
+    Plus haya vencido después de enviarla (no se le "cancela" la
+    revisión por eso) — pero para reenviarla o mandar una nueva hace
+    falta Plus vigente en ese momento, chequeo real en
+    `vendor_service.solicitar_verificacion_vendedor`.
+    """
+    vendor = vendor_actual()
+    plan_plus_activo = plan_plus_vigente(vendor)
+    if request.method == "POST":
+        _verificar_csrf()
+        if not plan_plus_activo:
+            flash("Solicitar la verificación es una función de e-link Plus.", "error")
+            return render_template(
+                "vendedor/perfil_verificacion.html", vendor=vendor, plan_plus_activo=plan_plus_activo
+            )
+        mensaje = request.form.get("mensaje", "")
+
+        documento_url, error_documento = _subir_imagen_opcional(
+            "documento", f"vendors/{vendor.slug}/verificacion"
+        )
+        if error_documento:
+            flash(error_documento, "error")
+            return render_template(
+                "vendedor/perfil_verificacion.html", vendor=vendor, plan_plus_activo=plan_plus_activo
+            )
+
+        documento_anterior = vendor.solicitud_verificacion_documento_url
+        try:
+            solicitar_verificacion_vendedor(vendor, mensaje=mensaje, documento_url=documento_url)
+        except SolicitudVerificacionInvalidaError as exc:
+            flash(str(exc), "error")
+            return render_template(
+                "vendedor/perfil_verificacion.html", vendor=vendor, plan_plus_activo=plan_plus_activo
+            )
+
+        if documento_url is not None and documento_anterior:
+            # Se adjuntó un documento nuevo reemplazando uno de un envío
+            # anterior — se borra el viejo para no dejarlo huérfano en R2
+            # (mismo criterio que logo/portada en perfil()).
+            r2_service.eliminar_imagen(documento_anterior)
+
+        flash("Solicitud enviada. El equipo de eServicios la va a revisar pronto.", "success")
+        return redirect(url_for("vendedor.perfil_verificacion"))
+    return render_template(
+        "vendedor/perfil_verificacion.html", vendor=vendor, plan_plus_activo=plan_plus_activo
+    )
+
+
 # --- Productos ---
 
 
@@ -829,13 +918,25 @@ def _producto_a_valores(producto: VendorProduct | None) -> dict:
         Diccionario con los valores a precargar en el formulario.
     """
     if producto is None:
-        return {"titulo": "", "descripcion": "", "precio": "", "fotos": _fotos_valores(None), "activo": True}
+        return {
+            "titulo": "",
+            "descripcion": "",
+            "precio": "",
+            "fotos": _fotos_valores(None),
+            "activo": True,
+            "badge": None,
+            "estado_stock": None,
+            "categoria_id": None,
+        }
     return {
         "titulo": producto.titulo,
         "descripcion": producto.descripcion,
         "precio": producto.precio,
         "fotos": _fotos_valores(producto),
         "activo": producto.activo,
+        "badge": producto.badge,
+        "estado_stock": producto.estado_stock,
+        "categoria_id": producto.categoria_id,
     }
 
 
@@ -880,16 +981,36 @@ def _leer_datos_producto(form: ImmutableMultiDict) -> tuple[dict, str | None]:
 def producto_nuevo():
     """Formulario para subir un producto nuevo a la tienda (hasta 5 fotos)."""
     vendor = vendor_actual()
+    plan_plus_activo = plan_plus_vigente(vendor)
     if request.method == "POST":
         _verificar_csrf()
         datos, error = _leer_datos_producto(request.form)
+        # El selector de badge/estado de stock/categoría (puntos 14, 17 y
+        # 18) solo se muestra/acepta con Plus vigente — igual que
+        # color_acento en el perfil. Un producto nuevo no tiene valor
+        # previo que preservar, así que sin Plus simplemente no se guarda
+        # ninguno.
+        badge = request.form.get("badge", "") if plan_plus_activo else ""
+        estado_stock = request.form.get("estado_stock", "") if plan_plus_activo else ""
+        categoria_id_raw = request.form.get("categoria_id", "") if plan_plus_activo else ""
+        categoria_id = int(categoria_id_raw) if categoria_id_raw.isdigit() else None
         if error:
             flash(error, "error")
             return render_template(
                 "vendedor/producto_form.html",
                 producto=None,
-                valores={**datos, "fotos": _fotos_valores(None)},
+                valores={
+                    **datos,
+                    "fotos": _fotos_valores(None),
+                    "badge": badge or None,
+                    "estado_stock": estado_stock or None,
+                    "categoria_id": categoria_id,
+                },
                 max_fotos=MAX_FOTOS_PRODUCTO,
+                plan_plus_activo=plan_plus_activo,
+                badges=listar_badges_producto(),
+                estados_stock=listar_estados_stock(),
+                categorias=listar_categorias_de_vendor(vendor),
             )
 
         fotos_urls, error_fotos, advertencia_fotos = _resolver_fotos_producto(vendor, None)
@@ -898,8 +1019,18 @@ def producto_nuevo():
             return render_template(
                 "vendedor/producto_form.html",
                 producto=None,
-                valores={**datos, "fotos": _fotos_valores(None)},
+                valores={
+                    **datos,
+                    "fotos": _fotos_valores(None),
+                    "badge": badge or None,
+                    "estado_stock": estado_stock or None,
+                    "categoria_id": categoria_id,
+                },
                 max_fotos=MAX_FOTOS_PRODUCTO,
+                plan_plus_activo=plan_plus_activo,
+                badges=listar_badges_producto(),
+                estados_stock=listar_estados_stock(),
+                categorias=listar_categorias_de_vendor(vendor),
             )
 
         crear_producto(
@@ -908,6 +1039,9 @@ def producto_nuevo():
             descripcion=datos["descripcion"],
             precio=datos["precio"],
             fotos_urls=fotos_urls,
+            badge=badge,
+            estado_stock=estado_stock,
+            categoria_id=categoria_id,
         )
         if advertencia_fotos:
             flash(advertencia_fotos, "error")
@@ -918,6 +1052,10 @@ def producto_nuevo():
         producto=None,
         valores=_producto_a_valores(None),
         max_fotos=MAX_FOTOS_PRODUCTO,
+        plan_plus_activo=plan_plus_activo,
+        badges=listar_badges_producto(),
+        estados_stock=listar_estados_stock(),
+        categorias=listar_categorias_de_vendor(vendor),
     )
 
 
@@ -926,19 +1064,43 @@ def producto_nuevo():
 def producto_editar(producto_id: int):
     """Formulario para editar un producto existente de la tienda (hasta 5 fotos)."""
     vendor = vendor_actual()
+    plan_plus_activo = plan_plus_vigente(vendor)
     producto = obtener_producto_de_vendor(vendor, producto_id)
     if producto is None:
         abort(404)
     if request.method == "POST":
         _verificar_csrf()
         datos, error = _leer_datos_producto(request.form)
+        # Igual que en producto_nuevo: badge/estado de stock/categoría
+        # solo pueden cambiarse con Plus vigente. Sin Plus se conserva el
+        # valor que el producto ya tenía en vez de borrarlo (mismo
+        # criterio que color_acento).
+        if plan_plus_activo:
+            badge = request.form.get("badge", "")
+            estado_stock = request.form.get("estado_stock", "")
+            categoria_id_raw = request.form.get("categoria_id", "")
+            categoria_id = int(categoria_id_raw) if categoria_id_raw.isdigit() else None
+        else:
+            badge = producto.badge or ""
+            estado_stock = producto.estado_stock or ""
+            categoria_id = producto.categoria_id
         if error:
             flash(error, "error")
             return render_template(
                 "vendedor/producto_form.html",
                 producto=producto,
-                valores={**datos, "fotos": _fotos_valores(producto)},
+                valores={
+                    **datos,
+                    "fotos": _fotos_valores(producto),
+                    "badge": badge or None,
+                    "estado_stock": estado_stock or None,
+                    "categoria_id": categoria_id,
+                },
                 max_fotos=MAX_FOTOS_PRODUCTO,
+                plan_plus_activo=plan_plus_activo,
+                badges=listar_badges_producto(),
+                estados_stock=listar_estados_stock(),
+                categorias=listar_categorias_de_vendor(vendor),
             )
 
         fotos_urls, error_fotos, advertencia_fotos = _resolver_fotos_producto(vendor, producto)
@@ -947,8 +1109,18 @@ def producto_editar(producto_id: int):
             return render_template(
                 "vendedor/producto_form.html",
                 producto=producto,
-                valores={**datos, "fotos": _fotos_valores(producto)},
+                valores={
+                    **datos,
+                    "fotos": _fotos_valores(producto),
+                    "badge": badge or None,
+                    "estado_stock": estado_stock or None,
+                    "categoria_id": categoria_id,
+                },
                 max_fotos=MAX_FOTOS_PRODUCTO,
+                plan_plus_activo=plan_plus_activo,
+                badges=listar_badges_producto(),
+                estados_stock=listar_estados_stock(),
+                categorias=listar_categorias_de_vendor(vendor),
             )
 
         actualizar_producto(
@@ -958,6 +1130,9 @@ def producto_editar(producto_id: int):
             precio=datos["precio"],
             fotos_urls=fotos_urls,
             activo=datos["activo"],
+            badge=badge,
+            estado_stock=estado_stock,
+            categoria_id=categoria_id,
         )
         if advertencia_fotos:
             flash(advertencia_fotos, "error")
@@ -968,6 +1143,10 @@ def producto_editar(producto_id: int):
         producto=producto,
         valores=_producto_a_valores(producto),
         max_fotos=MAX_FOTOS_PRODUCTO,
+        plan_plus_activo=plan_plus_activo,
+        badges=listar_badges_producto(),
+        estados_stock=listar_estados_stock(),
+        categorias=listar_categorias_de_vendor(vendor),
     )
 
 
@@ -1083,3 +1262,95 @@ def enlace_mover(link_id: int):
     if direccion in ("arriba", "abajo"):
         mover_link(vendor, link, direccion=direccion)
     return redirect(url_for("vendedor.enlaces"))
+
+
+# --- Categorías de producto (punto 18) ---
+
+
+def _categoria_a_valores(categoria) -> dict:
+    """Convierte una `VendorCategoria` (o None) en un dict plano para el formulario.
+
+    Args:
+        categoria: Categoría existente, o None para un formulario vacío.
+
+    Returns:
+        Diccionario con los valores a precargar en el formulario.
+    """
+    if categoria is None:
+        return {"nombre": ""}
+    return {"nombre": categoria.nombre}
+
+
+@vendedor_bp.route("/categorias")
+@requiere_vendor
+def categorias():
+    """Lista las categorías de producto de la tienda del vendedor."""
+    return render_template(
+        "vendedor/categorias.html", categorias=listar_categorias_de_vendor(vendor_actual())
+    )
+
+
+@vendedor_bp.route("/categorias/nueva", methods=["GET", "POST"])
+@requiere_vendor
+def categoria_nueva():
+    """Formulario para agregar una categoría nueva a la tienda."""
+    if request.method == "POST":
+        _verificar_csrf()
+        nombre = request.form.get("nombre", "")
+        try:
+            crear_categoria(vendor_actual(), nombre=nombre)
+        except CategoriaInvalidaError as exc:
+            flash(str(exc), "error")
+            return render_template("vendedor/categoria_form.html", categoria=None, valores={"nombre": nombre})
+        flash(f'Categoría "{nombre}" agregada.', "success")
+        return redirect(url_for("vendedor.categorias"))
+    return render_template("vendedor/categoria_form.html", categoria=None, valores=_categoria_a_valores(None))
+
+
+@vendedor_bp.route("/categorias/<int:categoria_id>/editar", methods=["GET", "POST"])
+@requiere_vendor
+def categoria_editar(categoria_id: int):
+    """Formulario para editar una categoría existente de la tienda."""
+    vendor = vendor_actual()
+    categoria = obtener_categoria_de_vendor(vendor, categoria_id)
+    if categoria is None:
+        abort(404)
+    if request.method == "POST":
+        _verificar_csrf()
+        nombre = request.form.get("nombre", "")
+        try:
+            actualizar_categoria(categoria, nombre=nombre)
+        except CategoriaInvalidaError as exc:
+            flash(str(exc), "error")
+            return render_template(
+                "vendedor/categoria_form.html", categoria=categoria, valores={"nombre": nombre}
+            )
+        flash(f'Categoría "{nombre}" actualizada.', "success")
+        return redirect(url_for("vendedor.categorias"))
+    return render_template(
+        "vendedor/categoria_form.html", categoria=categoria, valores=_categoria_a_valores(categoria)
+    )
+
+
+@vendedor_bp.route("/categorias/<int:categoria_id>/eliminar", methods=["POST"])
+@requiere_vendor
+def categoria_eliminar(categoria_id: int):
+    """Elimina una categoría de la tienda (los productos que la tenían quedan sin categoría)."""
+    _verificar_csrf()
+    categoria = obtener_categoria_de_vendor(vendor_actual(), categoria_id)
+    if categoria is None:
+        abort(404)
+    nombre = categoria.nombre
+    eliminar_categoria(categoria)
+    flash(f'Categoría "{nombre}" eliminada.', "success")
+    return redirect(url_for("vendedor.categorias"))
+
+
+# --- Avisos "avísame cuando vuelva" (punto 17) ---
+
+
+@vendedor_bp.route("/avisos")
+@requiere_vendor
+def avisos():
+    """Lista los pedidos de "avísame cuando vuelva" recibidos en todos los productos de la tienda."""
+    return render_template("vendedor/avisos.html", avisos=listar_avisos_de_vendor(vendor_actual()))

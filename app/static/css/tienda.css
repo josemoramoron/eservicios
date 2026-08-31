@@ -82,6 +82,186 @@
     max-width: 340px;
 }
 
+/* Indicador "Disponible ahora" / "Fuera de horario" (punto 15, e-link
+   Plus) — compartido por las 3 plantillas (Clásica, Editorial,
+   Minimalista lo reusan tal cual, sin variante propia). Reusa las
+   variables ya temáticas de whatsapp/texto-muted en vez de crear
+   colores nuevos: activa = mismo verde que el botón de WhatsApp,
+   inactiva = el gris muted de siempre. */
+.tienda-disponibilidad {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+}
+
+.tienda-disponibilidad__punto {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: var(--color-text-muted);
+}
+
+.tienda-disponibilidad--activa {
+    color: var(--color-whatsapp);
+}
+
+.tienda-disponibilidad--activa .tienda-disponibilidad__punto {
+    background-color: var(--color-whatsapp);
+}
+
+/* Badge de producto ("Más vendido", "Oferta", "Nuevo" — punto 14, e-link
+   Plus). Por defecto se posiciona como overlay en la esquina de una foto
+   (ver position: relative agregado a .tienda-card__foto y
+   .editorial-featured__img); la variante --inline (Minimalista, que no
+   tiene elemento de foto) se pinta como una etiqueta de texto en línea. */
+.tienda-badge-producto {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--color-badge-contraste);
+    background-color: var(--color-text-muted);
+    z-index: 1;
+}
+
+.tienda-badge-producto--mas_vendido {
+    background-color: var(--color-badge-vendido);
+}
+
+.tienda-badge-producto--oferta {
+    background-color: var(--color-badge-oferta);
+}
+
+.tienda-badge-producto--nuevo {
+    background-color: var(--color-badge-nuevo);
+}
+
+.tienda-badge-producto--inline {
+    position: static;
+    display: inline-block;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+/* Insignia "Vendedor verificado por eServicios" (punto 21) — gratis
+   para cualquier plan, junto al nombre de la tienda en las 3
+   plantillas (ver tienda/_insignia_verificado.html). Reusa
+   --color-whatsapp (el mismo verde de "confirmado/activo" que ya usa
+   .tienda-disponibilidad--activa) en vez de un color nuevo, para no
+   competir visualmente con --color-accent de la tienda. */
+.tienda-verificado {
+    display: inline-flex;
+    vertical-align: middle;
+    margin-left: 4px;
+    color: var(--color-whatsapp);
+}
+
+/* Estado manual de stock ("Pocas unidades", "Agotado" — punto 17,
+   e-link Plus). A propósito es texto junto al precio, no otro badge de
+   esquina de foto, para no competir visualmente con
+   .tienda-badge-producto (punto 14, marketing) — ver el comentario en
+   --color-stock-* de style.css. */
+.tienda-estado-stock {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #ffffff;
+    vertical-align: middle;
+}
+
+.tienda-estado-stock--pocas_unidades {
+    background-color: var(--color-stock-pocas);
+}
+
+.tienda-estado-stock--agotado {
+    background-color: var(--color-stock-agotado);
+}
+
+/* Filtro de categorías (punto 18, e-link Plus) — pastillas puramente
+   client-side (ver static/js/categoria_filtro.js), no recargan la
+   página. .tienda-card[hidden] asegura que ocultar una tarjeta filtrada
+   gane sobre el display propio de .tienda-card (una clase tiene más
+   especificidad que el selector de atributo [hidden] del navegador). */
+.tienda-categorias {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 16px;
+}
+
+.tienda-categorias__pill {
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background-color: transparent;
+    color: var(--color-text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.tienda-categorias__pill--activa {
+    background-color: var(--color-accent);
+    border-color: var(--color-accent);
+    color: var(--color-accent-contrast);
+}
+
+.tienda-card[hidden] {
+    display: none !important;
+}
+
+/* Mini-formulario "avísame cuando vuelva" (punto 17, e-link Plus) —
+   dentro del modal de producto, oculto por defecto (ver
+   tienda/_modal_producto.html y static/js/tienda.js), visible solo
+   cuando el producto abierto tiene estado_stock == "agotado". */
+.tienda-aviso-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+}
+
+.tienda-aviso-form__titulo {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.tienda-aviso-form__input {
+    padding: 10px 12px;
+    border-radius: 0.5rem;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-size: 14px;
+}
+
+.tienda-aviso-form__btn {
+    padding: 10px 16px;
+    border-radius: 999px;
+    border: none;
+    background-color: var(--color-accent);
+    color: var(--color-accent-contrast);
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+}
+
 .tienda-whatsapp-btn {
     display: inline-flex;
     align-items: center;
@@ -238,6 +418,7 @@
 }
 
 .tienda-card__foto {
+    position: relative;
     aspect-ratio: 1;
     display: flex;
     align-items: center;
@@ -458,6 +639,16 @@
     font-family: "Work Sans", system-ui, sans-serif;
 }
 
+/* Franja de color arriba de todo — hace visible el acento propio (punto
+   12) y el diseño de portada (punto 26) también en esta plantilla, que
+   no tiene un .tienda-banner como la Clásica. Cae al acento compartido
+   por defecto si el vendedor no eligió ninguno de los dos, igual que ya
+   hace .tienda-banner en la Clásica. */
+.editorial-topbar {
+    height: 6px;
+    background: linear-gradient(90deg, var(--color-portada-inicio, var(--color-accent)), var(--color-portada-fin, var(--color-accent)));
+}
+
 .editorial-head {
     display: flex;
     align-items: flex-start;
@@ -535,15 +726,17 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 13.5px;
+    font-size: 13px;
     font-weight: 600;
     text-decoration: none;
     color: var(--color-text);
     background: none;
-    border: none;
-    padding: 0;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 7px 14px;
     font-family: inherit;
     cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .editorial-link svg {
@@ -552,11 +745,18 @@
 }
 
 .editorial-link--whatsapp {
+    border-color: var(--color-whatsapp);
     color: var(--color-whatsapp);
 }
 
+.editorial-link--whatsapp:hover {
+    background-color: color-mix(in srgb, var(--color-whatsapp) 10%, transparent);
+}
+
 .editorial-body.tienda-body--acento .editorial-link--whatsapp:hover {
+    border-color: var(--color-accent);
     color: var(--color-accent);
+    background-color: color-mix(in srgb, var(--color-accent) 10%, transparent);
 }
 
 .editorial-link--share {
@@ -564,10 +764,12 @@
 }
 
 .editorial-link--share:hover {
+    border-color: var(--color-accent);
     color: var(--color-accent);
 }
 
 .editorial-body.tienda-body--acento .editorial-link--share {
+    border-color: var(--color-accent);
     color: var(--color-accent);
 }
 
@@ -634,6 +836,7 @@
 }
 
 .editorial-featured__img {
+    position: relative;
     aspect-ratio: 16 / 10;
     display: flex;
     align-items: center;
@@ -741,6 +944,14 @@
     font-family: "IBM Plex Sans", system-ui, sans-serif;
 }
 
+/* Misma franja de color que .editorial-topbar (ver esa regla) — hace
+   visible el acento propio y el diseño de portada también acá, que
+   tampoco tiene un .tienda-banner como la Clásica. */
+.minimalista-topbar {
+    height: 5px;
+    background: linear-gradient(90deg, var(--color-portada-inicio, var(--color-accent)), var(--color-portada-fin, var(--color-accent)));
+}
+
 .minimalista-wrap {
     max-width: 520px;
     margin: 0 auto;
@@ -803,23 +1014,68 @@
     gap: 6px 18px;
 }
 
-.minimalista-link {
-    font-size: 13px;
-    font-weight: 500;
+/* Acciones principales (WhatsApp/Compartir) — píldora con borde, más
+   peso visual que un enlace de texto suelto. Separadas de los enlaces
+   sociales de abajo (.minimalista-enlace) a propósito: Jose reportó que
+   la primera versión (todo como texto subrayado en una sola fila) se
+   veía desordenada y no distinguía qué era una acción importante de qué
+   era un enlace secundario. */
+.minimalista-accion {
+    display: inline-flex;
+    align-items: center;
+    font-size: 12.5px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
     color: var(--color-text);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    text-decoration-color: var(--color-border);
+    text-decoration: none;
     background: none;
-    border: none;
-    padding: 0;
+    border: 1.5px solid var(--color-text);
+    border-radius: 999px;
+    padding: 8px 16px;
     font-family: inherit;
     cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
 }
 
-.minimalista-link:hover {
+.minimalista-accion:hover {
+    border-color: var(--color-accent);
     color: var(--color-accent);
-    text-decoration-color: var(--color-accent);
+}
+
+.minimalista-accion--whatsapp {
+    border-color: var(--color-whatsapp);
+    color: var(--color-whatsapp);
+}
+
+.minimalista-body.tienda-body--acento .minimalista-accion--whatsapp:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+
+/* Enlaces sociales — píldora chica y discreta (muted), a diferencia de
+   .minimalista-accion, que es la acción principal de la tienda. */
+.minimalista-enlaces {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.minimalista-enlace {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    padding: 6px 13px;
+    transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.minimalista-enlace:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
 }
 
 .minimalista-regla {

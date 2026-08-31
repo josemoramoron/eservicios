@@ -80,10 +80,11 @@ def estadisticas_globales() -> dict:
 
     Returns:
         Diccionario con `total`, `activos`, `suspendidos` (conteo de
-        tiendas), y `vistas`/`clics_whatsapp` (suma de todas las
-        tiendas en los últimos `dias` días — misma ventana que
-        `estadisticas_service.resumen_estadisticas`, para que los
-        números sean comparables).
+        tiendas), `solicitudes_verificacion_pendientes` (tiendas con una
+        solicitud de verificación sin resolver), y `vistas`/
+        `clics_whatsapp` (suma de todas las tiendas en los últimos
+        `dias` días — misma ventana que `estadisticas_service.
+        resumen_estadisticas`, para que los números sean comparables).
     """
     desde = datetime.utcnow() - timedelta(days=DIAS_VENTANA_ESTADISTICAS)
     total = Vendor.query.count()
@@ -93,6 +94,9 @@ def estadisticas_globales() -> dict:
         "total": total,
         "activos": activos,
         "suspendidos": total - activos,
+        "solicitudes_verificacion_pendientes": Vendor.query.filter(
+            Vendor.solicitud_verificacion_en.isnot(None)
+        ).count(),
         "vistas": base.filter(VendorEvento.tipo == TipoEventoVendor.VISTA).count(),
         "clics_whatsapp": base.filter(VendorEvento.tipo == TipoEventoVendor.CLIC_WHATSAPP).count(),
         "dias": DIAS_VENTANA_ESTADISTICAS,
@@ -123,6 +127,65 @@ def reactivar_vendor(vendor: Vendor) -> None:
         vendor: Tienda a reactivar.
     """
     vendor.activo = True
+    db.session.commit()
+
+
+def marcar_verificado(vendor: Vendor) -> None:
+    """Otorga la insignia "Vendedor verificado por eServicios" (`verificado=True`).
+
+    Gratis para cualquier plan (a diferencia de color_acento/plantilla/
+    badge/disponible_ahora): es una señal de confianza sobre la identidad
+    del vendedor, no una función de personalización de e-link Plus — ver
+    el comentario en `Vendor.verificado`. No hay verificación automática
+    todavía: el equipo de eServicios la activa a mano tras revisar la
+    solicitud del vendedor (ver `vendor_service.solicitar_verificacion_vendedor`)
+    o por su propia cuenta, y puede quitarla en cualquier momento con
+    `quitar_verificacion`.
+
+    Si había una solicitud pendiente, la limpia: mensaje, documento (que
+    también se borra de R2 — mismo criterio de privacidad que
+    `eliminar_vendor_permanente`, no vale la pena conservar un documento
+    de identidad más tiempo del necesario) y fecha. Aprobar una tienda
+    que nunca envió una solicitud (el admin puede verificar por su
+    cuenta) es un no-op silencioso sobre esos 3 campos, ya en None.
+
+    Args:
+        vendor: Tienda a verificar.
+    """
+    vendor.verificado = True
+    eliminar_imagen(vendor.solicitud_verificacion_documento_url)
+    vendor.solicitud_verificacion_mensaje = None
+    vendor.solicitud_verificacion_documento_url = None
+    vendor.solicitud_verificacion_en = None
+    db.session.commit()
+
+
+def quitar_verificacion(vendor: Vendor) -> None:
+    """Retira la insignia "Vendedor verificado por eServicios" (`verificado=False`).
+
+    Args:
+        vendor: Tienda a la que se le retira la verificación.
+    """
+    vendor.verificado = False
+    db.session.commit()
+
+
+def rechazar_solicitud_verificacion(vendor: Vendor) -> None:
+    """Rechaza la solicitud de verificación pendiente, sin otorgar la insignia.
+
+    Limpia el mensaje y borra el documento adjunto de R2 (si había),
+    mismo criterio de privacidad que `marcar_verificado`. El vendedor
+    puede enviar una solicitud nueva en cualquier momento desde
+    `/vendedor/perfil/verificacion` — rechazar no es un baneo, solo dice
+    "esto que mandaste no alcanzó".
+
+    Args:
+        vendor: Tienda cuya solicitud se rechaza.
+    """
+    eliminar_imagen(vendor.solicitud_verificacion_documento_url)
+    vendor.solicitud_verificacion_mensaje = None
+    vendor.solicitud_verificacion_documento_url = None
+    vendor.solicitud_verificacion_en = None
     db.session.commit()
 
 
@@ -186,8 +249,9 @@ def eliminar_vendor_permanente(vendor: Vendor) -> None:
     """Elimina una tienda de vendedor de forma permanente e irreversible.
 
     Borra, en este orden: (1) todas las imágenes de la tienda en
-    Cloudflare R2 — logo, portada y cada foto de cada producto (el
-    borrado en R2 falla en silencio por diseño, ver `r2_service.
+    Cloudflare R2 — logo, portada, el documento de una solicitud de
+    verificación pendiente (si había una) y cada foto de cada producto
+    (el borrado en R2 falla en silencio por diseño, ver `r2_service.
     eliminar_imagen`, así que un objeto ya ausente en el bucket no
     interrumpe el resto); (2) los eventos de mini-analítica
     (`VendorEvento`) y los reportes de moderación (`VendorReporte`) de
@@ -211,6 +275,8 @@ def eliminar_vendor_permanente(vendor: Vendor) -> None:
         imagenes_a_borrar.append(vendor.logo_url)
     if vendor.banner_url:
         imagenes_a_borrar.append(vendor.banner_url)
+    if vendor.solicitud_verificacion_documento_url:
+        imagenes_a_borrar.append(vendor.solicitud_verificacion_documento_url)
     for producto in vendor.productos:
         for foto in producto.fotos:
             imagenes_a_borrar.append(foto.url)

@@ -10,10 +10,30 @@
         <div class="tienda-modal__miniaturas" id="tienda-modal-miniaturas"></div>
         <p class="tienda-modal__titulo" id="tienda-modal-titulo"></p>
         <p class="tienda-modal__precio" id="tienda-modal-precio"></p>
+        <p class="tienda-estado-stock" id="tienda-modal-estado-stock" hidden></p>
         <p class="tienda-modal__descripcion" id="tienda-modal-descripcion"></p>
         <a class="tienda-whatsapp-btn" id="tienda-modal-wa" href="#" target="_blank" rel="noopener">
             {{ icono_red("whatsapp") | safe }}
             Preguntar por este producto
         </a>
+
+        {# "Avísame cuando vuelva" (punto 17) — oculto por defecto,
+           tienda.js lo muestra solo cuando el producto abierto tiene
+           estado_stock == "agotado" (ver data-estado-stock en la
+           tarjeta) y completa el producto_id del hidden input. #}
+        <form
+            class="tienda-aviso-form"
+            id="tienda-aviso-form"
+            method="post"
+            action="{{ url_for('avisos.enviar') }}"
+            hidden
+        >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="producto_id" id="tienda-aviso-producto-id" value="">
+            <p class="tienda-aviso-form__titulo">¿Te avisamos cuando vuelva?</p>
+            <input class="tienda-aviso-form__input" type="text" name="nombre" placeholder="Tu nombre" maxlength="120" required>
+            <input class="tienda-aviso-form__input" type="text" name="contacto" placeholder="Tu WhatsApp o email" maxlength="255" required>
+            <button class="tienda-aviso-form__btn" type="submit">Avísame cuando vuelva</button>
+        </form>
     </div>
 </div>

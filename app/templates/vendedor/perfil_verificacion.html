@@ -1,0 +1,75 @@
+{% extends "vendedor/base.html" %}
+
+{% block title %}Verificación — {{ vendor.nombre_negocio }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <a class="breadcrumb__link" href="{{ url_for('health.index') }}">eServicios</a>
+    <a class="breadcrumb__link" href="{{ url_for('vendedor.dashboard') }}">Mi tienda</a>
+    <a class="breadcrumb__link" href="{{ url_for('vendedor.perfil') }}">Mi perfil</a>
+    <span class="breadcrumb__current">Verificación</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<h1 class="admin-page-title">Insignia "Vendedor verificado"</h1>
+
+{% if vendor.verificado %}
+<div style="padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 0.5rem; max-width: 480px;">
+    <p style="margin: 0;">Tu tienda ya está <strong>verificada</strong> por eServicios — el ícono se muestra junto al nombre de tu tienda en tu página pública.</p>
+</div>
+{% else %}
+
+{% if vendor.solicitud_verificacion_en %}
+<div style="padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 0.5rem; max-width: 480px; margin-bottom: 1.5rem;">
+    <p style="margin: 0 0 6px;">Tienes una solicitud <strong>pendiente de revisión</strong> por el equipo de eServicios.</p>
+    {% if plan_plus_activo %}
+    <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0;">
+        Puedes reenviarla en cualquier momento con el formulario de abajo — reemplaza el mensaje (y el documento, si adjuntas uno nuevo) de tu envío anterior.
+    </p>
+    {% else %}
+    <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0;">
+        Sigue en revisión con normalidad. Si quieres reenviarla o corregirla, necesitas <strong>e-link Plus</strong> vigente — contáctanos para activarlo en tu cuenta.
+    </p>
+    {% endif %}
+</div>
+{% elif plan_plus_activo %}
+<p style="color: var(--color-text-muted); max-width: 480px;">
+    Cuéntanos brevemente por qué debería verificarse tu tienda; el equipo de eServicios revisa cada solicitud a mano. Una vez que tu tienda quede verificada, el ícono se mantiene aunque tu plan cambie más adelante.
+</p>
+{% else %}
+<p style="color: var(--color-text-muted); max-width: 480px;">
+    Solicitar la verificación es una función de <strong>e-link Plus</strong> — contáctanos para activarlo en tu cuenta. Una vez otorgada, la insignia queda para siempre, sin importar el plan que tengas después.
+</p>
+{% endif %}
+
+{% if plan_plus_activo %}
+<form method="post" class="admin-form admin-form--narrow" enctype="multipart/form-data" action="{{ url_for('vendedor.perfil_verificacion') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <label class="admin-form__label" for="mensaje">¿Por qué debería verificarse tu tienda?</label>
+    <textarea class="admin-form__textarea" id="mensaje" name="mensaje" rows="4" maxlength="600" data-contador required>{{ vendor.solicitud_verificacion_mensaje or '' }}</textarea>
+    <p class="admin-form__hint">
+        Por ejemplo: tiempo operando, redes sociales de tu negocio, referencias de clientes.
+    </p>
+
+    <label class="admin-form__label" for="documento">Documento de respaldo (opcional)</label>
+    {% if vendor.solicitud_verificacion_documento_url %}
+    <p class="admin-form__hint" style="margin-bottom: 6px;">
+        Ya tienes uno adjunto de tu envío anterior. Sube uno nuevo solo si quieres reemplazarlo.
+    </p>
+    {% endif %}
+    <input class="admin-form__input" type="file" id="documento" name="documento" accept="image/jpeg,image/png,image/webp">
+    <p class="admin-form__hint">
+        Una foto de tu cédula, RUC/registro de negocio, o algo similar — JPG, PNG o WEBP, máximo 5 MB. No es obligatorio, pero ayuda a que la revisión sea más rápida.
+    </p>
+
+    <div class="admin-form__actions">
+        <button class="admin-btn admin-btn--primary" type="submit">
+            {% if vendor.solicitud_verificacion_en %}Reenviar solicitud{% else %}Enviar solicitud{% endif %}
+        </button>
+    </div>
+</form>
+{% endif %}
+{% endif %}
+{% endblock %}

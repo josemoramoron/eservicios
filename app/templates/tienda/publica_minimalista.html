@@ -6,6 +6,8 @@
 </head>
 <body class="tienda-body minimalista-body{% if acento %} tienda-body--acento{% endif %}"{% if acento %} style="--color-accent: {{ acento.color }}; --color-accent-contrast: {{ acento.contraste }};"{% elif preset_portada %} style="--color-portada-inicio: {{ preset_portada.color_inicio }}; --color-portada-fin: {{ preset_portada.color_fin }}; --color-portada-contraste: #ffffff;"{% endif %}>
 
+<div class="minimalista-topbar"></div>
+
 <div class="minimalista-wrap">
 
     <header class="minimalista-head">
@@ -16,25 +18,42 @@
             <span>{{ vendor.nombre_negocio[:2] | upper }}</span>
             {% endif %}
         </div>
-        <h1 class="minimalista-nombre">{{ vendor.nombre_negocio }}</h1>
+        <h1 class="minimalista-nombre">
+            {{ vendor.nombre_negocio }}
+            {% if vendor.verificado %}
+            {% include "tienda/_insignia_verificado.html" %}
+            {% endif %}
+        </h1>
         <p class="minimalista-subdominio">{{ vendor.slug }}.eservicios.org</p>
+        {% if disponibilidad is not none %}
+        <p class="tienda-disponibilidad{% if disponibilidad %} tienda-disponibilidad--activa{% endif %}">
+            <span class="tienda-disponibilidad__punto" aria-hidden="true"></span>
+            {{ "Disponible ahora" if disponibilidad else "Fuera de horario" }}
+        </p>
+        {% endif %}
         {% if vendor.bio %}<p class="minimalista-bio">{{ vendor.bio }}</p>{% endif %}
 
         <div class="minimalista-actions">
-            <a class="minimalista-link" href="{{ whatsapp_href_tienda }}" target="_blank" rel="noopener">WhatsApp</a>
-            <button type="button" class="minimalista-link minimalista-link--btn" data-compartir-btn data-url="{{ request.url }}" data-titulo="{{ vendor.nombre_negocio }}">Compartir</button>
+            <a class="minimalista-accion minimalista-accion--whatsapp" href="{{ whatsapp_href_tienda }}" target="_blank" rel="noopener">WhatsApp</a>
+            <button type="button" class="minimalista-accion" data-compartir-btn data-url="{{ request.url }}" data-titulo="{{ vendor.nombre_negocio }}">Compartir</button>
+        </div>
+
+        {% if enlaces %}
+        <div class="minimalista-enlaces">
             {% for link, icono in enlaces %}
-            <a class="minimalista-link" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.titulo }}</a>
+            <a class="minimalista-enlace" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.titulo }}</a>
             {% endfor %}
         </div>
+        {% endif %}
     </header>
 
     <hr class="minimalista-regla">
 
     <main>
         {% if productos %}
+        {% include "tienda/_filtro_categorias.html" %}
         <div class="minimalista-lista">
-            {% for producto, wa_href in productos %}
+            {% for producto, wa_href, badge, estado_stock in productos %}
             {% set fotos_producto = (producto.fotos | map(attribute='url') | list) if producto.fotos else ([producto.foto_url] if producto.foto_url else []) %}
             <button
                 type="button"
@@ -44,9 +63,23 @@
                 data-descripcion="{{ producto.descripcion }}"
                 data-fotos='{{ fotos_producto | tojson }}'
                 data-wa="{{ wa_href }}"
+                data-producto-id="{{ producto.id }}"
+                data-estado-stock="{{ estado_stock.clave if estado_stock else '' }}"
+                data-estado-stock-nombre="{{ estado_stock.nombre if estado_stock else '' }}"
+                {% if categorias %}data-categoria="{{ producto.categoria.nombre if producto.categoria else '' }}"{% endif %}
             >
-                <span class="minimalista-item__titulo">{{ producto.titulo }}</span>
-                <span class="minimalista-item__precio">${{ '%.2f' | format(producto.precio) }}</span>
+                <span class="minimalista-item__titulo">
+                    {{ producto.titulo }}
+                    {% if badge %}
+                    <span class="tienda-badge-producto tienda-badge-producto--{{ badge.clave }} tienda-badge-producto--inline">{{ badge.nombre }}</span>
+                    {% endif %}
+                </span>
+                <span class="minimalista-item__precio">
+                    ${{ '%.2f' | format(producto.precio) }}
+                    {% if estado_stock %}
+                    <span class="tienda-estado-stock tienda-estado-stock--{{ estado_stock.clave }}">{{ estado_stock.nombre }}</span>
+                    {% endif %}
+                </span>
                 <svg class="minimalista-item__flecha" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
             </button>
             {% endfor %}
@@ -64,5 +97,6 @@
 
 <script src="{{ estatico_v('js/tienda.js') }}"></script>
 <script src="{{ estatico_v('js/compartir.js') }}"></script>
+{% if categorias %}<script src="{{ estatico_v('js/categoria_filtro.js') }}"></script>{% endif %}
 </body>
 </html>

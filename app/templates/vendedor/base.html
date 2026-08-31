@@ -33,6 +33,14 @@
                 href="{{ url_for('vendedor.enlaces') }}"
             >Mis enlaces</a>
             <a
+                class="admin-nav__link{% if seccion_activa.startswith("categoria") %} admin-nav__link--active{{ clase_acento }}{% endif %}"
+                href="{{ url_for('vendedor.categorias') }}"
+            >Mis categorías</a>
+            <a
+                class="admin-nav__link{% if seccion_activa == "avisos" %} admin-nav__link--active{{ clase_acento }}{% endif %}"
+                href="{{ url_for('vendedor.avisos') }}"
+            >Avisos</a>
+            <a
                 class="admin-nav__link{% if seccion_activa.startswith("perfil") %} admin-nav__link--active{{ clase_acento }}{% endif %}"
                 href="{{ url_for('vendedor.perfil') }}"
             >Mi perfil</a>
