@@ -21,7 +21,19 @@ from app.services.vendor_service import (
     listar_links_activos,
     listar_productos_activos,
     resolver_acento_vendor,
+    resolver_plantilla_vendor,
 )
+
+# Plantilla ("clasica", gratis) -> archivo de template — punto 13 del
+# roadmap (e-link Plus). Un vendedor sin Plus vigente, o sin ninguna
+# plantilla premium elegida, siempre resuelve a "clasica" (ver
+# vendor_service.resolver_plantilla_vendor) — por eso es la única clave
+# de este diccionario que no vive en plantillas_tienda_service.
+_TEMPLATE_POR_PLANTILLA = {
+    "clasica": "tienda/publica.html",
+    "editorial": "tienda/publica_editorial.html",
+    "minimalista": "tienda/publica_minimalista.html",
+}
 
 # La tienda pública se sirve con este `Cache-Control` (navegador y
 # Cloudflare) — 60 segundos es suficiente para aliviar la carga de
@@ -66,7 +78,10 @@ def renderizar_tienda(vendor: Vendor):
     """Renderiza la página pública de la tienda de un vendedor.
 
     Registra una vista de mini-analítica (ver `estadisticas_service`)
-    y agrega el header `Cache-Control` a la respuesta.
+    y agrega el header `Cache-Control` a la respuesta. Qué archivo de
+    template usar lo decide `resolver_plantilla_vendor` (punto 13 del
+    roadmap, e-link Plus) — las tres plantillas comparten exactamente el
+    mismo contexto de render, solo cambia el layout/tipografía.
 
     Args:
         vendor: Vendedor activo resuelto a partir del host de la petición.
@@ -95,10 +110,11 @@ def renderizar_tienda(vendor: Vendor):
     # var(--color-accent))) ya cae solo en el acento del vendedor.
     acento = resolver_acento_vendor(vendor)
     preset_portada = None if acento else obtener_preset_portada(vendor.estilo_portada)
+    plantilla = resolver_plantilla_vendor(vendor)
 
     respuesta = make_response(
         render_template(
-            "tienda/publica.html",
+            _TEMPLATE_POR_PLANTILLA[plantilla],
             vendor=vendor,
             productos=productos_con_href,
             enlaces=enlaces,

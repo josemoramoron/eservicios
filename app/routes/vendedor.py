@@ -46,6 +46,7 @@ from app.services.vendor_email_verificacion_service import (
 )
 from app.services.estadisticas_service import resumen_estadisticas
 from app.services.estilos_portada_service import listar_presets_portada
+from app.services.plantillas_tienda_service import listar_plantillas_tienda
 from app.services.google_auth_service import oauth, obtener_perfil_google
 from app.services.vendor_service import (
     DIAS_ENTRE_CAMBIOS_SLUG,
@@ -606,7 +607,7 @@ def contacto_vcard():
 @vendedor_bp.route("/perfil", methods=["GET", "POST"])
 @requiere_vendor
 def perfil():
-    """Personalización de la tienda: nombre, WhatsApp, bio, logo, portada, estilo y acento."""
+    """Personalización de la tienda: nombre, WhatsApp, bio, logo, portada, estilo, acento y plantilla."""
     vendor = vendor_actual()
     plan_plus_activo = plan_plus_vigente(vendor)
     if request.method == "POST":
@@ -615,6 +616,11 @@ def perfil():
         whatsapp_numero = request.form.get("whatsapp_numero", "")
         bio = request.form.get("bio", "")
         estilo_portada = request.form.get("estilo_portada", "")
+        # Igual que estilo_portada: un radio cerrado, no texto libre — el
+        # gateo real por plan Plus ocurre en tiempo de render
+        # (resolver_plantilla_vendor), no acá. Se guarda tal cual llegue
+        # aunque el vendedor no tenga Plus vigente en este momento.
+        plantilla = request.form.get("plantilla", "")
 
         # El selector de color solo se envía (y solo puede cambiarse) si el
         # vendedor tiene Plus vigente — ver plan_plus_activo/plantilla. Si el
@@ -632,7 +638,11 @@ def perfil():
         if error_logo:
             flash(error_logo, "error")
             return render_template(
-                "vendedor/perfil.html", vendor=vendor, presets=listar_presets_portada(), plan_plus_activo=plan_plus_activo
+                "vendedor/perfil.html",
+                vendor=vendor,
+                presets=listar_presets_portada(),
+                plantillas=listar_plantillas_tienda(),
+                plan_plus_activo=plan_plus_activo,
             )
         if logo_url is not None:
             r2_service.eliminar_imagen(vendor.logo_url)
@@ -646,7 +656,11 @@ def perfil():
         if error_banner:
             flash(error_banner, "error")
             return render_template(
-                "vendedor/perfil.html", vendor=vendor, presets=listar_presets_portada(), plan_plus_activo=plan_plus_activo
+                "vendedor/perfil.html",
+                vendor=vendor,
+                presets=listar_presets_portada(),
+                plantillas=listar_plantillas_tienda(),
+                plan_plus_activo=plan_plus_activo,
             )
         if banner_url is not None:
             r2_service.eliminar_imagen(vendor.banner_url)
@@ -666,17 +680,26 @@ def perfil():
                 banner_url=banner_url,
                 estilo_portada=estilo_portada,
                 color_acento=color_acento,
+                plantilla=plantilla,
             )
         except PerfilInvalidoError as exc:
             flash(str(exc), "error")
             return render_template(
-                "vendedor/perfil.html", vendor=vendor, presets=listar_presets_portada(), plan_plus_activo=plan_plus_activo
+                "vendedor/perfil.html",
+                vendor=vendor,
+                presets=listar_presets_portada(),
+                plantillas=listar_plantillas_tienda(),
+                plan_plus_activo=plan_plus_activo,
             )
 
         flash("Perfil actualizado.", "success")
         return redirect(url_for("vendedor.perfil"))
     return render_template(
-        "vendedor/perfil.html", vendor=vendor, presets=listar_presets_portada(), plan_plus_activo=plan_plus_activo
+        "vendedor/perfil.html",
+        vendor=vendor,
+        presets=listar_presets_portada(),
+        plantillas=listar_plantillas_tienda(),
+        plan_plus_activo=plan_plus_activo,
     )
 
 

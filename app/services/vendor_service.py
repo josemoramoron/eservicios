@@ -20,6 +20,7 @@ from sqlalchemy import func
 from app.extensions import db
 from app.models import PlanVendor, ReservedSlug, Vendor, VendorLink, VendorProduct, VendorSlugHistorial
 from app.services.estilos_portada_service import PRESETS_PORTADA
+from app.services.plantillas_tienda_service import PLANTILLAS_TIENDA, obtener_plantilla_tienda
 
 # Formato exigido para Vendor.color_acento — "#" + 6 dígitos hexadecimales,
 # el mismo formato que produce un <input type="color"> nativo del navegador
@@ -451,6 +452,7 @@ def actualizar_perfil(
     banner_url: str | None,
     estilo_portada: str | None = None,
     color_acento: str | None = None,
+    plantilla: str | None = None,
 ) -> None:
     """Actualiza los datos de personalización de la tienda del vendedor.
 
@@ -488,6 +490,13 @@ def actualizar_perfil(
             parámetro NO valida que el vendedor tenga Plus vigente —
             se guarda igual aunque el plan no esté vigente, para no
             perder la elección si el vendedor vuelve a Plus más adelante.
+        plantilla: Clave de una plantilla de `plantillas_tienda_service`
+            (ej. "editorial"), o vacío/None para la plantilla "Clásica".
+            Mismo trato que `estilo_portada`: un valor que no exista en
+            `PLANTILLAS_TIENDA` se ignora en silencio (queda en None) en
+            vez de lanzar error. Tampoco valida el plan Plus aquí —esa
+            función de e-link Plus se gatea en tiempo de render (ver
+            `resolver_plantilla_vendor`), no al guardar.
 
     Raises:
         PerfilInvalidoError: Si el nombre o el WhatsApp quedan vacíos.
@@ -501,6 +510,8 @@ def actualizar_perfil(
 
     if estilo_portada and estilo_portada not in PRESETS_PORTADA:
         estilo_portada = None
+    if plantilla and plantilla not in PLANTILLAS_TIENDA:
+        plantilla = None
 
     vendor.nombre_negocio = nombre_negocio
     vendor.whatsapp_numero = whatsapp_numero
@@ -509,6 +520,7 @@ def actualizar_perfil(
     vendor.banner_url = banner_url
     vendor.estilo_portada = estilo_portada or None
     vendor.color_acento = color_acento if (color_acento and _PATRON_COLOR_HEX.match(color_acento)) else None
+    vendor.plantilla = plantilla or None
     db.session.commit()
 
 
@@ -582,6 +594,38 @@ def resolver_acento_vendor(vendor: Vendor) -> dict[str, str] | None:
     if not vendor.color_acento or not plan_plus_vigente(vendor):
         return None
     return {"color": vendor.color_acento, "contraste": _contraste_legible(vendor.color_acento)}
+
+
+PLANTILLA_POR_DEFECTO = "clasica"
+
+
+def resolver_plantilla_vendor(vendor: Vendor) -> str:
+    """Resuelve la plantilla visual efectiva de la tienda pública de un vendedor.
+
+    Punto único de entrada para la función Plus del punto 13 del roadmap
+    (plantillas prediseñadas) — `routes/tienda.py` la usa para decidir
+    qué archivo de template renderizar. A diferencia de
+    `resolver_acento_vendor`, siempre devuelve un valor (nunca None):
+    toda tienda tiene que renderizarse con alguna plantilla, y
+    "clasica" es la que ya existía antes de esta función, gratis para
+    todos.
+
+    Args:
+        vendor: Tienda a evaluar.
+
+    Returns:
+        `"clasica"` cuando la tienda no eligió ninguna plantilla premium,
+        cuando la clave guardada ya no es válida, o cuando no tiene el
+        plan Plus vigente ahora mismo (ver `plan_plus_vigente`) — en ese
+        último caso el valor sigue guardado en `vendor.plantilla`, listo
+        para reactivarse solo con volver a Plus. Si todo lo anterior
+        aplica, la clave guardada tal cual (ej. `"editorial"`).
+    """
+    if not vendor.plantilla or not plan_plus_vigente(vendor):
+        return PLANTILLA_POR_DEFECTO
+    if obtener_plantilla_tienda(vendor.plantilla) is None:
+        return PLANTILLA_POR_DEFECTO
+    return vendor.plantilla
 
 
 def cambiar_password(vendor: Vendor, *, password_actual: str, password_nueva: str) -> None:

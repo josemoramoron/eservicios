@@ -1,0 +1,24 @@
+{# Bloque <head> compartido por las 3 plantillas de la tienda pública
+   (punto 13 del roadmap, e-link Plus) — título, metaetiquetas Open
+   Graph/Twitter y las hojas de estilo comunes. Cada plantilla lo
+   incluye y, si necesita tipografía propia, agrega sus propios <link>
+   de Google Fonts justo después (ver publica_editorial.html /
+   publica_minimalista.html). #}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ vendor.nombre_negocio }}</title>
+<meta name="description" content="{{ vendor.bio or vendor.nombre_negocio }}">
+<meta property="og:site_name" content="{{ vendor.nombre_negocio }}">
+<meta property="og:type" content="website">
+<meta property="og:title" content="{{ vendor.nombre_negocio }}">
+<meta property="og:url" content="{{ request.url }}">
+{% if vendor.bio %}<meta property="og:description" content="{{ vendor.bio }}">{% endif %}
+{% set imagen_og = vendor.logo_url or vendor.banner_url or (productos[0][0].foto_url if productos else none) %}
+{% if imagen_og %}
+<meta property="og:image" content="{{ url_absoluta(imagen_og) }}">
+<meta name="twitter:card" content="summary_large_image">
+{% else %}
+<meta name="twitter:card" content="summary">
+{% endif %}
+<link rel="stylesheet" href="{{ estatico_v('css/style.css') }}">
+<link rel="stylesheet" href="{{ estatico_v('css/tienda.css') }}">

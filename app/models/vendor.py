@@ -68,6 +68,14 @@ class Vendor(db.Model):
     # renueva — la aplicación real siempre se resuelve en tiempo de
     # render, nunca solo por la presencia de este valor.
     color_acento: Mapped[str | None] = mapped_column(String(7), nullable=True)
+    # Plantilla visual de la tienda pública (layout + par tipográfico),
+    # función de e-link Plus (roadmap, Fase 2, punto 13) — ver
+    # app/services/plantillas_tienda_service.py para las claves válidas.
+    # None = plantilla "Clásica" (la de siempre, gratis para todos). Igual
+    # que color_acento, se guarda aunque el plan no esté vigente en este
+    # momento; la aplicación real siempre se resuelve en tiempo de render
+    # (ver vendor_service.resolver_plantilla_vendor).
+    plantilla: Mapped[str | None] = mapped_column(String(20), nullable=True)
     plan: Mapped[PlanVendor] = mapped_column(
         SqlEnum(PlanVendor, name="plan_vendor"), default=PlanVendor.FREE, nullable=False
     )

@@ -1,0 +1,26 @@
+{# Pie de la tienda pública — compartido por las 3 plantillas.
+   Deliberadamente sin identidad visual propia por plantilla: es
+   información de confianza (badge, términos, reportar), no parte del
+   diseño que el vendedor Plus elige. #}
+<footer class="tienda-footer">
+    <a class="tienda-badge" href="https://eservicios.org" target="_blank" rel="noopener">Creado con eServicios</a>
+    <a class="tienda-badge" href="{{ terminos_href }}">Términos y condiciones</a>
+    <details class="tienda-reporte">
+        <summary class="tienda-badge tienda-reporte__toggle">Reportar este sitio</summary>
+        <form method="post" action="{{ url_for('reportes.enviar') }}" class="tienda-reporte__form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label class="tienda-reporte__label" for="reporte-motivo">¿Qué está mal con esta tienda?</label>
+            <textarea
+                class="tienda-reporte__textarea"
+                id="reporte-motivo"
+                name="motivo"
+                rows="3"
+                required
+                placeholder="Ej.: este número de WhatsApp no es del dueño de la tienda..."
+            ></textarea>
+            <label class="tienda-reporte__label" for="reporte-contacto">Tu email o WhatsApp (opcional, por si necesitamos más info)</label>
+            <input class="tienda-reporte__input" type="text" id="reporte-contacto" name="contacto">
+            <button class="tienda-reporte__submit" type="submit">Enviar reporte</button>
+        </form>
+    </details>
+</footer>

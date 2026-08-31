@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+    {% include "tienda/_cabecera_meta.html" %}
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500&display=swap">
+</head>
+<body class="tienda-body minimalista-body{% if acento %} tienda-body--acento{% endif %}"{% if acento %} style="--color-accent: {{ acento.color }}; --color-accent-contrast: {{ acento.contraste }};"{% elif preset_portada %} style="--color-portada-inicio: {{ preset_portada.color_inicio }}; --color-portada-fin: {{ preset_portada.color_fin }}; --color-portada-contraste: #ffffff;"{% endif %}>
+
+<div class="minimalista-wrap">
+
+    <header class="minimalista-head">
+        <div class="minimalista-avatar">
+            {% if vendor.logo_url %}
+            <img src="{{ vendor.logo_url }}" alt="{{ vendor.nombre_negocio }}">
+            {% else %}
+            <span>{{ vendor.nombre_negocio[:2] | upper }}</span>
+            {% endif %}
+        </div>
+        <h1 class="minimalista-nombre">{{ vendor.nombre_negocio }}</h1>
+        <p class="minimalista-subdominio">{{ vendor.slug }}.eservicios.org</p>
+        {% if vendor.bio %}<p class="minimalista-bio">{{ vendor.bio }}</p>{% endif %}
+
+        <div class="minimalista-actions">
+            <a class="minimalista-link" href="{{ whatsapp_href_tienda }}" target="_blank" rel="noopener">WhatsApp</a>
+            <button type="button" class="minimalista-link minimalista-link--btn" data-compartir-btn data-url="{{ request.url }}" data-titulo="{{ vendor.nombre_negocio }}">Compartir</button>
+            {% for link, icono in enlaces %}
+            <a class="minimalista-link" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.titulo }}</a>
+            {% endfor %}
+        </div>
+    </header>
+
+    <hr class="minimalista-regla">
+
+    <main>
+        {% if productos %}
+        <div class="minimalista-lista">
+            {% for producto, wa_href in productos %}
+            {% set fotos_producto = (producto.fotos | map(attribute='url') | list) if producto.fotos else ([producto.foto_url] if producto.foto_url else []) %}
+            <button
+                type="button"
+                class="tienda-card minimalista-item"
+                data-titulo="{{ producto.titulo }}"
+                data-precio="${{ '%.2f' | format(producto.precio) }}"
+                data-descripcion="{{ producto.descripcion }}"
+                data-fotos='{{ fotos_producto | tojson }}'
+                data-wa="{{ wa_href }}"
+            >
+                <span class="minimalista-item__titulo">{{ producto.titulo }}</span>
+                <span class="minimalista-item__precio">${{ '%.2f' | format(producto.precio) }}</span>
+                <svg class="minimalista-item__flecha" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+            {% endfor %}
+        </div>
+        {% elif not enlaces %}
+        <p class="minimalista-vacio">Todavía no hay productos publicados.</p>
+        {% endif %}
+    </main>
+
+</div>
+
+{% include "tienda/_pie_tienda.html" %}
+
+{% include "tienda/_modal_producto.html" %}
+
+<script src="{{ estatico_v('js/tienda.js') }}"></script>
+<script src="{{ estatico_v('js/compartir.js') }}"></script>
+</body>
+</html>

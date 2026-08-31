@@ -96,6 +96,31 @@
     </p>
     {% endif %}
 
+    <label class="admin-form__label" style="margin-top: 14px;">Plantilla de tu tienda</label>
+    {% if plan_plus_activo %}
+    <div class="admin-galeria-estilos">
+        <label class="admin-galeria-estilos__opcion">
+            <input type="radio" name="plantilla" value="" {% if not vendor.plantilla %}checked{% endif %}>
+            <span class="admin-galeria-estilos__nombre">Clásica</span>
+        </label>
+        {% for plantilla in plantillas %}
+        <label class="admin-galeria-estilos__opcion">
+            <input type="radio" name="plantilla" value="{{ plantilla.clave }}" {% if vendor.plantilla == plantilla.clave %}checked{% endif %}>
+            <span class="admin-galeria-estilos__nombre">{{ plantilla.nombre }}</span>
+        </label>
+        {% endfor %}
+    </div>
+    <p class="admin-form__hint">
+        Función de e-link Plus. Cada plantilla trae su propia tipografía y organización de productos —
+        {% for plantilla in plantillas %}{{ plantilla.nombre }}: {{ plantilla.descripcion }}{% if not loop.last %} · {% endif %}{% endfor %}.
+        Tu color de acento y diseño de portada elegidos arriba se aplican en las tres.
+    </p>
+    {% else %}
+    <p class="admin-form__hint">
+        Elegir una plantilla prediseñada para tu tienda es una función de <strong>e-link Plus</strong> — contáctanos para activarlo en tu cuenta.
+    </p>
+    {% endif %}
+
     <div class="admin-form__actions">
         <button class="admin-btn admin-btn--primary" type="submit">Guardar cambios</button>
     </div>

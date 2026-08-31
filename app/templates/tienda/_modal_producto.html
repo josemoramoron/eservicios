@@ -1,0 +1,19 @@
+{# Modal de detalle de producto — compartido por las 3 plantillas.
+   Mismos ids/clases en las tres (tienda.js los busca por id, no le
+   importa qué plantilla los pintó), así que el JS no necesita saber
+   nada sobre plantillas. #}
+<div class="tienda-modal" id="tienda-modal" hidden>
+    <div class="tienda-modal__backdrop" data-cerrar></div>
+    <div class="tienda-modal__panel">
+        <button type="button" class="tienda-modal__cerrar" data-cerrar aria-label="Cerrar">&times;</button>
+        <div class="tienda-modal__foto" id="tienda-modal-foto"></div>
+        <div class="tienda-modal__miniaturas" id="tienda-modal-miniaturas"></div>
+        <p class="tienda-modal__titulo" id="tienda-modal-titulo"></p>
+        <p class="tienda-modal__precio" id="tienda-modal-precio"></p>
+        <p class="tienda-modal__descripcion" id="tienda-modal-descripcion"></p>
+        <a class="tienda-whatsapp-btn" id="tienda-modal-wa" href="#" target="_blank" rel="noopener">
+            {{ icono_red("whatsapp") | safe }}
+            Preguntar por este producto
+        </a>
+    </div>
+</div>

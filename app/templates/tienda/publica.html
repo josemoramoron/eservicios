@@ -1,24 +1,7 @@
 <!DOCTYPE html>
 <html lang="es" data-theme="light">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ vendor.nombre_negocio }}</title>
-    <meta name="description" content="{{ vendor.bio or vendor.nombre_negocio }}">
-    <meta property="og:site_name" content="{{ vendor.nombre_negocio }}">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="{{ vendor.nombre_negocio }}">
-    <meta property="og:url" content="{{ request.url }}">
-    {% if vendor.bio %}<meta property="og:description" content="{{ vendor.bio }}">{% endif %}
-    {% set imagen_og = vendor.logo_url or vendor.banner_url or (productos[0][0].foto_url if productos else none) %}
-    {% if imagen_og %}
-    <meta property="og:image" content="{{ url_absoluta(imagen_og) }}">
-    <meta name="twitter:card" content="summary_large_image">
-    {% else %}
-    <meta name="twitter:card" content="summary">
-    {% endif %}
-    <link rel="stylesheet" href="{{ estatico_v('css/style.css') }}">
-    <link rel="stylesheet" href="{{ estatico_v('css/tienda.css') }}">
+    {% include "tienda/_cabecera_meta.html" %}
 </head>
 <body class="tienda-body{% if acento %} tienda-body--acento{% endif %}"{% if acento %} style="--color-accent: {{ acento.color }}; --color-accent-contrast: {{ acento.contraste }};"{% elif preset_portada %} style="--color-portada-inicio: {{ preset_portada.color_inicio }}; --color-portada-fin: {{ preset_portada.color_fin }}; --color-portada-contraste: #ffffff;"{% endif %}>
 
@@ -100,44 +83,9 @@
     {% endif %}
 </main>
 
-<footer class="tienda-footer">
-    <a class="tienda-badge" href="https://eservicios.org" target="_blank" rel="noopener">Creado con eServicios</a>
-    <a class="tienda-badge" href="{{ terminos_href }}">Términos y condiciones</a>
-    <details class="tienda-reporte">
-        <summary class="tienda-badge tienda-reporte__toggle">Reportar este sitio</summary>
-        <form method="post" action="{{ url_for('reportes.enviar') }}" class="tienda-reporte__form">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <label class="tienda-reporte__label" for="reporte-motivo">¿Qué está mal con esta tienda?</label>
-            <textarea
-                class="tienda-reporte__textarea"
-                id="reporte-motivo"
-                name="motivo"
-                rows="3"
-                required
-                placeholder="Ej.: este número de WhatsApp no es del dueño de la tienda..."
-            ></textarea>
-            <label class="tienda-reporte__label" for="reporte-contacto">Tu email o WhatsApp (opcional, por si necesitamos más info)</label>
-            <input class="tienda-reporte__input" type="text" id="reporte-contacto" name="contacto">
-            <button class="tienda-reporte__submit" type="submit">Enviar reporte</button>
-        </form>
-    </details>
-</footer>
+{% include "tienda/_pie_tienda.html" %}
 
-<div class="tienda-modal" id="tienda-modal" hidden>
-    <div class="tienda-modal__backdrop" data-cerrar></div>
-    <div class="tienda-modal__panel">
-        <button type="button" class="tienda-modal__cerrar" data-cerrar aria-label="Cerrar">&times;</button>
-        <div class="tienda-modal__foto" id="tienda-modal-foto"></div>
-        <div class="tienda-modal__miniaturas" id="tienda-modal-miniaturas"></div>
-        <p class="tienda-modal__titulo" id="tienda-modal-titulo"></p>
-        <p class="tienda-modal__precio" id="tienda-modal-precio"></p>
-        <p class="tienda-modal__descripcion" id="tienda-modal-descripcion"></p>
-        <a class="tienda-whatsapp-btn" id="tienda-modal-wa" href="#" target="_blank" rel="noopener">
-            {{ icono_red("whatsapp") | safe }}
-            Preguntar por este producto
-        </a>
-    </div>
-</div>
+{% include "tienda/_modal_producto.html" %}
 
 <script src="{{ estatico_v('js/tienda.js') }}"></script>
 <script src="{{ estatico_v('js/compartir.js') }}"></script>
