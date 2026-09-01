@@ -85,6 +85,21 @@ class Vendor(db.Model):
     # esté vigente (ver vendor_service.resolver_disponibilidad_vendor) —
     # el valor igual se conserva si el plan vence, listo para reactivarse.
     disponible_ahora: Mapped[bool] = mapped_column(default=True, nullable=False)
+    # Código de cupón/descuento, texto libre y corto (ej. "VERANO10"),
+    # función de e-link Plus (roadmap, Fase 2, punto 16) — se muestra en
+    # la tienda pública debajo del botón de WhatsApp, dentro de un marco
+    # con la etiqueta fija "CUPÓN" al lado, y el cliente lo copia con un
+    # toque (ver app/static/js/copiar_cupon.js). NO es un sistema de
+    # descuentos real: no calcula ningún porcentaje ni ajusta ningún
+    # precio — es solo el texto que el vendedor define para que el
+    # cliente lo mencione al escribir por WhatsApp, y el vendedor lo
+    # honra a mano, igual que el resto de e-link no tiene checkout real.
+    # None = sin cupón activo (no se muestra nada). Igual que
+    # color_acento/plantilla, se guarda aunque el plan no esté vigente en
+    # este momento, para no perderlo si el vendedor renueva Plus — la
+    # aplicación real siempre se resuelve en tiempo de render (ver
+    # vendor_service.resolver_cupon_vendor).
+    cupon: Mapped[str | None] = mapped_column(String(40), nullable=True)
     # Insignia "Vendedor verificado por eServicios" — señal de confianza,
     # no de personalización visual, así que a diferencia de color_acento/
     # plantilla/badge/disponible_ahora NO depende del plan Plus: gratis

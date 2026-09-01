@@ -38,6 +38,13 @@
             <button type="button" class="minimalista-accion" data-compartir-btn data-url="{{ request.url }}" data-titulo="{{ vendor.nombre_negocio }}">Compartir</button>
         </div>
 
+        {% if cupon %}
+        <div class="tienda-cupon">
+            <span class="tienda-cupon__etiqueta">CUPÓN</span>
+            <button type="button" class="tienda-cupon__codigo" data-cupon-copiar data-codigo="{{ cupon }}">{{ cupon }}</button>
+        </div>
+        {% endif %}
+
         {% if enlaces %}
         <div class="minimalista-enlaces">
             {% for link, icono in enlaces %}
@@ -55,33 +62,39 @@
         <div class="minimalista-lista">
             {% for producto, wa_href, badge, estado_stock in productos %}
             {% set fotos_producto = (producto.fotos | map(attribute='url') | list) if producto.fotos else ([producto.foto_url] if producto.foto_url else []) %}
-            <button
-                type="button"
-                class="tienda-card minimalista-item"
-                data-titulo="{{ producto.titulo }}"
-                data-precio="{{ formatear_precio(producto.precio, vendor.moneda) }}"
-                data-descripcion="{{ producto.descripcion }}"
-                data-fotos='{{ fotos_producto | tojson }}'
-                data-wa="{{ wa_href }}"
-                data-producto-id="{{ producto.id }}"
-                data-estado-stock="{{ estado_stock.clave if estado_stock else '' }}"
-                data-estado-stock-nombre="{{ estado_stock.nombre if estado_stock else '' }}"
-                {% if categorias %}data-categoria="{{ producto.categoria.nombre if producto.categoria else '' }}"{% endif %}
-            >
-                <span class="minimalista-item__titulo">
-                    {{ producto.titulo }}
-                    {% if badge %}
-                    <span class="tienda-badge-producto tienda-badge-producto--{{ badge.clave }} tienda-badge-producto--inline">{{ badge.nombre }}</span>
-                    {% endif %}
-                </span>
-                <span class="minimalista-item__precio">
-                    {{ formatear_precio(producto.precio, vendor.moneda) }}
-                    {% if estado_stock %}
-                    <span class="tienda-estado-stock tienda-estado-stock--{{ estado_stock.clave }}">{{ estado_stock.nombre }}</span>
-                    {% endif %}
-                </span>
-                <svg class="minimalista-item__flecha" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
-            </button>
+            <div class="tienda-card-wrap tienda-card-wrap--fila">
+                {% if consulta_multiple_habilitada %}
+                {% set producto_id_consulta = producto.id %}
+                {% include "tienda/_checkbox_consulta_multiple.html" %}
+                {% endif %}
+                <button
+                    type="button"
+                    class="tienda-card minimalista-item"
+                    data-titulo="{{ producto.titulo }}"
+                    data-precio="{{ formatear_precio(producto.precio, vendor.moneda) }}"
+                    data-descripcion="{{ producto.descripcion }}"
+                    data-fotos='{{ fotos_producto | tojson }}'
+                    data-wa="{{ wa_href }}"
+                    data-producto-id="{{ producto.id }}"
+                    data-estado-stock="{{ estado_stock.clave if estado_stock else '' }}"
+                    data-estado-stock-nombre="{{ estado_stock.nombre if estado_stock else '' }}"
+                    {% if categorias %}data-categoria="{{ producto.categoria.nombre if producto.categoria else '' }}"{% endif %}
+                >
+                    <span class="minimalista-item__titulo">
+                        {{ producto.titulo }}
+                        {% if badge %}
+                        <span class="tienda-badge-producto tienda-badge-producto--{{ badge.clave }} tienda-badge-producto--inline">{{ badge.nombre }}</span>
+                        {% endif %}
+                    </span>
+                    <span class="minimalista-item__precio">
+                        {{ formatear_precio(producto.precio, vendor.moneda) }}
+                        {% if estado_stock %}
+                        <span class="tienda-estado-stock tienda-estado-stock--{{ estado_stock.clave }}">{{ estado_stock.nombre }}</span>
+                        {% endif %}
+                    </span>
+                    <svg class="minimalista-item__flecha" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                </button>
+            </div>
             {% endfor %}
         </div>
         {% elif not enlaces %}
@@ -95,8 +108,14 @@
 
 {% include "tienda/_modal_producto.html" %}
 
+{% if consulta_multiple_habilitada %}
+{% include "tienda/_bandeja_consulta_multiple.html" %}
+{% endif %}
+
 <script src="{{ estatico_v('js/tienda.js') }}"></script>
 <script src="{{ estatico_v('js/compartir.js') }}"></script>
 {% if categorias %}<script src="{{ estatico_v('js/categoria_filtro.js') }}"></script>{% endif %}
+{% if consulta_multiple_habilitada %}<script src="{{ estatico_v('js/consulta_multiple.js') }}"></script>{% endif %}
+{% if cupon %}<script src="{{ estatico_v('js/copiar_cupon.js') }}"></script>{% endif %}
 </body>
 </html>

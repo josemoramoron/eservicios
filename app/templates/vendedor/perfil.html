@@ -168,6 +168,19 @@
     </p>
     {% endif %}
 
+    <hr class="admin-form__separador">
+    <label class="admin-form__label" for="cupon">Cupón o código de descuento</label>
+    {% if plan_plus_activo %}
+    <input class="admin-form__input" type="text" id="cupon" name="cupon" value="{{ vendor.cupon or '' }}" maxlength="40" placeholder="Ej. VERANO10">
+    <p class="admin-form__hint">
+        Función de e-link Plus. Se muestra en tu tienda pública debajo del botón de WhatsApp, dentro de un marco que el cliente toca para copiarlo. No calcula ningún descuento — es solo el código que tú defines; el descuento lo aplicas tú a mano cuando el cliente te lo mencione. Déjalo vacío para no mostrar ningún cupón.
+    </p>
+    {% else %}
+    <p class="admin-form__hint">
+        Mostrar un cupón/código de descuento copiable en tu tienda es una función de <strong>e-link Plus</strong> — contáctanos para activarlo en tu cuenta.
+    </p>
+    {% endif %}
+
     <div class="admin-form__actions">
         <button class="admin-btn admin-btn--primary" type="submit">Guardar cambios</button>
     </div>

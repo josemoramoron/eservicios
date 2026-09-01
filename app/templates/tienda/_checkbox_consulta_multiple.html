@@ -1,0 +1,10 @@
+{# Checkbox de "marcar para consulta combinada" (punto 19 del roadmap,
+   e-link Plus) — espera una variable `producto_id_consulta` seteada
+   antes del include. Vive SIEMPRE fuera del <button> de la tarjeta,
+   nunca anidado dentro (ver la nota en tienda.css sobre
+   .tienda-card-wrap) — así un clic acá nunca dispara también el modal
+   de detalle del producto. #}
+<label class="tienda-consulta-check" title="Marcar para consultar junto con otros productos">
+    <input type="checkbox" data-consulta-multiple-check data-producto-id="{{ producto_id_consulta }}">
+    <span class="tienda-consulta-check__marca" aria-hidden="true"></span>
+</label>

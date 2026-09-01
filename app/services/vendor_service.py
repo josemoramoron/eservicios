@@ -486,6 +486,7 @@ def actualizar_perfil(
     plantilla: str | None = None,
     disponible_ahora: bool = True,
     moneda: str | None = None,
+    cupon: str = "",
 ) -> None:
     """Actualiza los datos de personalización de la tienda del vendedor.
 
@@ -546,6 +547,13 @@ def actualizar_perfil(
             resetear). Sin relación con el plan: gratis para cualquier
             tienda, no se gatea en ningún resolver (ver
             `monedas_service` para el porqué).
+        cupon: Texto del cupón/código de descuento (ej. "VERANO10"),
+            función de e-link Plus (punto 16 del roadmap) — cadena vacía
+            para quitarlo. No valida ningún formato (es texto libre
+            corto, no un código con reglas), y se guarda tal cual aunque
+            el plan no esté vigente en este momento, mismo trato que
+            `color_acento`/`plantilla` — la aplicación real se resuelve
+            en tiempo de render (ver `resolver_cupon_vendor`).
 
     Raises:
         PerfilInvalidoError: Si el nombre o el WhatsApp quedan vacíos.
@@ -573,6 +581,7 @@ def actualizar_perfil(
     vendor.disponible_ahora = disponible_ahora
     if moneda and moneda in MONEDAS:
         vendor.moneda = moneda
+    vendor.cupon = cupon.strip() or None
     db.session.commit()
 
 
@@ -709,6 +718,31 @@ def resolver_acento_vendor(vendor: Vendor) -> dict[str, str] | None:
     if not vendor.color_acento or not plan_plus_vigente(vendor):
         return None
     return {"color": vendor.color_acento, "contraste": _contraste_legible(vendor.color_acento)}
+
+
+def resolver_cupon_vendor(vendor: Vendor) -> str | None:
+    """Resuelve el cupón/código de descuento efectivo de una tienda, si aplica.
+
+    Punto único de entrada para la función Plus del punto 16 del roadmap
+    — `routes/tienda.py` la usa en vez de leer `vendor.cupon` directo,
+    para que el chequeo de plan nunca se le olvide. Mismo patrón que
+    `resolver_acento_vendor`: no es un sistema de descuentos, solo
+    decide si el texto que el vendedor guardó se muestra ahora mismo.
+
+    Args:
+        vendor: Tienda a evaluar.
+
+    Returns:
+        None cuando la tienda no tiene ningún cupón guardado, o cuando
+        no tiene el plan Plus vigente ahora mismo (ver
+        `plan_plus_vigente`) — en ese caso el texto puede seguir
+        guardado en `vendor.cupon`, listo para reactivarse solo con
+        volver a Plus. Si aplica, el texto del cupón tal cual el
+        vendedor lo escribió.
+    """
+    if not vendor.cupon or not plan_plus_vigente(vendor):
+        return None
+    return vendor.cupon
 
 
 # Paleta curada de colores de acento sugeridos — atajo de un clic en
@@ -1146,6 +1180,59 @@ def href_whatsapp_producto(vendor: Vendor, producto: VendorProduct) -> str:
         vendor.whatsapp_numero,
         f'Hola, quiero info sobre "{producto.titulo}" en {vendor.nombre_negocio}.'
         f"{_membrete_trazabilidad(vendor)}",
+    )
+
+
+def resolver_consulta_multiple_habilitada(vendor: Vendor) -> bool:
+    """Indica si el vendedor puede usar la consulta combinada de varios productos.
+
+    Punto 19 del roadmap (Fase 2, e-link Plus) — "el cliente marca varios
+    productos y se genera un solo mensaje de WhatsApp combinado". A
+    diferencia de `moneda`/`verificado` (gratis para cualquier plan), este
+    punto se quedó con la clasificación por defecto del roadmap (Premium):
+    Jose no pidió ningún override explícito para él, así que sigue el
+    mismo patrón que color de acento/plantillas/badges/estado de
+    stock/categorías — gateado por `plan_plus_vigente()`.
+
+    A diferencia de esos otros puntos, esta función no tiene ningún valor
+    que "guardar siempre" — no es una preferencia del vendedor, es una
+    capacidad de la tienda que está activa o no según el plan en cada
+    momento. Por eso no hay ninguna columna nueva en `Vendor` para esto.
+
+    Args:
+        vendor: Tienda a evaluar.
+
+    Returns:
+        True si el plan Plus está vigente en este momento.
+    """
+    return plan_plus_vigente(vendor)
+
+
+def construir_mensaje_consulta_multiple(vendor: Vendor, productos: list[VendorProduct]) -> str:
+    """Arma el texto del mensaje de WhatsApp combinado para varios productos.
+
+    Mismo criterio que `href_whatsapp_tienda`/`href_whatsapp_producto`: la
+    construcción del texto vive enteramente en el servicio, nunca en el
+    template ni en JavaScript — el cliente solo elige QUÉ productos
+    marcar (mandando sus ids a `clicks.click_whatsapp_multiple`), nunca
+    arma el mensaje él mismo.
+
+    Args:
+        vendor: Tienda dueña de los productos.
+        productos: Productos seleccionados, ya validados como activos y
+            pertenecientes a esta tienda (ver `clicks.click_whatsapp_multiple`).
+            No puede venir vacía — se asume que el llamador ya filtró la
+            lista antes de invocar esta función.
+
+    Returns:
+        Texto completo del mensaje, con un producto por línea y el
+        membrete de trazabilidad al final.
+    """
+    lineas_productos = "\n".join(f"- {producto.titulo}" for producto in productos)
+    return (
+        f"Hola, quiero consultar sobre estos productos en {vendor.nombre_negocio}:\n"
+        f"{lineas_productos}"
+        f"{_membrete_trazabilidad(vendor)}"
     )
 
 

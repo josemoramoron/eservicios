@@ -23,6 +23,8 @@ from app.services.vendor_service import (
     resolver_acento_vendor,
     resolver_badge_producto,
     resolver_categorias_producto,
+    resolver_consulta_multiple_habilitada,
+    resolver_cupon_vendor,
     resolver_disponibilidad_vendor,
     resolver_estado_stock_producto,
     resolver_plantilla_vendor,
@@ -129,6 +131,18 @@ def renderizar_tienda(vendor: Vendor):
     # mano (ver vendor_service.resolver_disponibilidad_vendor, punto 15).
     disponibilidad = resolver_disponibilidad_vendor(vendor)
 
+    # Consulta de múltiples productos (punto 19 del roadmap, e-link Plus)
+    # — el template solo necesita saber si mostrar los checkboxes y la
+    # bandeja; el link real (con los ids que el cliente vaya marcando) lo
+    # arma clicks.click_whatsapp_multiple, nunca el template ni el JS.
+    consulta_multiple_habilitada = resolver_consulta_multiple_habilitada(vendor)
+
+    # Cupón/código de descuento (punto 16 del roadmap, e-link Plus) —
+    # None cuando no hay ninguno guardado o el plan Plus no está vigente
+    # (ver vendor_service.resolver_cupon_vendor); el template solo lo
+    # muestra cuando no es None.
+    cupon = resolver_cupon_vendor(vendor)
+
     respuesta = make_response(
         render_template(
             _TEMPLATE_POR_PLANTILLA[plantilla],
@@ -142,6 +156,9 @@ def renderizar_tienda(vendor: Vendor):
             acento=acento,
             disponibilidad=disponibilidad,
             categorias=categorias,
+            consulta_multiple_habilitada=consulta_multiple_habilitada,
+            consulta_multiple_base_href=url_for("clicks.click_whatsapp_multiple"),
+            cupon=cupon,
         )
     )
     respuesta.headers["Cache-Control"] = _CACHE_CONTROL_TIENDA

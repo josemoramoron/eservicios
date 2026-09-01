@@ -243,8 +243,17 @@ def formatear_precio(precio: Decimal, moneda: str | None) -> str:
 
     Punto único de formato usado tanto en la tienda pública (las 3
     plantillas) como en el panel del vendedor (lista de productos,
-    formulario de producto) — para que un cambio de símbolo o de
-    cantidad de decimales se aplique en todos lados a la vez.
+    formulario de producto) — para que un cambio de símbolo, de
+    separadores o de cantidad de decimales se aplique en todos lados
+    a la vez.
+
+    **Adenda (2026-09-01):** a pedido explícito de Jose, el número usa
+    nomenclatura numérica latinoamericana/europea — punto como
+    separador de miles, coma como separador decimal (ej. "1.234,56"
+    en vez de "1,234.56") — para que las cantidades grandes se lean de
+    un vistazo. Python formatea los números al revés (coma de miles,
+    punto decimal) por defecto, así que se arma con el separador de
+    miles estándar y luego se intercambian los dos símbolos.
 
     Args:
         precio: Precio del producto, tal como está guardado (sin
@@ -253,8 +262,9 @@ def formatear_precio(precio: Decimal, moneda: str | None) -> str:
             None/inválida (cae en dólar).
 
     Returns:
-        Cadena lista para mostrar, ej. "US$25.00", "Bs.150.00", con 2
-        decimales siempre.
+        Cadena lista para mostrar, ej. "US$1.234,56", "Bs.150,00", con
+        2 decimales siempre y separador de miles cada 3 dígitos.
     """
     datos = obtener_moneda(moneda)
-    return f"{datos['simbolo']}{precio:.2f}"
+    numero_formateado = f"{precio:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    return f"{datos['simbolo']}{numero_formateado}"

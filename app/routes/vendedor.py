@@ -620,7 +620,7 @@ def contacto_vcard():
 @vendedor_bp.route("/perfil", methods=["GET", "POST"])
 @requiere_vendor
 def perfil():
-    """Personalización de la tienda: nombre, WhatsApp, bio, moneda, logo, portada, estilo, acento y plantilla."""
+    """Personalización de la tienda: nombre, WhatsApp, bio, moneda, logo, portada, estilo, acento, plantilla y cupón."""
     vendor = vendor_actual()
     plan_plus_activo = plan_plus_vigente(vendor)
     if request.method == "POST":
@@ -659,6 +659,15 @@ def perfil():
             disponible_ahora = request.form.get("disponible_ahora") == "on"
         else:
             disponible_ahora = vendor.disponible_ahora
+
+        # El campo del cupón (punto 16) sigue el mismo criterio que
+        # disponible_ahora/color_acento/plantilla: solo se muestra (y
+        # solo puede cambiarse) en el formulario si hay Plus vigente; si
+        # no llega, se conserva el valor actual en vez de borrarlo.
+        if plan_plus_activo:
+            cupon = request.form.get("cupon", "")
+        else:
+            cupon = vendor.cupon or ""
 
         logo_url, error_logo = _subir_imagen_opcional("logo", f"vendors/{vendor.slug}/logo")
         if error_logo:
@@ -713,6 +722,7 @@ def perfil():
                 plantilla=plantilla,
                 disponible_ahora=disponible_ahora,
                 moneda=moneda,
+                cupon=cupon,
             )
         except PerfilInvalidoError as exc:
             flash(str(exc), "error")

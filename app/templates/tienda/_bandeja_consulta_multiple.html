@@ -1,0 +1,21 @@
+{# Bandeja flotante de "consulta de múltiples productos" (punto 19 del
+   roadmap, e-link Plus). Compartida por las 3 plantillas, igual que
+   _modal_producto.html/_pie_tienda.html — solo se incluye cuando
+   consulta_multiple_habilitada es verdadero (el vendedor tiene Plus
+   vigente). El href real del link se arma en consulta_multiple.js a
+   partir de consulta_multiple_base_href — nunca queda un mensaje
+   armado en el HTML, el servidor lo construye recién en
+   clicks.click_whatsapp_multiple con los ids que el cliente marcó. #}
+<div
+    class="tienda-consulta-bandeja"
+    id="consulta-multiple-bandeja"
+    data-base-href="{{ consulta_multiple_base_href }}"
+    hidden
+>
+    <span class="tienda-consulta-bandeja__contador" id="consulta-multiple-contador">0 productos seleccionados</span>
+    <a class="tienda-consulta-bandeja__btn" id="consulta-multiple-link" href="#" target="_blank" rel="noopener">
+        {{ icono_red("whatsapp") | safe }}
+        Consultar por WhatsApp
+    </a>
+    <button type="button" class="tienda-consulta-bandeja__limpiar" id="consulta-multiple-limpiar">Quitar selección</button>
+</div>
