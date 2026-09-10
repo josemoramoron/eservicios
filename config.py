@@ -53,3 +53,50 @@ class Config:
     # Google queda ahí pero fallará hasta que se configuren estas dos claves.
     GOOGLE_CLIENT_ID: str = os.environ.get("GOOGLE_CLIENT_ID", "")
     GOOGLE_CLIENT_SECRET: str = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+
+    # Verificación de WhatsApp del vendedor vía Meta WhatsApp Business
+    # Platform / Cloud API (roadmap Fase 0, punto 1 — ver
+    # claude/spec-tiendas-vendedor.md, sección 11, y el futuro
+    # app/services/whatsapp_business_service.py). Mismo criterio que
+    # BREVO_*: nunca hardcodear estos valores ni pegarlos en el chat —
+    # van directo al .env del servidor (y al .env local mientras se
+    # prueba con el número de prueba gratuito de Meta).
+    #
+    # WHATSAPP_PHONE_NUMBER_ID es el ID interno del número (ej.
+    # "1313508931841287"), NO el número de teléfono en sí (ej.
+    # "+1 555 203 2276") — Meta los trata como dos cosas distintas; el
+    # endpoint de envío siempre usa este ID, nunca el número visible.
+    # Ambos valores se ven en el panel de WhatsApp Manager, dentro de la
+    # App de Meta (API Setup → "From" phone number).
+    WHATSAPP_PHONE_NUMBER_ID: str = os.environ.get("WHATSAPP_PHONE_NUMBER_ID", "")
+    # ID de la WhatsApp Business Account (WABA) — no hace falta para
+    # mandar mensajes (eso solo usa WHATSAPP_PHONE_NUMBER_ID), pero se
+    # guarda para futuras tareas de administración (ej. un script propio
+    # que cree/liste plantillas por API en vez de hacerlo a mano desde
+    # WhatsApp Manager).
+    WHATSAPP_BUSINESS_ACCOUNT_ID: str = os.environ.get("WHATSAPP_BUSINESS_ACCOUNT_ID", "")
+    # Token de acceso — durante las pruebas con el número gratuito de
+    # Meta es el token temporal (vence en ~24 horas, hay que regenerarlo
+    # seguido desde el panel); antes de pasar a producción con el número
+    # real hay que reemplazarlo por un token permanente (System User,
+    # generado una sola vez desde Business Settings → System Users).
+    WHATSAPP_CLOUD_API_TOKEN: str = os.environ.get("WHATSAPP_CLOUD_API_TOKEN", "")
+    # Versión de la Graph API que usa el endpoint de envío (ej. "v25.0",
+    # la que te dio Meta en el ejemplo de curl) — Meta va sacando
+    # versiones nuevas con el tiempo, así que queda configurable en vez
+    # de hardcodeada en el servicio.
+    WHATSAPP_API_VERSION: str = os.environ.get("WHATSAPP_API_VERSION", "v25.0")
+    # Nombre de la plantilla de categoría "Authentication" (código +
+    # botón "Copiar código") que hay que crear y que Meta tiene que
+    # aprobar — NO la plantilla de ejemplo "jaspers_market_order_..."
+    # que trae la cuenta por defecto, esa es solo la demo genérica de
+    # Meta para probar la conexión, no sirve para el código de
+    # verificación real. Vacío por defecto: el servicio de envío falla
+    # con un error claro si se intenta usar antes de tener una plantilla
+    # real aprobada y configurada acá.
+    WHATSAPP_TEMPLATE_NAME: str = os.environ.get("WHATSAPP_TEMPLATE_NAME", "")
+    # Código de idioma de esa plantilla, tal como quede registrado al
+    # crearla en WhatsApp Manager (ej. "es_MX", "es_LA" o "en_US" según
+    # cuál elijas) — tiene que coincidir exacto con el idioma aprobado,
+    # si no la API rechaza el envío.
+    WHATSAPP_TEMPLATE_IDIOMA: str = os.environ.get("WHATSAPP_TEMPLATE_IDIOMA", "es_MX")
