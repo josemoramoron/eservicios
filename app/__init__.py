@@ -35,6 +35,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     from app.routes.reportes import reportes_bp
     from app.routes.servicios import servicios_bp
     from app.routes.tienda import renderizar_tienda
+    from app.routes.vendedor import login as vendedor_login
     from app.routes.vendedor import registro as vendedor_registro
     from app.routes.vendedor import vendedor_bp
     from app.services.google_auth_service import configurar_oauth_google
@@ -70,6 +71,32 @@ def create_app(config_class: type[Config] = Config) -> Flask:
         "/e-link",
         endpoint="vendedor.landing_e_link",
         view_func=vendedor_registro,
+        methods=["GET", "POST"],
+    )
+
+    # URLs canónicas de registro/login de e-link, en "/e-link/..." en vez de
+    # "/vendedor/..." (pedido de Jose, 2026-09-11): la URL pública que ve
+    # cualquier visitante no debería depender del prefijo interno del panel
+    # ("/vendedor"), que es un detalle de implementación. Registradas
+    # directamente sobre `app` (no vía `@vendedor_bp.route`, que siempre
+    # antepone "/vendedor") con el MISMO nombre de endpoint que usaban antes
+    # (`vendedor.registro` / `vendedor.login`), así que cada `url_for(...)`
+    # existente en el resto del código (redirecciones, enlaces "Inicia
+    # sesión"/"Regístrate", el correo de verificación, etc.) sigue
+    # funcionando sin tocar una sola plantilla más. La URL vieja
+    # "/vendedor/registro"/"/vendedor/login" se conserva funcionando con un
+    # 301 (ver `registro_url_antigua`/`login_url_antigua` en vendedor.py),
+    # para no romper marcadores o enlaces ya compartidos.
+    app.add_url_rule(
+        "/e-link/registro",
+        endpoint="vendedor.registro",
+        view_func=vendedor_registro,
+        methods=["GET", "POST"],
+    )
+    app.add_url_rule(
+        "/e-link/login",
+        endpoint="vendedor.login",
+        view_func=vendedor_login,
         methods=["GET", "POST"],
     )
 

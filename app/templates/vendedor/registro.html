@@ -4,7 +4,14 @@
 
 {% block breadcrumb %}
 <nav class="breadcrumb">
-    <span class="breadcrumb__link">eServicios</span>
+    {# A diferencia de las pantallas del panel ya logueado (dashboard,
+       perfil, etc.), acá "eServicios" SÍ es un enlace a la página
+       principal (`health.index`) — un visitante que llega a crear su
+       tienda o a iniciar sesión todavía no "está" dentro del panel, así
+       que necesita una salida real hacia el sitio principal (2026-09-11,
+       revierte para esta pantalla puntual el cambio de la sección
+       9-vicies decies, que sí sigue aplicando al resto del panel). #}
+    <a class="breadcrumb__link" href="{{ url_for('health.index') }}">eServicios</a>
     <span class="breadcrumb__current">Crear tienda gratis (e-link)</span>
 </nav>
 {% endblock %}

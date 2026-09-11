@@ -246,9 +246,13 @@ def _resolver_fotos_producto(vendor, producto: VendorProduct | None) -> tuple[li
 # --- Registro y autenticación ---
 
 
-@vendedor_bp.route("/registro", methods=["GET", "POST"])
 def registro():
-    """Formulario de registro de una tienda nueva (plan gratis)."""
+    """Formulario de registro de una tienda nueva (plan gratis).
+
+    Registrado directamente en `app/__init__.py` bajo `/e-link/registro`
+    (no como ruta del blueprint bajo `/vendedor`) — ver el comentario ahí
+    y `registro_url_antigua()` más abajo para el porqué (2026-09-11).
+    """
     if vendor_actual() is not None:
         return redirect(url_for("vendedor.dashboard"))
 
@@ -317,6 +321,29 @@ def registro():
     return render_template("vendedor/registro.html", valores=valores)
 
 
+@vendedor_bp.route("/registro", methods=["GET", "POST"])
+def registro_url_antigua():
+    """Compatibilidad con la URL vieja `/vendedor/registro` (2026-09-11).
+
+    Este formulario vivía en `/vendedor/registro` y se movió a
+    `/e-link/registro` para que la URL pública de e-link no dependa del
+    prefijo interno `/vendedor` (pedido de Jose, ver `claude/spec-tiendas-vendedor.md`).
+    Un GET se redirige (301) a la URL nueva, para no dejar dos URLs
+    indexables con el mismo contenido y para que cualquier marcador viejo
+    termine apuntando al lugar correcto. Un POST (ej. una pestaña vieja ya
+    cargada en el navegador de alguien, con el `<form>` todavía apuntando
+    aquí porque no fija `action`) se atiende igual que siempre, llamando
+    directamente a `registro()`, para no perder los datos ya enviados.
+
+    Returns:
+        Redirección 301 a `/e-link/registro` (GET), o la respuesta normal
+        de `registro()` (POST).
+    """
+    if request.method == "POST":
+        return registro()
+    return redirect(url_for("vendedor.registro"), code=301)
+
+
 @vendedor_bp.route("/registro/verificar-slug")
 def verificar_slug():
     """Endpoint AJAX: valida formato y disponibilidad de un slug en vivo.
@@ -335,9 +362,13 @@ def verificar_slug():
     return {"disponible": True, "error": None}
 
 
-@vendedor_bp.route("/login", methods=["GET", "POST"])
 def login():
-    """Formulario de inicio de sesión del panel de vendedor."""
+    """Formulario de inicio de sesión del panel de vendedor.
+
+    Registrado directamente en `app/__init__.py` bajo `/e-link/login`
+    (no como ruta del blueprint bajo `/vendedor`) — ver el comentario ahí
+    y `login_url_antigua()` más abajo para el porqué (2026-09-11).
+    """
     if vendor_actual() is not None:
         return redirect(url_for("vendedor.dashboard"))
     if request.method == "POST":
@@ -357,6 +388,24 @@ def login():
             destino = request.args.get("next") or url_for("vendedor.dashboard")
             return redirect(destino)
     return render_template("vendedor/login.html")
+
+
+@vendedor_bp.route("/login", methods=["GET", "POST"])
+def login_url_antigua():
+    """Compatibilidad con la URL vieja `/vendedor/login` (2026-09-11).
+
+    Mismo criterio que `registro_url_antigua()`: este formulario vivía en
+    `/vendedor/login` y se movió a `/e-link/login`. GET se redirige (301)
+    a la URL nueva; POST se atiende llamando directamente a `login()`, para
+    no perder las credenciales ya enviadas desde una pestaña vieja.
+
+    Returns:
+        Redirección 301 a `/e-link/login` (GET), o la respuesta normal de
+        `login()` (POST).
+    """
+    if request.method == "POST":
+        return login()
+    return redirect(url_for("vendedor.login"), code=301)
 
 
 @vendedor_bp.route("/auth/google")

@@ -4,7 +4,10 @@
 
 {% block breadcrumb %}
 <nav class="breadcrumb">
-    <span class="breadcrumb__link">eServicios</span>
+    {# Ver el mismo comentario en registro.html: acá "eServicios" sí es un
+       enlace a la página principal, a diferencia del resto del panel
+       (2026-09-11). #}
+    <a class="breadcrumb__link" href="{{ url_for('health.index') }}">eServicios</a>
     <span class="breadcrumb__current">Iniciar sesión (e-link)</span>
 </nav>
 {% endblock %}
