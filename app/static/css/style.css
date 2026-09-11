@@ -8,6 +8,15 @@
     --color-accent-contrast: #ffffff;
     --color-whatsapp: #25d366;
     --color-whatsapp-contrast: #ffffff;
+    /* Azul fijo de marca para la insignia "Vendedor verificado por
+       eServicios" (ver .tienda-verificado en tienda.css). A propósito
+       NO es --color-accent: ese lo puede cambiar cada vendedor Plus
+       (ver "Usar el azul de eServicios" en vendedor/perfil.html), y la
+       insignia de verificado debe verse igual para todos, sin importar
+       el color de acento que haya elegido la tienda. Mismo valor que el
+       --color-accent por defecto (el azul propio de eServicios), fijo
+       en ambos temas. */
+    --color-eservicios-azul: #2563eb;
     /* Badges de producto ("Más vendido", "Oferta", "Nuevo"), función de
        e-link Plus (roadmap, Fase 2, punto 14) — ver
        app/static/css/tienda.css (.tienda-badge-producto--*). */
@@ -34,6 +43,7 @@
     --color-accent-contrast: #0b0b0b;
     --color-whatsapp: #25d366;
     --color-whatsapp-contrast: #ffffff;
+    --color-eservicios-azul: #2563eb;
     --color-badge-vendido: #a78bfa;
     --color-badge-oferta: #f87171;
     --color-badge-nuevo: #34d399;
@@ -1400,68 +1410,123 @@ body {
     color: #fff;
 }
 
-/* --- Galería de estilos de portada/avatar prediseñados (perfil vendedor) --- */
-
-.admin-galeria-estilos {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, 64px);
-    gap: 10px;
-    margin: 10px 0 4px;
-}
-
-.admin-galeria-estilos__opcion {
+/* --- Miniaturas de fotos existentes al editar un producto (2026-09-11) ---
+   Antes esta lista no tenía NINGÚN estilo propio: cada <img> se pintaba
+   a su tamaño real (una foto de celular sin editar fácilmente supera
+   1000px de ancho) apilada verticalmente, desbordando la página — Jose
+   lo reportó desde /vendedor/productos/<id>/editar. Miniaturas
+   cuadradas de tamaño fijo (96px), en una fila que se ajusta sola
+   (flex-wrap), con object-fit: cover para recortar sin deformar —
+   ninguna imagen puede volver a desbordar, sea cual sea su tamaño
+   original. Los botones de mover/quitar (`producto_fotos.js`) se
+   agrupan en una barra angosta debajo de cada miniatura, con íconos en
+   vez de los caracteres ‹ › × sueltos de antes, para que el vendedor
+   entienda de un vistazo qué hace cada uno sin tener que adivinar. */
+.fotos-actuales-lista {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
+    flex-wrap: wrap;
+    gap: 12px;
+    list-style: none;
+    margin: 8px 0 4px;
+    padding: 0;
 }
 
-.admin-galeria-estilos__opcion input {
+.fotos-actuales-lista__item {
+    position: relative;
+    width: 96px;
+    flex: 0 0 auto;
+    border: 1px solid var(--color-border);
+    border-radius: 0.6rem;
+    background-color: var(--color-surface);
+    overflow: hidden;
+    cursor: grab;
+}
+
+.fotos-actuales-lista__item--arrastrando {
+    opacity: 0.4;
+}
+
+.fotos-actuales-lista__miniatura {
+    display: block;
+    width: 96px;
+    height: 96px;
+    object-fit: cover;
+}
+
+.fotos-actuales-lista__handle {
     position: absolute;
-    width: 1px;
-    height: 1px;
-    opacity: 0;
+    top: 4px;
+    left: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    font-size: 11px;
+    line-height: 1;
     pointer-events: none;
 }
 
-.admin-galeria-estilos__muestra {
+.fotos-actuales-lista__portada-badge {
+    display: none;
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background-color: var(--color-accent);
+    color: var(--color-accent-contrast);
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.fotos-actuales-lista__item--portada .fotos-actuales-lista__portada-badge {
     display: block;
-    width: 100%;
-    aspect-ratio: 1;
-    border-radius: 0.75rem;
-    border: 3px solid transparent;
-    box-sizing: border-box;
 }
 
-.admin-galeria-estilos__opcion input:checked + .admin-galeria-estilos__muestra {
-    border-color: var(--color-text);
+.fotos-actuales-lista__botones {
+    display: flex;
+    justify-content: center;
+    gap: 2px;
+    padding: 3px;
+    border-top: 1px solid var(--color-border);
+    background-color: var(--color-bg);
 }
 
-.admin-galeria-estilos__opcion input:focus-visible + .admin-galeria-estilos__muestra {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 2px;
-}
-
-.admin-galeria-estilos__muestra--defecto {
-    background-color: var(--color-surface);
-    border-style: dashed;
-    border-color: var(--color-border);
-}
-
-.admin-galeria-estilos__nombre {
-    font-size: 12px;
+.fotos-actuales-lista__mover,
+.fotos-actuales-lista__quitar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 0.4rem;
+    background: none;
     color: var(--color-text-muted);
-    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.fotos-actuales-lista__mover:hover,
+.fotos-actuales-lista__quitar:hover {
+    background-color: var(--color-border);
+    color: var(--color-text);
+}
+
+.fotos-actuales-lista__quitar:hover {
+    color: #b3261e;
 }
 
 /* --- Separador entre subsecciones del formulario de perfil (2026-08-31) ---
    Jose reportó que, en un formulario largo con muchas subsecciones
-   (logo, portada, galería de estilos, acento, plantilla), no se
-   distinguía dónde terminaba una y empezaba la siguiente. Una raya
-   delgada entre subsecciones, en vez de un cuadro/tarjeta por sección
-   (que habría exigido reestructurar todo el formulario en un solo
-   <form>). */
+   (logo, portada, acento, plantilla), no se distinguía dónde terminaba
+   una y empezaba la siguiente. Una raya delgada entre subsecciones, en
+   vez de un cuadro/tarjeta por sección (que habría exigido
+   reestructurar todo el formulario en un solo <form>). */
 .admin-form__separador {
     border: none;
     border-top: 1px solid var(--color-border);
@@ -1469,12 +1534,12 @@ body {
 }
 
 /* --- Tarjetas de selección de plantilla (punto 13, e-link Plus) ---
-   A diferencia de .admin-galeria-estilos (colores, con una muestra
-   cuadrada como indicador visual), acá cada opción es texto — por eso
-   necesita su propia "caja" con borde para que el estado marcado
-   (:checked) tenga un indicador visual real. Jose reportó que la
-   primera versión (reutilizando .admin-galeria-estilos__nombre suelto,
-   sin caja) no mostraba ninguna animación/indicación de selección. */
+   A diferencia de .admin-paleta-acento (colores, con un círculo como
+   indicador visual), acá cada opción es texto — por eso necesita su
+   propia "caja" con borde para que el estado marcado (:checked) tenga
+   un indicador visual real. Jose reportó que la primera versión
+   (texto suelto, sin caja) no mostraba ninguna animación/indicación de
+   selección. */
 .admin-plantillas {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -1535,17 +1600,26 @@ body {
 /* --- Círculos de color rápido para el acento propio (2026-08-31) ---
    Complementa (no reemplaza) el <input type="color"> nativo — Jose pidió
    círculos como en el mockup de las plantillas, para elegir un color
-   común de un clic sin abrir el selector nativo del sistema operativo. */
+   común de un clic sin abrir el selector nativo del sistema operativo.
+   Unificación del 2026-09-11: la paleta creció de 6 a 10 colores en
+   Plus (se sumaron rosado/vinotinto/marrón/fucsia — ver
+   vendor_service.PALETA_ACENTO_PLUS) y Jose pidió que, aun así, los
+   círculos quedaran "todo en una misma fila" — nowrap + scroll
+   horizontal PROPIO de esta fila (no de la página) en vez de encogerlos
+   hasta que quepan todos o dejarlos pasar a una segunda línea. */
 .admin-paleta-acento {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
     gap: 10px;
     margin: 4px 0 12px;
+    padding-bottom: 2px;
 }
 
 .admin-paleta-acento__circulo {
     width: 32px;
     height: 32px;
+    flex: 0 0 auto;
     border-radius: 50%;
     border: 2px solid var(--color-border);
     padding: 0;

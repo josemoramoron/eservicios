@@ -47,7 +47,6 @@ from app.services.vendor_email_verificacion_service import (
 from app.services.badges_producto_service import listar_badges_producto
 from app.services.estadisticas_service import resumen_estadisticas
 from app.services.estados_stock_service import listar_estados_stock
-from app.services.estilos_portada_service import listar_presets_portada
 from app.services.monedas_service import listar_monedas
 from app.services.plantillas_tienda_service import listar_plantillas_tienda
 from app.services.google_auth_service import oauth, obtener_perfil_google
@@ -91,7 +90,7 @@ from app.services.vendor_service import (
     obtener_categoria_de_vendor,
     obtener_link_de_vendor,
     obtener_producto_de_vendor,
-    listar_paleta_acento_sugerida,
+    listar_paleta_acento,
     obtener_vendor_por_email,
     obtener_vendor_por_google_id,
     plan_plus_vigente,
@@ -109,11 +108,14 @@ vendedor_bp = Blueprint("vendedor", __name__, url_prefix="/vendedor")
 
 @vendedor_bp.context_processor
 def inyectar_vendor_actual() -> dict:
-    """Expone el vendedor autenticado, su acento Plus y el generador de CSRF a las plantillas.
+    """Expone el vendedor autenticado, su acento y el generador de CSRF a las plantillas.
 
     `acento` se calcula acá (no en cada ruta) porque el color de acento
     del vendedor debe verse en todo el panel — nav, botones, tarjetas de
     estadísticas —, no solo en la pantalla de perfil donde se elige.
+    Desde la unificación del 2026-09-11 ya no es exclusivo de Plus (ver
+    `resolver_acento_vendor`): toda tienda tiene un acento efectivo,
+    aunque nunca haya elegido uno (el azul de eServicios por defecto).
 
     Returns:
         Diccionario con las claves `vendor`, `acento` y `csrf_token` para Jinja.
@@ -620,7 +622,7 @@ def contacto_vcard():
 @vendedor_bp.route("/perfil", methods=["GET", "POST"])
 @requiere_vendor
 def perfil():
-    """Personalización de la tienda: nombre, WhatsApp, bio, moneda, logo, portada, estilo, acento, plantilla y cupón."""
+    """Personalización de la tienda: nombre, WhatsApp, bio, moneda, logo, portada, acento, plantilla y cupón."""
     vendor = vendor_actual()
     plan_plus_activo = plan_plus_vigente(vendor)
     if request.method == "POST":
@@ -628,28 +630,26 @@ def perfil():
         nombre_negocio = request.form.get("nombre_negocio", "")
         whatsapp_numero = request.form.get("whatsapp_numero", "")
         bio = request.form.get("bio", "")
-        # Gratis para cualquier plan (a diferencia de plantilla/color_acento/
+        # Gratis para cualquier plan (a diferencia de plantilla/
         # disponible_ahora abajo) — siempre viene del <select> cerrado del
         # formulario, sin gateo por plan_plus_activo (ver monedas_service).
         moneda = request.form.get("moneda", "")
-        estilo_portada = request.form.get("estilo_portada", "")
-        # Igual que estilo_portada: un radio cerrado, no texto libre — el
-        # gateo real por plan Plus ocurre en tiempo de render
-        # (resolver_plantilla_vendor), no acá. Se guarda tal cual llegue
-        # aunque el vendedor no tenga Plus vigente en este momento.
+        # Igual: un radio cerrado, no texto libre — el gateo real por
+        # plan Plus ocurre en tiempo de render (resolver_plantilla_vendor),
+        # no acá. Se guarda tal cual llegue aunque el vendedor no tenga
+        # Plus vigente en este momento.
         plantilla = request.form.get("plantilla", "")
 
-        # El selector de color solo se envía (y solo puede cambiarse) si el
-        # vendedor tiene Plus vigente — ver plan_plus_activo/plantilla. Si el
-        # campo no llega (input deshabilitado/ausente) se conserva el valor
-        # actual en vez de borrarlo; el checkbox "quitar" es la única forma
-        # de limpiarlo, y solo aparece en el formulario cuando hay Plus.
-        if request.form.get("quitar_color_acento") == "on":
-            color_acento = None
-        elif "color_acento" in request.form and plan_plus_activo:
-            color_acento = request.form.get("color_acento", "").strip()
-        else:
-            color_acento = vendor.color_acento
+        # El color de acento (unificado con "diseño de portada y avatar"
+        # el 2026-09-11) ya se muestra a CUALQUIER plan — con el plan
+        # gratis, un <input type="hidden"> que solo los círculos de la
+        # paleta gratuita pueden cambiar (ver paleta_acento.js); con Plus,
+        # además el selector de color nativo. Por eso ya no hace falta
+        # distinguir si el campo llegó o no: siempre viene en el
+        # formulario. Cuáles colores son válidos para el plan actual del
+        # vendedor se decide en tiempo de render (resolver_acento_vendor),
+        # no acá — mismo criterio que plantilla/disponible_ahora/cupón.
+        color_acento = request.form.get("color_acento", "").strip() or vendor.color_acento
 
         # El interruptor de disponibilidad (punto 15) solo se muestra en
         # el formulario si hay Plus vigente — mismo criterio que
@@ -675,9 +675,8 @@ def perfil():
             return render_template(
                 "vendedor/perfil.html",
                 vendor=vendor,
-                presets=listar_presets_portada(),
                 plantillas=listar_plantillas_tienda(),
-                paleta_acento=listar_paleta_acento_sugerida(),
+                paleta_acento=listar_paleta_acento(plan_plus_activo),
                 plan_plus_activo=plan_plus_activo,
                 monedas=listar_monedas(),
             )
@@ -695,9 +694,8 @@ def perfil():
             return render_template(
                 "vendedor/perfil.html",
                 vendor=vendor,
-                presets=listar_presets_portada(),
                 plantillas=listar_plantillas_tienda(),
-                paleta_acento=listar_paleta_acento_sugerida(),
+                paleta_acento=listar_paleta_acento(plan_plus_activo),
                 plan_plus_activo=plan_plus_activo,
                 monedas=listar_monedas(),
             )
@@ -717,7 +715,6 @@ def perfil():
                 bio=bio,
                 logo_url=logo_url,
                 banner_url=banner_url,
-                estilo_portada=estilo_portada,
                 color_acento=color_acento,
                 plantilla=plantilla,
                 disponible_ahora=disponible_ahora,
@@ -729,9 +726,8 @@ def perfil():
             return render_template(
                 "vendedor/perfil.html",
                 vendor=vendor,
-                presets=listar_presets_portada(),
                 plantillas=listar_plantillas_tienda(),
-                paleta_acento=listar_paleta_acento_sugerida(),
+                paleta_acento=listar_paleta_acento(plan_plus_activo),
                 plan_plus_activo=plan_plus_activo,
                 monedas=listar_monedas(),
             )
@@ -741,9 +737,8 @@ def perfil():
     return render_template(
         "vendedor/perfil.html",
         vendor=vendor,
-        presets=listar_presets_portada(),
         plantillas=listar_plantillas_tienda(),
-        paleta_acento=listar_paleta_acento_sugerida(),
+        paleta_acento=listar_paleta_acento(plan_plus_activo),
         plan_plus_activo=plan_plus_activo,
         monedas=listar_monedas(),
     )

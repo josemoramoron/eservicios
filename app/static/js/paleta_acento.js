@@ -1,17 +1,18 @@
 /**
- * Círculos de color rápido para "Color de acento propio" en /vendedor/perfil.
+ * Círculos de color rápido para "Color de tu tienda" en /vendedor/perfil.
  *
- * Al hacer clic en un círculo, escribe ese color en el <input type="color">
- * nativo (el selector personalizado sigue disponible aparte, para
- * cualquier hex que no esté en la paleta) y desmarca el checkbox de
- * "quitar mi color" si estaba marcado, para que el color elegido no se
- * pierda al guardar. Sin dependencias, mismo espíritu que
- * validacion_formulario.js y producto_fotos.js.
+ * Al hacer clic en un círculo, escribe ese color en el input
+ * `#color_acento` — un <input type="color"> visible con e-link Plus
+ * (el selector nativo sigue disponible aparte, para cualquier hex que
+ * no esté en la paleta), o un <input type="hidden"> con el plan
+ * gratis, que solo estos círculos pueden cambiar (ver
+ * vendor_service.PALETA_ACENTO_GRATIS: azul y rosado). Sin
+ * dependencias, mismo espíritu que validacion_formulario.js y
+ * producto_fotos.js.
  */
 document.addEventListener("DOMContentLoaded", () => {
     const circulos = document.querySelectorAll(".admin-paleta-acento__circulo");
     const inputColor = document.getElementById("color_acento");
-    const checkboxQuitar = document.querySelector('input[name="quitar_color_acento"]');
 
     if (!circulos.length || !inputColor) {
         return;
@@ -22,9 +23,6 @@ document.addEventListener("DOMContentLoaded", () => {
             inputColor.value = circulo.dataset.color;
             circulos.forEach((otro) => otro.classList.remove("admin-paleta-acento__circulo--activo"));
             circulo.classList.add("admin-paleta-acento__circulo--activo");
-            if (checkboxQuitar) {
-                checkboxQuitar.checked = false;
-            }
         });
     });
 

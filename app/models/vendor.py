@@ -55,18 +55,29 @@ class Vendor(db.Model):
     whatsapp_numero: Mapped[str] = mapped_column(String(30), nullable=False)
     logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     banner_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    # Preset de color elegido para el banner/avatar de respaldo cuando no
-    # hay logo_url/banner_url propios (ver app/services/estilos_portada_service.py).
-    # None = usa el placeholder genérico de siempre (acento compartido).
+    # OBSOLETO desde la unificación del 2026-09-11: guardaba la clave de
+    # un preset de color para el banner/avatar de respaldo, elegido por
+    # separado del color de acento (ver el viejo
+    # `estilos_portada_service.py`, eliminado). Ese mecanismo se fusionó
+    # con `color_acento` de abajo, que ahora arma el mismo degradado él
+    # solo (ver `vendor_service.resolver_acento_vendor`). La columna
+    # queda sin usar (nunca se lee ni se escribe) en vez de borrarse, para
+    # no requerir una migración solo por esto — datos viejos, inofensivos.
     estilo_portada: Mapped[str | None] = mapped_column(String(30), nullable=True)
-    # Color de acento propio de la tienda ("#rrggbb"), función de e-link
-    # Plus (roadmap, Fase 2, punto 12) — reemplaza el --color-accent
-    # compartido en la tienda pública y en el panel del propio vendedor
-    # cuando el plan Plus está vigente (ver vendor_service.resolver_acento_vendor).
-    # Se guarda aunque el plan no esté vigente en este momento (ej. Plus
-    # vencido), para que el vendedor no tenga que volver a elegirlo si
-    # renueva — la aplicación real siempre se resuelve en tiempo de
-    # render, nunca solo por la presencia de este valor.
+    # Color de acento propio de la tienda ("#rrggbb") — con el plan
+    # gratis, limitado a una paleta de 2 colores (azul de eServicios y
+    # rosado); con e-link Plus (roadmap, Fase 2, punto 12), una paleta
+    # más amplia o cualquier color personalizado. Reemplaza el
+    # --color-accent compartido en la tienda pública y en el panel del
+    # propio vendedor, y (desde la unificación del 2026-09-11) también
+    # arma el degradado del banner/avatar de respaldo cuando no hay
+    # logo_url/banner_url propios — ver vendor_service.resolver_acento_vendor,
+    # que es quien de verdad decide qué colores están permitidos según el
+    # plan. Se guarda aunque el plan Plus no esté vigente en este momento
+    # (ej. vencido), para que el vendedor no tenga que volver a elegir un
+    # color exclusivo de Plus si renueva — la aplicación real siempre se
+    # resuelve en tiempo de render, nunca solo por la presencia de este
+    # valor.
     color_acento: Mapped[str | None] = mapped_column(String(7), nullable=True)
     # Plantilla visual de la tienda pública (layout + par tipográfico),
     # función de e-link Plus (roadmap, Fase 2, punto 13) — ver

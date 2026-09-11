@@ -40,9 +40,12 @@ class Config:
     BREVO_REMITENTE: str = os.environ.get("BREVO_REMITENTE", "no-responder@eservicios.org")
 
     # Límite de tamaño de request completo (Flask lo rechaza con 413 antes de
-    # leer el body si se supera) — cubre con margen los casos con logo +
-    # portada + foto de producto en un mismo formulario (5 MB cada una).
-    MAX_CONTENT_LENGTH: int = 16 * 1024 * 1024
+    # leer el body si se supera) — cubre con margen el peor caso real: el
+    # formulario de un producto nuevo, con hasta MAX_FOTOS_PRODUCTO (5)
+    # fotos a la vez, cada una hasta el tope de r2_service._TAMANO_MAXIMO_BYTES
+    # (10 MB desde el 2026-09-11, antes de comprimir) = 50 MB, más margen
+    # para el resto del formulario y el overhead de multipart.
+    MAX_CONTENT_LENGTH: int = 56 * 1024 * 1024
 
     # "Iniciar sesión con Google" del vendedor (ver app/services/google_auth_service.py
     # y las rutas /vendedor/auth/google*). Se generan en Google Cloud Console

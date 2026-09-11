@@ -8,8 +8,10 @@
     font-family: system-ui, sans-serif;
 }
 
-/* Color de acento propio (e-link Plus, punto 12 del roadmap) — se activa
-   junto con el override de --color-accent en el <body> (ver
+/* Color de acento propio (punto 12 del roadmap) — toda tienda lo tiene
+   (unificación del 2026-09-11: `resolver_acento_vendor` ya no devuelve
+   None, ver vendor_service.py), así que esta clase va siempre en el
+   <body> junto con el override de --color-accent (ver
    tienda/publica.html). Un degradado suave y acotado en altura (no de
    toda la página, que puede ser muy larga) para no perder legibilidad;
    cae de vuelta a --color-bg sólido más abajo. color-mix() no lo
@@ -22,11 +24,12 @@
 
 .tienda-banner {
     height: 132px;
-    /* --color-portada-* la define un preset elegido en /vendedor/perfil
-       (ver estilos_portada_service.py) mediante un style="" en <body>;
-       si el vendedor no eligió ninguno, cae de vuelta al acento
-       compartido de siempre — nunca toca --color-accent directamente,
-       para no chocar con el futuro color de acento de e-link Plus. */
+    /* --color-portada-* sale del mismo color de acento del vendedor
+       (ver vendor_service.resolver_acento_vendor, unificación del
+       2026-09-11: acento.color/acento.gradiente_fin), fijado en un
+       style="" en <body> (ver tienda/publica.html) — toda tienda tiene
+       un acento efectivo, así que este fallback ya casi nunca aplica;
+       queda solo por si algún template no llega a fijar la variable. */
     background: linear-gradient(135deg, var(--color-portada-inicio, var(--color-accent)), var(--color-portada-fin, var(--color-surface)));
     background-size: cover;
     background-position: center;
@@ -152,16 +155,18 @@
 }
 
 /* Insignia "Vendedor verificado por eServicios" (punto 21) — gratis
-   para cualquier plan, junto al nombre de la tienda en las 3
-   plantillas (ver tienda/_insignia_verificado.html). Reusa
-   --color-whatsapp (el mismo verde de "confirmado/activo" que ya usa
-   .tienda-disponibilidad--activa) en vez de un color nuevo, para no
-   competir visualmente con --color-accent de la tienda. */
+   para cualquier plan, junto al nombre de la tienda en las 4
+   plantillas (ver tienda/_insignia_verificado.html). Usa
+   --color-eservicios-azul (azul fijo de marca, definido en
+   style.css) en vez de --color-whatsapp: el vendedor puede tener
+   cualquier color de acento en su tienda, y la insignia debe verse
+   igual — azul de eServicios — para todos, sin competir con ese
+   acento ni confundirse con el verde de WhatsApp/disponibilidad. */
 .tienda-verificado {
     display: inline-flex;
     vertical-align: middle;
     margin-left: 4px;
-    color: var(--color-whatsapp);
+    color: var(--color-eservicios-azul);
 }
 
 /* Estado manual de stock ("Pocas unidades", "Agotado" — punto 17,

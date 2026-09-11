@@ -4,7 +4,7 @@
     {% include "tienda/_cabecera_meta.html" %}
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500&display=swap">
 </head>
-<body class="tienda-body minimalista-body{% if acento %} tienda-body--acento{% endif %}"{% if acento %} style="--color-accent: {{ acento.color }}; --color-accent-contrast: {{ acento.contraste }};"{% elif preset_portada %} style="--color-portada-inicio: {{ preset_portada.color_inicio }}; --color-portada-fin: {{ preset_portada.color_fin }}; --color-portada-contraste: #ffffff;"{% endif %}>
+<body class="tienda-body minimalista-body tienda-body--acento" style="--color-accent: {{ acento.color }}; --color-accent-contrast: {{ acento.contraste }}; --color-portada-inicio: {{ acento.color }}; --color-portada-fin: {{ acento.gradiente_fin }}; --color-portada-contraste: {{ acento.contraste }};">
 
 <div class="minimalista-topbar"></div>
 

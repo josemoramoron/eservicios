@@ -30,14 +30,13 @@ from app.models import (
 )
 from app.services.badges_producto_service import BADGES_PRODUCTO, obtener_badge_producto
 from app.services.estados_stock_service import ESTADOS_STOCK, obtener_estado_stock
-from app.services.estilos_portada_service import PRESETS_PORTADA
 from app.services.monedas_service import MONEDAS, detectar_moneda_por_whatsapp
 from app.services.plantillas_tienda_service import PLANTILLAS_TIENDA, obtener_plantilla_tienda
 
 # Formato exigido para Vendor.color_acento — "#" + 6 dígitos hexadecimales,
 # el mismo formato que produce un <input type="color"> nativo del navegador
 # (ver vendedor/perfil.html). Cualquier otro valor se ignora en silencio,
-# mismo criterio que ya se usa con estilo_portada en actualizar_perfil().
+# mismo criterio que ya se usa con plantilla en actualizar_perfil().
 _PATRON_COLOR_HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 _SLUG_RE = re.compile(r"^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$")
@@ -481,7 +480,6 @@ def actualizar_perfil(
     bio: str,
     logo_url: str | None,
     banner_url: str | None,
-    estilo_portada: str | None = None,
     color_acento: str | None = None,
     plantilla: str | None = None,
     disponible_ahora: bool = True,
@@ -502,51 +500,46 @@ def actualizar_perfil(
         bio: Nueva descripción corta (puede quedar vacía).
         logo_url: URL del logo ya subido a R2, o None para quitarlo.
         banner_url: URL del banner ya subido a R2, o None para quitarlo.
-        estilo_portada: Clave de un preset de `estilos_portada_service`
-            (ej. "oceano"), o vacío/None para usar el placeholder
-            genérico. Un valor que no exista en `PRESETS_PORTADA` se
-            ignora en silencio (queda en None) en vez de lanzar error —
-            es un `<select>`/radio cerrado, no texto libre del usuario.
-        color_acento: Valor FINAL a guardar como color de acento propio
-            ("#rrggbb", función de e-link Plus — ver
-            `resolver_acento_vendor`), o None para dejarlo sin color
-            propio. A diferencia de los demás parámetros, esto no
-            representa "el campo tal como llegó del formulario" — es
-            responsabilidad del llamador resolver antes de llamar aquí
-            si el vendedor pidió quitar el color, escribió uno nuevo, o
-            el formulario ni siquiera incluía el selector (por no tener
-            Plus vigente), en cuyo caso el llamador debe pasar el valor
-            que ya tenía `vendor.color_acento` para no perderlo (ver
-            `vendedor.perfil`). Un valor que no cumpla el formato se
-            ignora en silencio (queda en None) en vez de lanzar error —
-            no debería ocurrir nunca desde un `<input type="color">`
-            nativo, pero se valida igual por si llega manipulado. Este
-            parámetro NO valida que el vendedor tenga Plus vigente —
-            se guarda igual aunque el plan no esté vigente, para no
-            perder la elección si el vendedor vuelve a Plus más adelante.
+        color_acento: Color de acento propio de la tienda ("#rrggbb"),
+            elegido de la paleta de círculos o (con e-link Plus) de un
+            selector de color libre — ver `resolver_acento_vendor` y
+            `listar_paleta_acento`. Reemplaza, desde la unificación del
+            2026-09-11, al viejo selector separado de "diseño de portada
+            y avatar": este mismo color ahora también arma el degradado
+            del banner/avatar cuando el vendedor no subió su propio logo
+            o portada. Un valor que no cumpla el formato "#rrggbb" se
+            ignora en silencio (queda en None, que resuelve al azul de
+            eServicios) en vez de lanzar error. A propósito NO valida
+            acá si el color es de los permitidos para el plan actual del
+            vendedor (ej. un color exclusivo de Plus guardado con Plus
+            vigente, que luego vence): se guarda tal cual llegue, y es
+            `resolver_acento_vendor` quien decide en tiempo de render si
+            corresponde usarlo o caer de vuelta al azul/rosado gratis —
+            así el vendedor no pierde su elección si vuelve a Plus más
+            adelante.
         plantilla: Clave de una plantilla de `plantillas_tienda_service`
             (ej. "editorial"), o vacío/None para la plantilla "Clásica".
-            Mismo trato que `estilo_portada`: un valor que no exista en
-            `PLANTILLAS_TIENDA` se ignora en silencio (queda en None) en
-            vez de lanzar error. Tampoco valida el plan Plus aquí —esa
-            función de e-link Plus se gatea en tiempo de render (ver
-            `resolver_plantilla_vendor`), no al guardar.
+            Un valor que no exista en `PLANTILLAS_TIENDA` se ignora en
+            silencio (queda en None) en vez de lanzar error. Tampoco
+            valida el plan Plus aquí —esa función de e-link Plus se
+            gatea en tiempo de render (ver `resolver_plantilla_vendor`),
+            no al guardar.
         disponible_ahora: Estado del interruptor manual "Disponible
             ahora" / "Fuera de horario" (función de e-link Plus, punto
-            15 del roadmap). A diferencia de `estilo_portada`/`plantilla`,
-            no hay valor inválido posible (siempre es `True` o `False`),
-            así que se guarda tal cual — es responsabilidad del llamador
-            conservar `vendor.disponible_ahora` en vez de pasar un valor
-            nuevo cuando el formulario ni siquiera mostraba el
-            interruptor (por no tener Plus vigente), igual que ya hace
-            con `color_acento` (ver `vendedor.perfil`).
+            15 del roadmap). A diferencia de `plantilla`, no hay valor
+            inválido posible (siempre es `True` o `False`), así que se
+            guarda tal cual — es responsabilidad del llamador conservar
+            `vendor.disponible_ahora` en vez de pasar un valor nuevo
+            cuando el formulario ni siquiera mostraba el interruptor
+            (por no tener Plus vigente), igual que ya hace con
+            `cupon` (ver `vendedor.perfil`).
         moneda: Clave de una moneda de `monedas_service` (ej. "cop"), o
             vacío/None/inválida para conservar la moneda que la tienda
             ya tenía (nunca queda sin moneda — a diferencia de
-            `estilo_portada`/`plantilla`, no existe un "sin moneda" para
-            resetear). Sin relación con el plan: gratis para cualquier
-            tienda, no se gatea en ningún resolver (ver
-            `monedas_service` para el porqué).
+            `plantilla`, no existe un "sin moneda" para resetear). Sin
+            relación con el plan: gratis para cualquier tienda, no se
+            gatea en ningún resolver (ver `monedas_service` para el
+            porqué).
         cupon: Texto del cupón/código de descuento (ej. "VERANO10"),
             función de e-link Plus (punto 16 del roadmap) — cadena vacía
             para quitarlo. No valida ningún formato (es texto libre
@@ -565,8 +558,6 @@ def actualizar_perfil(
     if not whatsapp_numero:
         raise PerfilInvalidoError("El número de WhatsApp es obligatorio.")
 
-    if estilo_portada and estilo_portada not in PRESETS_PORTADA:
-        estilo_portada = None
     if plantilla and plantilla not in PLANTILLAS_TIENDA:
         plantilla = None
 
@@ -575,7 +566,6 @@ def actualizar_perfil(
     vendor.bio = bio.strip() or None
     vendor.logo_url = logo_url
     vendor.banner_url = banner_url
-    vendor.estilo_portada = estilo_portada or None
     vendor.color_acento = color_acento if (color_acento and _PATRON_COLOR_HEX.match(color_acento)) else None
     vendor.plantilla = plantilla or None
     vendor.disponible_ahora = disponible_ahora
@@ -694,30 +684,77 @@ def _contraste_legible(color_hex: str) -> str:
     return "#111111" if luminancia > 0.6 else "#ffffff"
 
 
-def resolver_acento_vendor(vendor: Vendor) -> dict[str, str] | None:
-    """Resuelve el color de acento propio efectivo de una tienda, si aplica.
+def _oscurecer_color(color_hex: str, factor: float = 0.45) -> str:
+    """Oscurece un color hexadecimal, para usarlo como segundo tono de un degradado.
 
-    Punto único de entrada para la función Plus del punto 12 del roadmap
-    — tanto la tienda pública (`routes/tienda.py`) como el panel del
-    propio vendedor (`routes/vendedor.py`, vía el context processor)
-    llaman a esta función en vez de leer `vendor.color_acento`
-    directamente, para que el chequeo de plan nunca se les olvide.
+    Interpola cada canal RGB hacia el negro en la proporción `factor`,
+    sin tocar el matiz — el mismo tono, más oscuro. Reemplaza a los
+    pares de color fijos que antes vivían uno por uno en
+    `estilos_portada_service` (eliminado en la unificación del
+    2026-09-11): ahora el degradado del banner/avatar sale de un solo
+    color de acento, no de un preset elegido aparte.
+
+    Args:
+        color_hex: Color en formato "#rrggbb".
+        factor: Qué tan oscuro debe quedar (0 = igual, 1 = negro). 0.45
+            por defecto — suficiente contraste con el tono original para
+            que el degradado se note, sin llegar a negro puro.
+
+    Returns:
+        Color oscurecido, en formato "#rrggbb".
+    """
+    r = round(int(color_hex[1:3], 16) * (1 - factor))
+    g = round(int(color_hex[3:5], 16) * (1 - factor))
+    b = round(int(color_hex[5:7], 16) * (1 - factor))
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
+def resolver_acento_vendor(vendor: Vendor) -> dict[str, str]:
+    """Resuelve el color de acento propio efectivo de una tienda — siempre devuelve uno.
+
+    Punto único de entrada para el color de marca de la tienda — tanto
+    la tienda pública (`routes/tienda.py`) como el panel del propio
+    vendedor (`routes/vendedor.py`, vía el context processor) llaman a
+    esta función en vez de leer `vendor.color_acento` directamente.
+
+    Desde la unificación del 2026-09-11 (antes "diseño de portada y
+    avatar" y "color de acento propio" eran dos mecanismos separados —
+    ver el viejo `estilos_portada_service`, eliminado), este color hace
+    dos trabajos a la vez: el acento plano (`color`/`contraste`, en
+    botones/precios/fondo) y el degradado del banner/avatar de respaldo
+    (`color` a `gradiente_fin`) mientras el vendedor no suba su propio
+    logo/portada. Y, a diferencia de la versión anterior de esta
+    función, YA NO devuelve `None`: el plan Plus ya no decide si hay
+    acento o no, sino QUÉ colores están permitidos (ver
+    `listar_paleta_acento`) — con el plan gratis, entre el azul de
+    eServicios y un rosado fijo; con Plus, entre una paleta más amplia o
+    cualquier color personalizado.
 
     Args:
         vendor: Tienda a evaluar.
 
     Returns:
-        None cuando la tienda no tiene un color de acento propio
-        guardado, o cuando no tiene el plan Plus vigente ahora mismo
-        (ver `plan_plus_vigente`) — en ese caso el valor puede seguir
-        guardado en `vendor.color_acento`, listo para reactivarse solo
-        con volver a Plus. Si aplica, un diccionario con `color` (el hex
-        guardado) y `contraste` (blanco o casi negro, calculado para que
-        el texto sea legible sobre ese color).
+        Diccionario con `color` (el hex efectivo, nunca vacío),
+        `contraste` (blanco o casi negro, legible sobre `color`) y
+        `gradiente_fin` (una versión oscurecida de `color` — el propio
+        `color` es el otro extremo del degradado).
     """
-    if not vendor.color_acento or not plan_plus_vigente(vendor):
-        return None
-    return {"color": vendor.color_acento, "contraste": _contraste_legible(vendor.color_acento)}
+    color = vendor.color_acento
+    if color and _PATRON_COLOR_HEX.match(color):
+        if not plan_plus_vigente(vendor) and color.lower() not in {c.lower() for c in PALETA_ACENTO_GRATIS}:
+            # Color exclusivo de Plus, guardado cuando el plan estaba
+            # vigente — ahora vencido, cae de vuelta al azul/rosado
+            # gratis hasta que el vendedor vuelva a Plus (el valor sigue
+            # guardado en la base, no se pierde: ver actualizar_perfil).
+            color = None
+    else:
+        color = None
+    color = color or COLOR_ACENTO_POR_DEFECTO
+    return {
+        "color": color,
+        "contraste": _contraste_legible(color),
+        "gradiente_fin": _oscurecer_color(color),
+    }
 
 
 def resolver_cupon_vendor(vendor: Vendor) -> str | None:
@@ -745,29 +782,49 @@ def resolver_cupon_vendor(vendor: Vendor) -> str | None:
     return vendor.cupon
 
 
-# Paleta curada de colores de acento sugeridos — atajo de un clic en
+# Azul de marca de eServicios — el acento por defecto de cualquier
+# tienda que no eligió ningún color propio (ver resolver_acento_vendor),
+# y el mismo valor que --color-accent trae de fábrica en style.css.
+COLOR_ACENTO_POR_DEFECTO = "#2563eb"
+
+# Paleta curada de colores de acento — atajo de un clic en
 # /vendedor/perfil (círculos), inspirada en el mismo mockup aprobado por
-# Jose para las plantillas del punto 13. No reemplaza el selector de
-# color nativo (`<input type="color">`), que sigue disponible para
-# cualquier hex personalizado que el vendedor quiera usar.
-PALETA_ACENTO_SUGERIDA: list[str] = [
-    "#2563eb",  # azul (el mismo --color-accent compartido por defecto)
-    "#e11d48",  # rosa/rojo
+# Jose para las plantillas del punto 13. Dos niveles, unificados en un
+# solo mecanismo (ver resolver_acento_vendor): el plan gratis solo
+# puede usar PALETA_ACENTO_GRATIS (el azul de siempre + un rosado fijo);
+# el plan Plus además desbloquea PALETA_ACENTO_PLUS completa y el
+# selector de color nativo (`<input type="color">`) para cualquier hex.
+PALETA_ACENTO_GRATIS: list[str] = [
+    COLOR_ACENTO_POR_DEFECTO,  # azul (el de siempre)
+    "#ec4899",  # rosado
+]
+
+PALETA_ACENTO_PLUS: list[str] = PALETA_ACENTO_GRATIS + [
+    "#e11d48",  # rosa fuerte/rojo
     "#059669",  # verde esmeralda
     "#7c3aed",  # violeta
     "#ea580c",  # naranja
     "#0f172a",  # grafito casi negro
+    "#7f1d1d",  # vinotinto
+    "#78350f",  # marrón
+    "#c026d3",  # fucsia
 ]
 
 
-def listar_paleta_acento_sugerida() -> list[str]:
-    """Devuelve la paleta curada de colores de acento sugeridos.
+def listar_paleta_acento(plan_plus_activo: bool) -> list[str]:
+    """Devuelve la paleta curada de colores de acento disponible para el plan del vendedor.
+
+    Args:
+        plan_plus_activo: Si la tienda tiene e-link Plus vigente ahora
+            mismo (ver `plan_plus_vigente`).
 
     Returns:
-        Lista de colores en formato "#rrggbb", en el orden en que deben
-        mostrarse los círculos en `/vendedor/perfil`.
+        `PALETA_ACENTO_PLUS` (10 colores) si `plan_plus_activo`,
+        `PALETA_ACENTO_GRATIS` (2 colores: azul y rosado) en caso
+        contrario — en el orden en que deben mostrarse los círculos en
+        `/vendedor/perfil`, todos en una sola fila.
     """
-    return list(PALETA_ACENTO_SUGERIDA)
+    return list(PALETA_ACENTO_PLUS if plan_plus_activo else PALETA_ACENTO_GRATIS)
 
 
 PLANTILLA_POR_DEFECTO = "clasica"
@@ -778,11 +835,10 @@ def resolver_plantilla_vendor(vendor: Vendor) -> str:
 
     Punto único de entrada para la función Plus del punto 13 del roadmap
     (plantillas prediseñadas) — `routes/tienda.py` la usa para decidir
-    qué archivo de template renderizar. A diferencia de
-    `resolver_acento_vendor`, siempre devuelve un valor (nunca None):
-    toda tienda tiene que renderizarse con alguna plantilla, y
-    "clasica" es la que ya existía antes de esta función, gratis para
-    todos.
+    qué archivo de template renderizar. Igual que `resolver_acento_vendor`,
+    siempre devuelve un valor (nunca None): toda tienda tiene que
+    renderizarse con alguna plantilla, y "clasica" es la que ya existía
+    antes de esta función, gratis para todos.
 
     Args:
         vendor: Tienda a evaluar.
@@ -1033,8 +1089,8 @@ def crear_producto(
         badge: Clave de un badge de `badges_producto_service` (ej.
             "oferta"), o vacío/None para no mostrar ninguno. Un valor que
             no exista en `BADGES_PRODUCTO` se ignora en silencio (queda
-            en None) — mismo trato que `estilo_portada`/`plantilla` en
-            `Vendor`. No valida el plan Plus aquí — esa función se gatea
+            en None) — mismo trato que `plantilla` en `Vendor`. No
+            valida el plan Plus aquí — esa función se gatea
             en tiempo de render (ver `resolver_badge_producto`).
         estado_stock: Clave de un estado de `estados_stock_service` (ej.
             "agotado"), o vacío/None para "Normal". Mismo trato que

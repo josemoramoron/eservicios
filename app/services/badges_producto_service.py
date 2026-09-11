@@ -3,11 +3,11 @@
 Función de e-link Plus (roadmap, Fase 2, punto 14) — un badge es una
 etiqueta corta que resalta un producto puntual en la tienda pública, no
 un estado del producto (`VendorProduct.activo` ya cubre eso). Mismo
-criterio de conjunto cerrado que `plantillas_tienda_service.py` y
-`estilos_portada_service.py`: el vendedor elige entre opciones curadas,
-no texto libre — así el color de cada badge se puede fijar por CSS
-(`.tienda-badge-producto--<clave>`, ver `app/static/css/tienda.css`) sin
-depender de nada que el vendedor escriba.
+criterio de conjunto cerrado que `plantillas_tienda_service.py`: el
+vendedor elige entre opciones curadas, no texto libre — así el color de
+cada badge se puede fijar por CSS (`.tienda-badge-producto--<clave>`,
+ver `app/static/css/tienda.css`) sin depender de nada que el vendedor
+escriba.
 
 `vendor_service.resolver_badge_producto()` es quien de verdad gatea esto
 contra el plan Plus del vendedor — este servicio solo conoce los badges

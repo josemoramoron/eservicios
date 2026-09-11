@@ -33,7 +33,14 @@ _TIPOS_PERMITIDOS = {
     "image/png": "png",
     "image/webp": "webp",
 }
-_TAMANO_MAXIMO_BYTES = 5 * 1024 * 1024  # 5 MB por imagen
+# Tope del archivo ORIGINAL, antes de comprimir — no del archivo final
+# que se guarda en R2 (ese siempre queda acotado por _DIMENSION_MAXIMA_PX
+# / _CALIDAD_JPEG_WEBP más abajo, típicamente unos cientos de KB). Subido
+# de 5 a 10 MB (2026-09-11): una foto de celular sin editar hoy pesa
+# fácil 5-10 MB, y antes de esta subida se rechazaba de entrada — aunque
+# la íbamos a comprimir igual de bien que cualquier otra — en vez de
+# optimizarla. 10 MB sigue acotando cuánta memoria usa Pillow al abrirla.
+_TAMANO_MAXIMO_BYTES = 10 * 1024 * 1024  # 10 MB por imagen (antes de comprimir)
 
 # Ningún uso en el sitio (foto de producto, logo, portada) necesita más
 # resolución que esta — limitarla reduce el peso de archivo (menos
@@ -49,7 +56,7 @@ class ArchivoInvalidoError(Exception):
 
 
 class ArchivoDemasiadoGrandeError(Exception):
-    """El archivo supera el tamaño máximo permitido (5 MB)."""
+    """El archivo original supera el tamaño máximo permitido (10 MB), antes de comprimir."""
 
 
 def _cliente_r2():
@@ -129,7 +136,8 @@ def subir_imagen(archivo: FileStorage, *, carpeta: str) -> str:
     Raises:
         ArchivoInvalidoError: Si el archivo no es una imagen JPG, PNG o WEBP
             (por mimetype declarado, o porque Pillow no logra abrirlo).
-        ArchivoDemasiadoGrandeError: Si supera los 5 MB.
+        ArchivoDemasiadoGrandeError: Si el archivo original supera los 10 MB
+            (antes de comprimir — ver `_TAMANO_MAXIMO_BYTES`).
     """
     extension = _TIPOS_PERMITIDOS.get(archivo.mimetype)
     if extension is None:
@@ -139,7 +147,7 @@ def subir_imagen(archivo: FileStorage, *, carpeta: str) -> str:
     tamano = archivo.stream.tell()
     archivo.stream.seek(0)
     if tamano > _TAMANO_MAXIMO_BYTES:
-        raise ArchivoDemasiadoGrandeError("La imagen no puede superar los 5 MB.")
+        raise ArchivoDemasiadoGrandeError("La imagen no puede superar los 10 MB.")
 
     buffer, content_type = _comprimir_imagen(archivo, extension)
 

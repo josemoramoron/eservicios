@@ -62,44 +62,24 @@
     </label>
     {% endif %}
     <p style="font-size: 0.8rem; color: var(--color-text-muted); margin: 6px 0 0;">
-        JPG, PNG o WEBP, máximo 5 MB cada imagen.
+        JPG, PNG o WEBP, hasta 10 MB cada imagen — las optimizamos automáticamente a un tamaño liviano, así que una foto de celular sin editar entra sin problema.
     </p>
 
     <hr class="admin-form__separador">
-    <label class="admin-form__label">Diseño de portada y avatar (mientras no subas tus propias imágenes)</label>
-    <div class="admin-galeria-estilos">
-        <label class="admin-galeria-estilos__opcion">
-            <input type="radio" name="estilo_portada" value="" {% if not vendor.estilo_portada %}checked{% endif %}>
-            <span class="admin-galeria-estilos__muestra admin-galeria-estilos__muestra--defecto"></span>
-            <span class="admin-galeria-estilos__nombre">Por defecto</span>
-        </label>
-        {% for preset in presets %}
-        <label class="admin-galeria-estilos__opcion">
-            <input type="radio" name="estilo_portada" value="{{ preset.clave }}" {% if vendor.estilo_portada == preset.clave %}checked{% endif %}>
-            <span class="admin-galeria-estilos__muestra" style="background: linear-gradient(135deg, {{ preset.color_inicio }}, {{ preset.color_fin }});"></span>
-            <span class="admin-galeria-estilos__nombre">{{ preset.nombre }}</span>
-        </label>
-        {% endfor %}
-    </div>
-    <p class="admin-form__hint">
-        Se usa en el banner y el círculo de tu tienda pública mientras no subas tu propio logo o portada — se nota en las 3 plantillas (abajo), no solo en la Clásica.
-    </p>
-
-    <hr class="admin-form__separador">
-    <label class="admin-form__label">Color de acento propio</label>
-    {% if plan_plus_activo %}
+    <label class="admin-form__label">Color de tu tienda</label>
     <div class="admin-paleta-acento">
         {% for color in paleta_acento %}
         <button
             type="button"
-            class="admin-paleta-acento__circulo{% if vendor.color_acento == color %} admin-paleta-acento__circulo--activo{% endif %}"
+            class="admin-paleta-acento__circulo{% if (vendor.color_acento or '#2563eb') == color %} admin-paleta-acento__circulo--activo{% endif %}"
             data-color="{{ color }}"
             style="background-color: {{ color }};"
             aria-label="Usar el color {{ color }}"
         ></button>
         {% endfor %}
     </div>
-    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+    {% if plan_plus_activo %}
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 8px;">
         <input
             type="color"
             id="color_acento"
@@ -109,16 +89,13 @@
         >
         <span style="font-size: 0.8rem; color: var(--color-text-muted);">o elige un color personalizado</span>
     </div>
-    <label class="admin-form__checkbox" style="margin-top: 8px;">
-        <input type="checkbox" name="quitar_color_acento">
-        Usar el azul de eServicios (quitar mi color)
-    </label>
     <p class="admin-form__hint">
-        Función de e-link Plus. Se aplica en tu tienda pública (banner, avatar, precios, botones, fondo) y en este panel — gana sobre el diseño prediseñado de arriba si tienes ambos elegidos.
+        Se usa en el banner y avatar de tu tienda pública (mientras no subas tu propio logo o portada), en precios y botones, y en este panel — en las 4 plantillas, no solo en la Clásica.
     </p>
     {% else %}
+    <input type="hidden" id="color_acento" name="color_acento" value="{{ vendor.color_acento or '#2563eb' }}">
     <p class="admin-form__hint">
-        Elegir tu propio color de acento es una función de <strong>e-link Plus</strong> — contáctanos para activarlo en tu cuenta.
+        Con el plan gratis puedes elegir entre azul (el de siempre) o rosado. El resto de colores y un color totalmente personalizado son función de <strong>e-link Plus</strong> — contáctanos para activarlo en tu cuenta.
     </p>
     {% endif %}
 
@@ -144,7 +121,7 @@
         {% endfor %}
     </div>
     <p class="admin-form__hint">
-        Función de e-link Plus. Cada plantilla trae su propia tipografía y organización de productos — tu color de acento y diseño de portada elegidos arriba se aplican en las tres.
+        Función de e-link Plus. Cada plantilla trae su propia tipografía y organización de productos — el color que elegiste arriba se aplica en las 4.
     </p>
     {% else %}
     <p class="admin-form__hint">
