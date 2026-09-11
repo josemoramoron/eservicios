@@ -609,18 +609,49 @@ def logout():
     return redirect(url_for("vendedor.login"))
 
 
-# --- Dashboard ---
+# --- Inicio (home del panel) ---
+
+
+@vendedor_bp.route("/inicio")
+@requiere_vendor
+def inicio():
+    """Portada del panel ("e-Link"): link de la tienda, QR/compartir y estadísticas.
+
+    Separada de `dashboard()` (2026-09-11): antes este contenido vivía
+    junto con la lista de productos en la portada del panel; Jose pidió
+    reordenar el navbar para que "e-Link" (antes un texto suelto, ahora
+    un enlace real — ver `vendedor/base.html`) sea el home del sitio, y
+    que la lista de productos se una con categorías en pestañas dentro
+    de "Tienda" (ver `dashboard()`/`categorias()` más abajo).
+    """
+    vendor = vendor_actual()
+    return render_template(
+        "vendedor/inicio.html",
+        estadisticas=resumen_estadisticas(vendor),
+    )
+
+
+# --- Tienda: productos y categorías, en pestañas ---
 
 
 @vendedor_bp.route("/")
 @requiere_vendor
 def dashboard():
-    """Portada del panel: link de la tienda y lista de productos."""
+    """Pestaña "Productos" de Mi tienda.
+
+    Comparte plantilla (`vendedor/tienda.html`) y endpoint/URL con
+    `categorias()`: ambas rutas siguen existiendo tal cual (muchos
+    `url_for(...)` y redirecciones ya apuntan a ellas en todo el
+    proyecto), pero ahora las dos renderizan el mismo panel con
+    pestañas de Productos/Categorías (2026-09-11) — solo cambia
+    `tab_activo`, según por cuál URL se entró.
+    """
     vendor = vendor_actual()
     return render_template(
-        "vendedor/dashboard.html",
+        "vendedor/tienda.html",
         productos=listar_productos_de_vendor(vendor),
-        estadisticas=resumen_estadisticas(vendor),
+        categorias=listar_categorias_de_vendor(vendor),
+        tab_activo="productos",
     )
 
 
@@ -1348,9 +1379,13 @@ def _categoria_a_valores(categoria) -> dict:
 @vendedor_bp.route("/categorias")
 @requiere_vendor
 def categorias():
-    """Lista las categorías de producto de la tienda del vendedor."""
+    """Pestaña "Categorías" de Mi tienda (ver `dashboard()` — misma plantilla, mismo panel)."""
+    vendor = vendor_actual()
     return render_template(
-        "vendedor/categorias.html", categorias=listar_categorias_de_vendor(vendor_actual())
+        "vendedor/tienda.html",
+        productos=listar_productos_de_vendor(vendor),
+        categorias=listar_categorias_de_vendor(vendor),
+        tab_activo="categorias",
     )
 
 

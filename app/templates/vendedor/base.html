@@ -19,30 +19,37 @@
     {% block header %}
     <header class="admin-header">
         <nav class="admin-nav">
-            {# Identificador de la plataforma — a propósito ya NO es un
-               enlace: antes apuntaba al dashboard y quedaba en negrita
-               siempre, sin importar en qué sección estuviera el
-               vendedor, lo que parecía un estado "activo" fijo y
-               confundía. El nombre de la tienda (abajo) toma ahora ese
-               rol de "volver a mi tienda", con negrita solo cuando
-               corresponde de verdad. #}
-            <span class="admin-nav__brand">e-Link</span>
             {% if vendor %}
             {% set seccion_activa = request.endpoint.split(".", 1)[1] if request.endpoint and "." in request.endpoint else "" %}
             {% set clase_acento = " admin-nav__link--acento" if acento else "" %}
+            {# "e-Link" vuelve a ser un enlace (2026-09-11): ahora es el
+               home del panel (`vendedor.inicio` — QR, compartir y
+               estadísticas, ver inicio.html), reordenado al frente del
+               navbar según pidió Jose. Antes era un <span> a propósito
+               (ver historial): apuntaba al dashboard y quedaba en
+               negrita siempre sin importar la sección, lo que parecía
+               un estado "activo" fijo y confundía. Ahora ese problema
+               no existe: tiene su propia página y su propio estado
+               activo, calculado igual que el resto de los enlaces. #}
             <a
-                class="admin-nav__link{% if seccion_activa in ("dashboard", "qr_tienda", "producto_nuevo", "producto_editar", "producto_eliminar") %} admin-nav__link--active{{ clase_acento }}{% endif %}"
-                href="{{ url_for('vendedor.dashboard') }}"
-                title="{{ vendor.nombre_negocio }}"
-            >Tienda</a>
+                class="admin-nav__brand{% if seccion_activa == "inicio" %} admin-nav__link--active{{ clase_acento }}{% endif %}"
+                href="{{ url_for('vendedor.inicio') }}"
+            >e-Link</a>
             <a
                 class="admin-nav__link{% if seccion_activa.startswith("enlace") %} admin-nav__link--active{{ clase_acento }}{% endif %}"
                 href="{{ url_for('vendedor.enlaces') }}"
             >Enlaces</a>
+            {# "Tienda" ahora agrupa productos Y categorías, en pestañas
+               dentro de una misma página (`vendedor/tienda.html`,
+               2026-09-11) — Jose pidió unirlas porque las categorías
+               son, en el fondo, una función de la tienda. Por eso el
+               estado activo de este enlace también cubre los endpoints
+               de categorías, y ya no hay un enlace "Categorías" aparte. #}
             <a
-                class="admin-nav__link{% if seccion_activa.startswith("categoria") %} admin-nav__link--active{{ clase_acento }}{% endif %}"
-                href="{{ url_for('vendedor.categorias') }}"
-            >Categorías</a>
+                class="admin-nav__link{% if seccion_activa in ("dashboard", "qr_tienda", "producto_nuevo", "producto_editar", "producto_eliminar", "categorias", "categoria_nueva", "categoria_editar", "categoria_eliminar") %} admin-nav__link--active{{ clase_acento }}{% endif %}"
+                href="{{ url_for('vendedor.dashboard') }}"
+                title="{{ vendor.nombre_negocio }}"
+            >Tienda</a>
             <a
                 class="admin-nav__link{% if seccion_activa == "avisos" %} admin-nav__link--active{{ clase_acento }}{% endif %}"
                 href="{{ url_for('vendedor.avisos') }}"
@@ -58,6 +65,11 @@
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                 </button>
             </form>
+            {% else %}
+            {# Sin sesión de vendedor (ej. verificar_email.html a mitad del
+               registro): "e-Link" vuelve a ser texto suelto, sin enlace ni
+               resto del navbar, porque `vendedor.inicio` requiere sesión. #}
+            <span class="admin-nav__brand">e-Link</span>
             {% endif %}
         </nav>
     </header>

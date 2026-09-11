@@ -1,18 +1,23 @@
 {% extends "vendedor/base.html" %}
 
-{% block title %}Mi tienda — {{ vendor.nombre_negocio }}{% endblock %}
+{% block title %}e-Link — {{ vendor.nombre_negocio }}{% endblock %}
 
 {% block breadcrumb %}
 <nav class="breadcrumb">
     <span class="breadcrumb__link">eServicios</span>
-    <span class="breadcrumb__current">Mi tienda (e-link)</span>
+    <span class="breadcrumb__current">e-Link</span>
 </nav>
 {% endblock %}
 
+{# Home del panel (2026-09-11): antes este contenido (link de la tienda, QR,
+   compartir, estadísticas) vivía junto con la lista de productos en
+   dashboard.html — se separó porque Jose pidió que "e-Link" (el enlace del
+   navbar, antes un texto suelto) sea el home del sitio, y que la lista de
+   productos se una con categorías en pestañas dentro de "Tienda" (ver
+   vendedor/tienda.html). #}
 {% block content %}
 <div class="admin-page-header">
-    <h1 class="admin-page-title">Mi tienda</h1>
-    <a class="admin-btn admin-btn--primary" href="{{ url_for('vendedor.producto_nuevo') }}">Nuevo producto</a>
+    <h1 class="admin-page-title">e-Link</h1>
 </div>
 
 <p class="admin-auth__title" style="font-size: 14px; margin: -8px 0 20px;">
@@ -65,42 +70,6 @@
         <span class="admin-stat-card__label">Clics a WhatsApp (últimos {{ estadisticas.dias }} días)</span>
     </div>
 </div>
-
-<table class="admin-table">
-    <thead>
-        <tr>
-            <th>Producto</th>
-            <th>Precio</th>
-            <th>Activo</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for producto in productos %}
-        <tr>
-            <td>{{ producto.titulo }}</td>
-            <td>{{ formatear_precio(producto.precio, vendor.moneda) }}</td>
-            <td>{{ "Sí" if producto.activo else "No" }}</td>
-            <td class="admin-table__actions">
-                <a class="admin-link" href="{{ url_for('vendedor.producto_editar', producto_id=producto.id) }}">Editar</a>
-                <form
-                    method="post"
-                    action="{{ url_for('vendedor.producto_eliminar', producto_id=producto.id) }}"
-                    class="admin-table__inline-form"
-                    onsubmit="return confirm('¿Eliminar \'{{ producto.titulo }}\'?');"
-                >
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button class="admin-link admin-link--danger" type="submit">Eliminar</button>
-                </form>
-            </td>
-        </tr>
-        {% else %}
-        <tr>
-            <td colspan="4">Todavía no has publicado ningún producto.</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
 
 <script src="{{ estatico_v('js/compartir.js') }}"></script>
 {% endblock %}

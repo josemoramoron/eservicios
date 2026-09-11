@@ -805,10 +805,17 @@ PALETA_ACENTO_PLUS: list[str] = PALETA_ACENTO_GRATIS + [
     "#7c3aed",  # violeta
     "#ea580c",  # naranja
     "#0f172a",  # grafito casi negro
-    "#7f1d1d",  # vinotinto
     "#78350f",  # marrón
-    "#c026d3",  # fucsia
 ]
+# Nota (2026-09-11): Jose pidió quitar 2 de los 10 círculos originales —
+# "vinotinto" (#7f1d1d, antepenúltimo) y "fucsia" (#c026d3, el último de
+# la derecha) — dejando 8. No hace falta ninguna migración ni afecta a un
+# vendedor que ya haya guardado alguno de estos 2 colores como su
+# `color_acento`: `resolver_acento_vendor` solo valida el formato hex para
+# planes Plus (el selector de color personalizado siempre permitió
+# cualquier hex, no solo los de esta lista curada) — el cambio es
+# puramente sobre qué círculos de acceso rápido se muestran en
+# `/vendedor/perfil`.
 
 
 def listar_paleta_acento(plan_plus_activo: bool) -> list[str]:

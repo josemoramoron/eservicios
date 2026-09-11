@@ -1,0 +1,178 @@
+{% extends "vendedor/base.html" %}
+
+{% block title %}Mi tienda — {{ vendor.nombre_negocio }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="breadcrumb">
+    <span class="breadcrumb__link">eServicios</span>
+    <span class="breadcrumb__current">Mi tienda</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="admin-page-header">
+    <h1 class="admin-page-title">Mi tienda</h1>
+</div>
+
+{# Pestañas "Productos"/"Categorías" en una sola página (2026-09-11): antes
+   eran 2 rutas/páginas separadas (dashboard.html y categorias.html) — Jose
+   pidió unirlas porque las categorías son, en el fondo, una función de la
+   tienda (mismo patrón de pestañas que ya usa en su proyecto ceiba21, para
+   la calculadora de PayPal con 3 pestañas en una página). Los 2 paneles se
+   renderizan siempre los dos en el HTML (sin segunda petición al
+   servidor); un poco de JS solo cambia cuál se ve. `tab_activo` (pasado
+   por la vista) decide cuál pestaña se ve primero, según si se entró por
+   /vendedor/ (productos) o /vendedor/categorias (categorías) — así los
+   enlaces y redirecciones que ya existen hacia cada URL (menús,
+   redirecciones tras crear/editar/eliminar un producto o categoría) siguen
+   llevando a la pestaña que corresponde, sin tener que tocarlos. #}
+<div class="admin-tabs" data-tabs>
+    <nav class="admin-tabs__nav" role="tablist">
+        <button
+            type="button"
+            class="admin-tabs__tab{% if tab_activo == "productos" %} admin-tabs__tab--active{% endif %}"
+            data-tab-btn="productos"
+            role="tab"
+            aria-selected="{{ "true" if tab_activo == "productos" else "false" }}"
+        >Productos</button>
+        <button
+            type="button"
+            class="admin-tabs__tab{% if tab_activo == "categorias" %} admin-tabs__tab--active{% endif %}"
+            data-tab-btn="categorias"
+            role="tab"
+            aria-selected="{{ "true" if tab_activo == "categorias" else "false" }}"
+        >Categorías</button>
+    </nav>
+
+    <div class="admin-tabs__panel{% if tab_activo != "productos" %} admin-tabs__panel--oculto{% endif %}" data-tab-panel="productos">
+        <div class="admin-page-header">
+            <h2 class="admin-page-title">Productos</h2>
+            <a class="admin-btn admin-btn--primary" href="{{ url_for('vendedor.producto_nuevo') }}">Nuevo producto</a>
+        </div>
+
+        <table class="admin-table admin-table--tienda">
+            <thead>
+                <tr>
+                    <th class="tienda-table__nombre">Producto</th>
+                    <th class="tienda-table__precio">Precio</th>
+                    <th class="tienda-table__activo">Activo</th>
+                    <th class="tienda-table__acciones"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for producto in productos %}
+                <tr>
+                    <td class="tienda-table__nombre" title="{{ producto.titulo }}">{{ producto.titulo }}</td>
+                    <td class="tienda-table__precio">{{ formatear_precio(producto.precio, vendor.moneda) }}</td>
+                    <td class="tienda-table__activo">{{ "Sí" if producto.activo else "No" }}</td>
+                    <td class="admin-table__actions tienda-table__acciones">
+                        <a class="admin-icon-btn" href="{{ url_for('vendedor.producto_editar', producto_id=producto.id) }}" aria-label="Editar" title="Editar">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                        </a>
+                        <form
+                            method="post"
+                            action="{{ url_for('vendedor.producto_eliminar', producto_id=producto.id) }}"
+                            class="admin-table__inline-form"
+                            onsubmit="return confirm('¿Eliminar \'{{ producto.titulo }}\'?');"
+                        >
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="admin-icon-btn admin-icon-btn--danger" type="submit" aria-label="Eliminar" title="Eliminar">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4">Todavía no has publicado ningún producto.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="admin-tabs__panel{% if tab_activo != "categorias" %} admin-tabs__panel--oculto{% endif %}" data-tab-panel="categorias">
+        <div class="admin-page-header">
+            <h2 class="admin-page-title">Categorías</h2>
+            <a class="admin-btn admin-btn--primary" href="{{ url_for('vendedor.categoria_nueva') }}">Nueva categoría</a>
+        </div>
+
+        <p class="admin-auth__title" style="font-size: 14px; margin: -8px 0 20px;">
+            Agrupa tus productos en categorías propias (ej. "Electrodomésticos", "Ofertas") —
+            se muestran como filtro en tu tienda pública. Función de e-link Plus.
+        </p>
+
+        <table class="admin-table admin-table--tienda">
+            <thead>
+                <tr>
+                    <th class="tienda-table__nombre">Categoría</th>
+                    <th class="tienda-table__cantidad">Productos</th>
+                    <th class="tienda-table__acciones"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for categoria in categorias %}
+                <tr>
+                    <td class="tienda-table__nombre" title="{{ categoria.nombre }}">{{ categoria.nombre }}</td>
+                    <td class="tienda-table__cantidad">{{ categoria.productos | length }}</td>
+                    <td class="admin-table__actions tienda-table__acciones">
+                        <a class="admin-icon-btn" href="{{ url_for('vendedor.categoria_editar', categoria_id=categoria.id) }}" aria-label="Editar" title="Editar">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                        </a>
+                        <form
+                            method="post"
+                            action="{{ url_for('vendedor.categoria_eliminar', categoria_id=categoria.id) }}"
+                            class="admin-table__inline-form"
+                            onsubmit="return confirm('¿Eliminar \'{{ categoria.nombre }}\'? Los productos que la tengan quedarán sin categoría.');"
+                        >
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="admin-icon-btn admin-icon-btn--danger" type="submit" aria-label="Eliminar" title="Eliminar">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3">Todavía no has creado ninguna categoría.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{# Cambiar de pestaña no recarga la página (los 2 paneles ya vienen
+   renderizados con sus datos) — solo alterna la visibilidad con CSS y
+   actualiza la URL con `history.replaceState` para que "Productos" quede
+   en /vendedor/ y "Categorías" en /vendedor/categorias (recargar la
+   página, o volver con el botón "atrás", cae en la pestaña correcta). #}
+<script>
+(function () {
+    var contenedor = document.querySelector("[data-tabs]");
+    if (!contenedor) return;
+    var botones = contenedor.querySelectorAll("[data-tab-btn]");
+    var urlPorPestana = {
+        productos: "{{ url_for('vendedor.dashboard') }}",
+        categorias: "{{ url_for('vendedor.categorias') }}"
+    };
+
+    botones.forEach(function (boton) {
+        boton.addEventListener("click", function () {
+            var nombre = boton.getAttribute("data-tab-btn");
+            botones.forEach(function (b) {
+                var activo = b === boton;
+                b.classList.toggle("admin-tabs__tab--active", activo);
+                b.setAttribute("aria-selected", activo ? "true" : "false");
+            });
+            contenedor.querySelectorAll("[data-tab-panel]").forEach(function (panel) {
+                panel.classList.toggle("admin-tabs__panel--oculto", panel.getAttribute("data-tab-panel") !== nombre);
+            });
+            if (window.history && window.history.replaceState && urlPorPestana[nombre]) {
+                window.history.replaceState(null, "", urlPorPestana[nombre]);
+            }
+        });
+    });
+})();
+</script>
+{% endblock %}
