@@ -70,6 +70,15 @@
         {% block content %}{% endblock %}
     </main>
 
+    {# Pie de página del panel — misma pastilla "Creado con eServicios"
+       que ya existe en la tienda pública (_pie_tienda.html), como única
+       vía para salir a eServicios.org ahora que la palabra "eServicios"
+       del breadcrumb dejó de ser un enlace (ver comentario en cada
+       breadcrumb). #}
+    <footer class="admin-footer">
+        <a class="admin-footer__badge" href="https://eservicios.org" target="_blank" rel="noopener">Creado con eServicios</a>
+    </footer>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>

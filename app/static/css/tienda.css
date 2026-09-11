@@ -1401,6 +1401,7 @@
     box-sizing: border-box;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
     width: 100%;
     padding: 13px 18px;
