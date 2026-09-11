@@ -950,24 +950,61 @@ body {
     align-items: center;
 }
 
-/* Columna de "Eliminar", separada de la de mover/Editar (arriba) — pedido
-   de Jose (2026-09-11): antes las 2 flechas de reordenar + "Editar" +
-   "Eliminar" vivían en una sola celda, así que en la primera/última fila
-   (sin una de las 2 flechas) "Editar" y "Eliminar" se corrían de lugar
-   entre filas. Ahora cada bloque vive en su propia columna de tabla — ver
-   `.admin-table__flecha` abajo para la uniformidad de las flechas. */
-.admin-table__actions--eliminar {
-    justify-content: flex-end;
+/* Celda de acciones de "Mis enlaces" — a propósito NO usa
+   `.admin-table__actions` de arriba (2026-09-11). Esa clase le pone
+   `display: flex` directo al <td>, y eso rompe el layout de tabla del
+   navegador apenas la celda tiene más de un control (reordenar + editar +
+   eliminar): la fila "se escalona" en varias líneas en vez de quedar en
+   una sola, e infla mucho su altura — el bug real detrás de lo que Jose
+   reportó como "grueso"/"escalonado". Acá el <td> se queda con su
+   `display: table-cell` normal; el flex real vive en
+   `.enlaces-table__fila`, en un <div> interno. */
+.enlaces-table__acciones {
+    text-align: right;
+}
+
+.enlaces-table__fila {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
 }
 
 /* Reserva el mismo ancho fijo esté o no la flecha (el primer enlace no
-   tiene "subir", el último no tiene "bajar") — así "Editar" siempre
-   arranca en la misma posición horizontal en cualquier fila. */
+   tiene "subir", el último no tiene "bajar") — así "Editar"/"Eliminar"
+   siempre arrancan en la misma posición horizontal en cualquier fila. */
 .admin-table__flecha {
     display: inline-flex;
     justify-content: center;
-    width: 1rem;
+    width: 1.625rem;
     flex: 0 0 auto;
+}
+
+/* Botón de icono para las acciones de una fila de tabla (reordenar,
+   editar, eliminar) — mismo tamaño/estilo que
+   `.fotos-actuales-lista__mover`/`__quitar` (2026-09-11), para que ambos
+   patrones de icono-botón se vean consistentes en todo el panel. */
+.admin-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.625rem;
+    height: 1.625rem;
+    border: none;
+    border-radius: 0.4rem;
+    background: none;
+    padding: 0;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.admin-icon-btn:hover {
+    background-color: var(--color-border);
+    color: var(--color-text);
+}
+
+.admin-icon-btn--danger:hover {
+    color: #b3261e;
 }
 
 .admin-table__inline-form {

@@ -28,7 +28,6 @@
             <th>URL</th>
             <th>Activo</th>
             <th></th>
-            <th></th>
         </tr>
     </thead>
     <tbody>
@@ -37,45 +36,63 @@
             <td>{{ link.titulo }}</td>
             <td><a class="admin-link" href="{{ link.url }}" target="_blank" rel="noopener">{{ link.url }}</a></td>
             <td>{{ "Sí" if link.activo else "No" }}</td>
-            {# Mover + Editar en su propia columna, separada de Eliminar (abajo):
-               así, que el primer/último enlace no tenga una de las 2 flechas no
-               corre "Editar" de lugar entre filas (cada flecha reserva su propio
-               espacio fijo con .admin-table__flecha, esté o no presente) ni
-               empuja a "Eliminar", que vive en su propia columna aparte. #}
-            <td class="admin-table__actions">
-                <span class="admin-table__flecha">
-                    {% if not loop.first %}
-                    <form method="post" action="{{ url_for('vendedor.enlace_mover', link_id=link.id, direccion='arriba') }}" class="admin-table__inline-form">
+            {# Todos los controles (reordenar, editar, eliminar) en una sola
+               fila de iconos, dentro de un <div> interno (2026-09-11): esta
+               celda usa su propia clase `enlaces-table__acciones` en vez de
+               `.admin-table__actions` (compartida con otras tablas del
+               panel) a propósito — ponerle `display: flex` directo al <td>
+               (como hacía `.admin-table__actions`) rompe el layout de tabla
+               del navegador apenas hay más de un control (la fila se
+               "escalona" en varias líneas en vez de quedar en una sola, y
+               por eso se veía tan alta). El <td> se queda con su
+               `display: table-cell` normal, y el flex vive solo en
+               `.enlaces-table__fila`. Como los 4 controles son iconos del
+               mismo tamaño, ya no hace falta partir esto en 2 columnas para
+               la alineación: cada flecha sigue reservando su espacio fijo
+               con `.admin-table__flecha`, esté o no presente, así
+               "Editar"/"Eliminar" nunca se corren de lugar entre filas. #}
+            <td class="enlaces-table__acciones">
+                <div class="enlaces-table__fila">
+                    <span class="admin-table__flecha">
+                        {% if not loop.first %}
+                        <form method="post" action="{{ url_for('vendedor.enlace_mover', link_id=link.id, direccion='arriba') }}" class="admin-table__inline-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="admin-icon-btn" type="submit" aria-label="Subir" title="Subir">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </span>
+                    <span class="admin-table__flecha">
+                        {% if not loop.last %}
+                        <form method="post" action="{{ url_for('vendedor.enlace_mover', link_id=link.id, direccion='abajo') }}" class="admin-table__inline-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="admin-icon-btn" type="submit" aria-label="Bajar" title="Bajar">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                            </button>
+                        </form>
+                        {% endif %}
+                    </span>
+                    <a class="admin-icon-btn" href="{{ url_for('vendedor.enlace_editar', link_id=link.id) }}" aria-label="Editar" title="Editar">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+                    </a>
+                    <form
+                        method="post"
+                        action="{{ url_for('vendedor.enlace_eliminar', link_id=link.id) }}"
+                        class="admin-table__inline-form"
+                        onsubmit="return confirm('¿Eliminar \'{{ link.titulo }}\'?');"
+                    >
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button class="admin-link" type="submit" aria-label="Subir">&uarr;</button>
+                        <button class="admin-icon-btn admin-icon-btn--danger" type="submit" aria-label="Eliminar" title="Eliminar">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>
+                        </button>
                     </form>
-                    {% endif %}
-                </span>
-                <span class="admin-table__flecha">
-                    {% if not loop.last %}
-                    <form method="post" action="{{ url_for('vendedor.enlace_mover', link_id=link.id, direccion='abajo') }}" class="admin-table__inline-form">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button class="admin-link" type="submit" aria-label="Bajar">&darr;</button>
-                    </form>
-                    {% endif %}
-                </span>
-                <a class="admin-link" href="{{ url_for('vendedor.enlace_editar', link_id=link.id) }}">Editar</a>
-            </td>
-            <td class="admin-table__actions admin-table__actions--eliminar">
-                <form
-                    method="post"
-                    action="{{ url_for('vendedor.enlace_eliminar', link_id=link.id) }}"
-                    class="admin-table__inline-form"
-                    onsubmit="return confirm('¿Eliminar \'{{ link.titulo }}\'?');"
-                >
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button class="admin-link admin-link--danger" type="submit">Eliminar</button>
-                </form>
+                </div>
             </td>
         </tr>
         {% else %}
         <tr>
-            <td colspan="5">Todavía no has agregado ningún enlace.</td>
+            <td colspan="4">Todavía no has agregado ningún enlace.</td>
         </tr>
         {% endfor %}
     </tbody>
