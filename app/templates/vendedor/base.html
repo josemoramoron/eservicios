@@ -11,6 +11,12 @@
     <link rel="stylesheet" href="{{ estatico_v('css/style.css') }}">
 </head>
 <body{% if acento %} style="--color-accent: {{ acento.color }}; --color-accent-contrast: {{ acento.contraste }};"{% endif %}>
+    {# Bloque nuevo (2026-09-11): por defecto es el navbar de siempre del
+       panel de vendedor (abajo), pero `registro.html`/`login.html` lo
+       sobreescriben con el navbar del SITIO PRINCIPAL — pedido puntual de
+       Jose para esas 2 pantallas nada más, ver la sección "URLs de
+       registro/login..." en claude/spec-tiendas-vendedor.md. #}
+    {% block header %}
     <header class="admin-header">
         <nav class="admin-nav">
             {# Identificador de la plataforma — a propósito ya NO es un
@@ -55,6 +61,7 @@
             {% endif %}
         </nav>
     </header>
+    {% endblock %}
 
     <main class="admin-main">
         {% with mensajes = get_flashed_messages(with_categories=true) %}

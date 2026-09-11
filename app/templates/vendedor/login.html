@@ -2,6 +2,19 @@
 
 {% block title %}Iniciar sesión — Mi Tienda{% endblock %}
 
+{% block header %}
+{# Ver el mismo comentario en registro.html: acá se usa el navbar del
+   sitio principal en vez del navbar reducido del panel (2026-09-11). #}
+<header class="site-header">
+    <nav class="site-nav">
+        <a class="site-nav__brand" href="{{ url_for('health.index') }}">eServicios</a>
+        <a class="site-nav__link" href="{{ url_for('vendedor.landing_e_link') }}">e-link</a>
+        <a class="site-nav__link" href="{{ url_for('servicios.index') }}">Servicios</a>
+        <a class="site-nav__link" href="{{ url_for('blog.index') }}">Blog</a>
+    </nav>
+</header>
+{% endblock %}
+
 {% block breadcrumb %}
 <nav class="breadcrumb">
     {# Ver el mismo comentario en registro.html: acá "eServicios" sí es un

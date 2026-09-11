@@ -28,6 +28,7 @@
             <th>URL</th>
             <th>Activo</th>
             <th></th>
+            <th></th>
         </tr>
     </thead>
     <tbody>
@@ -36,20 +37,31 @@
             <td>{{ link.titulo }}</td>
             <td><a class="admin-link" href="{{ link.url }}" target="_blank" rel="noopener">{{ link.url }}</a></td>
             <td>{{ "Sí" if link.activo else "No" }}</td>
+            {# Mover + Editar en su propia columna, separada de Eliminar (abajo):
+               así, que el primer/último enlace no tenga una de las 2 flechas no
+               corre "Editar" de lugar entre filas (cada flecha reserva su propio
+               espacio fijo con .admin-table__flecha, esté o no presente) ni
+               empuja a "Eliminar", que vive en su propia columna aparte. #}
             <td class="admin-table__actions">
-                {% if not loop.first %}
-                <form method="post" action="{{ url_for('vendedor.enlace_mover', link_id=link.id, direccion='arriba') }}" class="admin-table__inline-form">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button class="admin-link" type="submit" aria-label="Subir">&uarr;</button>
-                </form>
-                {% endif %}
-                {% if not loop.last %}
-                <form method="post" action="{{ url_for('vendedor.enlace_mover', link_id=link.id, direccion='abajo') }}" class="admin-table__inline-form">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button class="admin-link" type="submit" aria-label="Bajar">&darr;</button>
-                </form>
-                {% endif %}
+                <span class="admin-table__flecha">
+                    {% if not loop.first %}
+                    <form method="post" action="{{ url_for('vendedor.enlace_mover', link_id=link.id, direccion='arriba') }}" class="admin-table__inline-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="admin-link" type="submit" aria-label="Subir">&uarr;</button>
+                    </form>
+                    {% endif %}
+                </span>
+                <span class="admin-table__flecha">
+                    {% if not loop.last %}
+                    <form method="post" action="{{ url_for('vendedor.enlace_mover', link_id=link.id, direccion='abajo') }}" class="admin-table__inline-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="admin-link" type="submit" aria-label="Bajar">&darr;</button>
+                    </form>
+                    {% endif %}
+                </span>
                 <a class="admin-link" href="{{ url_for('vendedor.enlace_editar', link_id=link.id) }}">Editar</a>
+            </td>
+            <td class="admin-table__actions admin-table__actions--eliminar">
                 <form
                     method="post"
                     action="{{ url_for('vendedor.enlace_eliminar', link_id=link.id) }}"
@@ -63,7 +75,7 @@
         </tr>
         {% else %}
         <tr>
-            <td colspan="4">Todavía no has agregado ningún enlace.</td>
+            <td colspan="5">Todavía no has agregado ningún enlace.</td>
         </tr>
         {% endfor %}
     </tbody>

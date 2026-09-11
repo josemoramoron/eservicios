@@ -2,6 +2,22 @@
 
 {% block title %}Crear mi tienda gratis — eServicios{% endblock %}
 
+{% block header %}
+{# Navbar del sitio principal (mismo markup que templates/base.html),
+   pedido puntual de Jose para esta pantalla (2026-09-11): quien llega a
+   crear su tienda todavía no "está" en el panel de e-link, así que
+   conviene que vea la navegación completa del sitio, no el navbar
+   reducido del panel (que solo tiene sentido una vez logueado). #}
+<header class="site-header">
+    <nav class="site-nav">
+        <a class="site-nav__brand" href="{{ url_for('health.index') }}">eServicios</a>
+        <a class="site-nav__link" href="{{ url_for('vendedor.landing_e_link') }}">e-link</a>
+        <a class="site-nav__link" href="{{ url_for('servicios.index') }}">Servicios</a>
+        <a class="site-nav__link" href="{{ url_for('blog.index') }}">Blog</a>
+    </nav>
+</header>
+{% endblock %}
+
 {% block breadcrumb %}
 <nav class="breadcrumb">
     {# A diferencia de las pantallas del panel ya logueado (dashboard,
