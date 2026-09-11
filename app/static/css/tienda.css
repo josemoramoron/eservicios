@@ -1391,6 +1391,14 @@
 }
 
 .pildoras-pill {
+    /* Sin esto, "width: 100%" solo fija el ancho del CONTENIDO — el
+       padding y el borde de abajo se sumaban aparte (caja de tipo
+       content-box, la de por defecto), y la píldora terminaba más
+       ancha que su contenedor, desbordando la página entera hacia la
+       derecha (bug reportado por Jose, visible al hacer scroll
+       horizontal). border-box hace que "100%" sea el ancho FINAL,
+       padding y borde incluidos. */
+    box-sizing: border-box;
     display: flex;
     align-items: center;
     gap: 10px;
