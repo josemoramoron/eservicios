@@ -31,6 +31,12 @@ PLANTILLAS_TIENDA: dict[str, dict[str, str]] = {
         "descripcion": "Lista densa de una sola columna, esquinas rectas y mucho espacio en blanco, "
         "tipografía Manrope + IBM Plex Sans.",
     },
+    "pildoras": {
+        "nombre": "Píldoras",
+        "descripcion": "Igual que Clásica arriba (portada, logo, disponibilidad), con 3 accesos rápidos "
+        "circulares (catálogo, WhatsApp, compartir) y tus enlaces como píldoras con texto — ideal si "
+        "agregas enlaces de referido o sitios propios, no solo redes sociales.",
+    },
 }
 
 

@@ -39,6 +39,7 @@ _TEMPLATE_POR_PLANTILLA = {
     "clasica": "tienda/publica.html",
     "editorial": "tienda/publica_editorial.html",
     "minimalista": "tienda/publica_minimalista.html",
+    "pildoras": "tienda/publica_pildoras.html",
 }
 
 # La tienda pública se sirve con este `Cache-Control` (navegador y

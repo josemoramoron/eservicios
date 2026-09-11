@@ -69,14 +69,6 @@ CATEGORIAS: list[dict] = [
                 vendible=False,
             ),
             dict(
-                slug="soluciones-raspberry-pi",
-                nombre="Soluciones con Raspberry Pi",
-                tipo=TipoOffering.PRODUCTO,
-                descripcion="Proyectos, equipos armados y configuraciones a medida sobre Raspberry Pi.",
-                vendible=True,
-                precio=Decimal("120.00"),
-            ),
-            dict(
                 slug="servidor-sms",
                 nombre="Servidor SMS (Twilio, eSIM)",
                 tipo=TipoOffering.SERVICIO,
@@ -210,15 +202,6 @@ CATEGORIAS: list[dict] = [
         "orden": 6,
         "ofertas": [
             dict(
-                slug="impresiones-3d",
-                nombre="Impresiones 3D",
-                tipo=TipoOffering.PRODUCTO,
-                descripcion="Fabricación de piezas, prototipos y modelos a pedido.",
-                vendible=True,
-                precio=Decimal("15.00"),
-                destacado=True,
-            ),
-            dict(
                 slug="diseno-3d-inmersivo-inmuebles",
                 nombre="Diseño 3D Inmersivo para Inmuebles",
                 tipo=TipoOffering.SERVICIO,
@@ -248,29 +231,41 @@ CATEGORIAS: list[dict] = [
                 descripcion="Manejo de cuentas, creación de contenido y crecimiento orgánico en redes sociales.",
                 vendible=False,
             ),
-            dict(
-                slug="e-link-tienda-con-subdominio",
-                nombre="e-link — Tu Tienda con Subdominio Propio",
-                tipo=TipoOffering.SERVICIO,
-                descripcion=(
-                    "Crea gratis tu propia tienda en línea con tu subdominio "
-                    "personalizado (tunombre.eservicios.org), al estilo Linktree o "
-                    "Beacons pero enfocada en vender: sube tus productos con foto, "
-                    "descripción y precio, y recibe consultas directas de tus "
-                    "clientes por WhatsApp. Sin comisiones ni pasarela de pago — "
-                    "regístrate en minutos en eservicios.org/vendedor/registro."
-                ),
-                vendible=False,
-                destacado=True,
-            ),
         ],
     },
     {
-        "slug": "hardware",
-        "nombre": "Compra y Venta de Equipos (Hardware)",
-        "descripcion": "Intermediación y comercialización de tecnología.",
+        # Antes se llamaba "hardware" (Compra y Venta de Equipos) — se
+        # renombra a "Tienda" y pasa a agrupar TODOS los productos físicos
+        # del catálogo (los que ya tenía, más los dos que estaban sueltos
+        # en otras categorías: soluciones-raspberry-pi e impresiones-3d).
+        # `slug_anterior` le dice a `upsert_categoria` que busque primero
+        # por el slug viejo para renombrar la fila existente en vez de
+        # crear una categoría nueva y dejar "hardware" huérfana en la BD.
+        # Más adelante esta categoría es la base para la futura tienda
+        # online (con checkout propio).
+        "slug": "tienda",
+        "slug_anterior": "hardware",
+        "nombre": "Tienda",
+        "descripcion": "Productos físicos disponibles para compra o intermediación — más adelante, tienda online con checkout propio.",
         "orden": 8,
         "ofertas": [
+            dict(
+                slug="soluciones-raspberry-pi",
+                nombre="Soluciones con Raspberry Pi",
+                tipo=TipoOffering.PRODUCTO,
+                descripcion="Proyectos, equipos armados y configuraciones a medida sobre Raspberry Pi.",
+                vendible=True,
+                precio=Decimal("120.00"),
+            ),
+            dict(
+                slug="impresiones-3d",
+                nombre="Impresiones 3D",
+                tipo=TipoOffering.PRODUCTO,
+                descripcion="Fabricación de piezas, prototipos y modelos a pedido.",
+                vendible=True,
+                precio=Decimal("15.00"),
+                destacado=True,
+            ),
             dict(
                 slug="laptops-placas-madre",
                 nombre="Laptops y Placas Madre",
@@ -363,16 +358,26 @@ def upsert_categoria(datos: dict) -> Category:
     El ícono se deriva del slug (`app/static/img/categorias/<slug>.svg`),
     así que no hace falta declararlo a mano en cada entrada de `CATEGORIAS`.
 
+    Si `datos` trae `slug_anterior` (caso de un renombre, ej.
+    "hardware" -> "tienda"), se busca primero por ese slug viejo antes
+    de crear una fila nueva — así la categoría existente se renombra en
+    su lugar (mismo `id`, sin dejar una fila huérfana con el slug viejo
+    ni perder las ofertas que ya tenía asignadas).
+
     Args:
-        datos: Diccionario con nombre, slug, descripcion y orden.
+        datos: Diccionario con nombre, slug, descripcion, orden y,
+            opcionalmente, slug_anterior.
 
     Returns:
         La instancia de `Category` creada o actualizada.
     """
     categoria = Category.query.filter_by(slug=datos["slug"]).first()
+    if categoria is None and datos.get("slug_anterior"):
+        categoria = Category.query.filter_by(slug=datos["slug_anterior"]).first()
     if categoria is None:
         categoria = Category(slug=datos["slug"])
         db.session.add(categoria)
+    categoria.slug = datos["slug"]
     categoria.nombre = datos["nombre"]
     categoria.descripcion = datos["descripcion"]
     categoria.orden = datos["orden"]

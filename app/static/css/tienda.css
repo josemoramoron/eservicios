@@ -1318,3 +1318,110 @@
     color: var(--color-text-muted);
     font-size: 14px;
 }
+
+/* Plantilla "Píldoras" (2026-09-10) — reutiliza el mismo encabezado que
+   Clásica (.tienda-body/.tienda-header/.tienda-avatar/etc., sin ningún
+   namespace propio ahí), tal como pidió Jose. Solo dos cosas cambian:
+   los 3 accesos rápidos circulares (catálogo, WhatsApp, compartir) en
+   vez del botón grande de WhatsApp + botón de compartir aparte, y los
+   enlaces del vendedor como píldoras con texto en vez de íconos
+   circulares — pensado para enlaces de referido o sitios propios,
+   donde un símbolo de red social no alcanza a explicar el enlace. */
+.pildoras-acciones {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 14px;
+}
+
+.pildoras-accion {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    font: inherit;
+    text-decoration: none;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+
+.pildoras-accion svg {
+    width: 20px;
+    height: 20px;
+}
+
+.pildoras-accion:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+
+/* WhatsApp se mantiene verde en reposo (mismo criterio que
+   .tienda-whatsapp-btn) y transiciona hacia el acento del vendedor,
+   si lo tiene, al pasar el mouse. */
+.pildoras-accion--whatsapp {
+    border-color: var(--color-whatsapp);
+    color: var(--color-whatsapp);
+}
+
+.pildoras-accion--whatsapp:hover {
+    background-color: color-mix(in srgb, var(--color-whatsapp) 10%, transparent);
+}
+
+.tienda-body--acento .pildoras-accion--whatsapp:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    background-color: color-mix(in srgb, var(--color-accent) 10%, transparent);
+}
+
+.pildoras-links {
+    padding: 4px 20px 20px;
+    max-width: 480px;
+    margin: 0 auto;
+}
+
+.pildoras-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pildoras-pill {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 13px 18px;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    font-weight: 600;
+    font-size: 14px;
+    text-decoration: none;
+    transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.pildoras-pill svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+}
+
+.pildoras-pill:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+
+/* El ancla "Catálogo" hace scroll hasta #pildoras-productos en la misma
+   página — con desplazamiento suave donde el visitante no pidió
+   reducir el movimiento (regla de accesibilidad de .clinerules). */
+@media (prefers-reduced-motion: no-preference) {
+    .pildoras-body {
+        scroll-behavior: smooth;
+    }
+}

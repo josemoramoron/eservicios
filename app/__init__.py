@@ -35,6 +35,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     from app.routes.reportes import reportes_bp
     from app.routes.servicios import servicios_bp
     from app.routes.tienda import renderizar_tienda
+    from app.routes.vendedor import registro as vendedor_registro
     from app.routes.vendedor import vendedor_bp
     from app.services.google_auth_service import configurar_oauth_google
     from app.services.iconos_service import obtener_icono_categoria, obtener_icono_red
@@ -57,6 +58,21 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     app.register_blueprint(legal_bp)
     app.register_blueprint(reportes_bp)
     app.register_blueprint(avisos_bp)
+
+    # Alias público "/e-link" para el registro de vendedores: mismo
+    # formulario que "/vendedor/registro" (misma función de vista), pero
+    # con la URL de marca que se muestra en el navbar y en material de
+    # difusión — coherente con los prefijos "/e-link-click", "/e-link-reporte"
+    # y "/e-link-aviso" que ya usa el proyecto para esta misma función.
+    # Como el <form> de registro.html no fija un `action`, el POST también
+    # se envía a "/e-link", así que la URL se mantiene durante todo el flujo.
+    app.add_url_rule(
+        "/e-link",
+        endpoint="vendedor.landing_e_link",
+        view_func=vendedor_registro,
+        methods=["GET", "POST"],
+    )
+
     configurar_oauth_google(app)
     app.jinja_env.globals["icono_categoria"] = obtener_icono_categoria
     app.jinja_env.globals["icono_red"] = obtener_icono_red

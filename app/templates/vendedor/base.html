@@ -20,22 +20,23 @@
                confundía. El nombre de la tienda (abajo) toma ahora ese
                rol de "volver a mi tienda", con negrita solo cuando
                corresponde de verdad. #}
-            <span class="admin-nav__brand">eServicios · e-link</span>
+            <span class="admin-nav__brand">e-Link</span>
             {% if vendor %}
             {% set seccion_activa = request.endpoint.split(".", 1)[1] if request.endpoint and "." in request.endpoint else "" %}
             {% set clase_acento = " admin-nav__link--acento" if acento else "" %}
             <a
                 class="admin-nav__link{% if seccion_activa in ("dashboard", "qr_tienda", "producto_nuevo", "producto_editar", "producto_eliminar") %} admin-nav__link--active{{ clase_acento }}{% endif %}"
                 href="{{ url_for('vendedor.dashboard') }}"
-            >{{ vendor.nombre_negocio }}</a>
+                title="{{ vendor.nombre_negocio }}"
+            >Tienda</a>
             <a
                 class="admin-nav__link{% if seccion_activa.startswith("enlace") %} admin-nav__link--active{{ clase_acento }}{% endif %}"
                 href="{{ url_for('vendedor.enlaces') }}"
-            >Mis enlaces</a>
+            >Enlaces</a>
             <a
                 class="admin-nav__link{% if seccion_activa.startswith("categoria") %} admin-nav__link--active{{ clase_acento }}{% endif %}"
                 href="{{ url_for('vendedor.categorias') }}"
-            >Mis categorías</a>
+            >Categorías</a>
             <a
                 class="admin-nav__link{% if seccion_activa == "avisos" %} admin-nav__link--active{{ clase_acento }}{% endif %}"
                 href="{{ url_for('vendedor.avisos') }}"
@@ -43,11 +44,13 @@
             <a
                 class="admin-nav__link{% if seccion_activa.startswith("perfil") %} admin-nav__link--active{{ clase_acento }}{% endif %}"
                 href="{{ url_for('vendedor.perfil') }}"
-            >Mi perfil</a>
+            >Perfil</a>
             <span class="admin-nav__spacer"></span>
             <form method="post" action="{{ url_for('vendedor.logout') }}" class="admin-nav__logout-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="admin-nav__logout" type="submit">Salir</button>
+                <button class="admin-nav__logout" type="submit" aria-label="Salir" title="Salir">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                </button>
             </form>
             {% endif %}
         </nav>
