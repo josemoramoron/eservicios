@@ -21,21 +21,33 @@
     se muestran como botones en tu tienda pública, antes de tus productos.
 </p>
 
-<table class="admin-table">
+<table class="admin-table admin-table--enlaces">
     <thead>
         <tr>
             <th>Enlace</th>
-            <th>URL</th>
-            <th>Activo</th>
             <th></th>
         </tr>
     </thead>
     <tbody>
         {% for link in links %}
         <tr>
-            <td>{{ link.titulo }}</td>
-            <td><a class="admin-link" href="{{ link.url }}" target="_blank" rel="noopener">{{ link.url }}</a></td>
-            <td>{{ "Sí" if link.activo else "No" }}</td>
+            {# Título + URL apilados en una sola celda (2026-09-11), en vez de
+               2 columnas separadas ("Enlace" y "URL") — Jose pidió que todo
+               quepa en una sola pantalla de celular sin scroll horizontal, y
+               esto le devuelve a la URL casi todo el ancho de la fila (antes
+               tenía que repartirlo con la columna del título). También se
+               quitó la columna "Activo": no hay ninguna verificación en
+               tiempo real de que el enlace funcione, así que mostrar
+               "Sí"/"No" ahí no aportaba información real — ese estado se
+               sigue pudiendo cambiar desde "Editar" (formulario del enlace),
+               solo se dejó de mostrar en esta tabla. La URL se trunca con
+               "…" vía CSS (`.enlaces-table__url`) en vez de cortarla en el
+               servidor, para que el punto de corte se ajuste solo al ancho
+               real disponible en cada pantalla (celular, tablet o PC). #}
+            <td class="enlaces-table__info">
+                <p class="enlaces-table__titulo">{{ link.titulo }}</p>
+                <a class="enlaces-table__url" href="{{ link.url }}" target="_blank" rel="noopener" title="{{ link.url }}">{{ link.url }}</a>
+            </td>
             {# Todos los controles (reordenar, editar, eliminar) en una sola
                fila de iconos, dentro de un <div> interno (2026-09-11): esta
                celda usa su propia clase `enlaces-table__acciones` en vez de
@@ -92,7 +104,7 @@
         </tr>
         {% else %}
         <tr>
-            <td colspan="4">Todavía no has agregado ningún enlace.</td>
+            <td colspan="2">Todavía no has agregado ningún enlace.</td>
         </tr>
         {% endfor %}
     </tbody>

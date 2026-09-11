@@ -944,6 +944,46 @@ body {
     border-bottom: 1px solid var(--color-border);
 }
 
+/* Tabla "Mis enlaces": ancho fijo con `table-layout: fixed` para que la
+   columna de acciones tenga un ancho reservado (`enlaces-table__acciones`
+   más abajo) y la de "Enlace" absorba el resto — así todo cabe en una sola
+   pantalla de celular sin scroll horizontal (2026-09-11). Sin
+   `table-layout: fixed`, el navegador agranda cada columna según su
+   contenido y el "…" de `.enlaces-table__url` nunca llegaría a activarse. */
+.admin-table--enlaces {
+    table-layout: fixed;
+}
+
+.enlaces-table__info {
+    width: auto;
+}
+
+.enlaces-table__titulo {
+    margin: 0 0 0.15rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* El "…" de la URL se genera con CSS (no se corta el texto en el
+   servidor): el punto de corte se ajusta solo al ancho real disponible en
+   cada pantalla, en vez de un límite de caracteres fijo que se vería corto
+   de más en PC y aun así insuficiente en un celular angosto. */
+.enlaces-table__url {
+    display: block;
+    color: var(--color-accent);
+    text-decoration: none;
+    font-size: 0.82rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.enlaces-table__url:hover {
+    text-decoration: underline;
+}
+
 .admin-table__actions {
     display: flex;
     gap: 0.75rem;
@@ -961,6 +1001,13 @@ body {
    `.enlaces-table__fila`, en un <div> interno. */
 .enlaces-table__acciones {
     text-align: right;
+    /* Ancho fijo, igual en cualquier pantalla: 4 íconos de 1.625rem +
+       3 espacios de 0.15rem + el padding del <td> (2 × 0.6rem) ≈ 8.15rem;
+       se deja un poco de margen. Con `table-layout: fixed` en la tabla,
+       esto es lo que hace que la columna "Enlace" absorba automáticamente
+       el resto del ancho disponible. */
+    width: 8.5rem;
+    white-space: nowrap;
 }
 
 .enlaces-table__fila {
