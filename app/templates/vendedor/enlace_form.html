@@ -4,9 +4,7 @@
 
 {% block breadcrumb %}
 <nav class="breadcrumb">
-    <span class="breadcrumb__link">eServicios</span>
-    <a class="breadcrumb__link" href="{{ url_for('vendedor.dashboard') }}">Mi tienda</a>
-    <a class="breadcrumb__link" href="{{ url_for('vendedor.enlaces') }}">Mis enlaces</a>
+    <span class="breadcrumb__brand">e-Link</span>
     <span class="breadcrumb__current">{{ 'Editar enlace' if link else 'Nuevo enlace' }}</span>
 </nav>
 {% endblock %}

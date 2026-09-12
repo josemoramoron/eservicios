@@ -4,8 +4,8 @@
 
 {% block breadcrumb %}
 <nav class="breadcrumb">
-    <span class="breadcrumb__link">eServicios</span>
-    <span class="breadcrumb__current">Mi tienda</span>
+    <span class="breadcrumb__brand">e-Link</span>
+    <span class="breadcrumb__current">Tienda</span>
 </nav>
 {% endblock %}
 
@@ -55,7 +55,12 @@
                 <tr>
                     <th class="tienda-table__nombre">Producto</th>
                     <th class="tienda-table__precio">Precio</th>
-                    <th class="tienda-table__activo">Activo</th>
+                    <th class="tienda-table__activo" title="Activo">
+                        <span class="admin-table__th-icono" aria-hidden="true">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="5" width="22" height="14" rx="7" ry="7"></rect><circle cx="16" cy="12" r="3"></circle></svg>
+                        </span>
+                        <span class="sr-only">Activo</span>
+                    </th>
                     <th class="tienda-table__acciones"></th>
                 </tr>
             </thead>
@@ -64,7 +69,11 @@
                 <tr>
                     <td class="tienda-table__nombre" title="{{ producto.titulo }}">{{ producto.titulo }}</td>
                     <td class="tienda-table__precio">{{ formatear_precio(producto.precio, vendor.moneda) }}</td>
-                    <td class="tienda-table__activo">{{ "Sí" if producto.activo else "No" }}</td>
+                    <td class="tienda-table__activo">
+                        <span class="admin-estado-dot admin-estado-dot--{{ 'activo' if producto.activo else 'inactivo' }}" title="{{ 'Activo' if producto.activo else 'Inactivo' }}">
+                            <span class="sr-only">{{ 'Activo' if producto.activo else 'Inactivo' }}</span>
+                        </span>
+                    </td>
                     <td class="admin-table__actions tienda-table__acciones">
                         <a class="admin-icon-btn" href="{{ url_for('vendedor.producto_editar', producto_id=producto.id) }}" aria-label="Editar" title="Editar">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>

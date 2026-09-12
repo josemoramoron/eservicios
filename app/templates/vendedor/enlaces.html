@@ -4,9 +4,8 @@
 
 {% block breadcrumb %}
 <nav class="breadcrumb">
-    <span class="breadcrumb__link">eServicios</span>
-    <a class="breadcrumb__link" href="{{ url_for('vendedor.dashboard') }}">Mi tienda</a>
-    <span class="breadcrumb__current">Mis enlaces</span>
+    <span class="breadcrumb__brand">e-Link</span>
+    <span class="breadcrumb__current">Enlaces</span>
 </nav>
 {% endblock %}
 
@@ -25,6 +24,21 @@
     <thead>
         <tr>
             <th>Enlace</th>
+            {# Columna "Activo" de vuelta (2026-09-12): se había quitado el
+               2026-09-11 porque mostrar "Sí"/"No" insinuaba una
+               verificación en tiempo real de que el enlace funciona, que no
+               existe. Jose la pidió de vuelta con el mismo patrón de punto
+               de color que "Mi tienda" (ver `tienda.html`): un ícono en el
+               encabezado (con texto accesible en `.sr-only`, no visible) y
+               un círculo verde/rojo en cada fila en vez de texto — se lee
+               más como "el vendedor lo marcó activo/inactivo" que como una
+               garantía del sistema. #}
+            <th class="enlaces-table__activo" title="Activo">
+                <span class="admin-table__th-icono" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="5" width="22" height="14" rx="7" ry="7"></rect><circle cx="16" cy="12" r="3"></circle></svg>
+                </span>
+                <span class="sr-only">Activo</span>
+            </th>
             <th></th>
         </tr>
     </thead>
@@ -35,18 +49,19 @@
                2 columnas separadas ("Enlace" y "URL") — Jose pidió que todo
                quepa en una sola pantalla de celular sin scroll horizontal, y
                esto le devuelve a la URL casi todo el ancho de la fila (antes
-               tenía que repartirlo con la columna del título). También se
-               quitó la columna "Activo": no hay ninguna verificación en
-               tiempo real de que el enlace funcione, así que mostrar
-               "Sí"/"No" ahí no aportaba información real — ese estado se
-               sigue pudiendo cambiar desde "Editar" (formulario del enlace),
-               solo se dejó de mostrar en esta tabla. La URL se trunca con
-               "…" vía CSS (`.enlaces-table__url`) en vez de cortarla en el
-               servidor, para que el punto de corte se ajuste solo al ancho
-               real disponible en cada pantalla (celular, tablet o PC). #}
+               tenía que repartirlo con la columna del título). La URL se
+               trunca con "…" vía CSS (`.enlaces-table__url`) en vez de
+               cortarla en el servidor, para que el punto de corte se ajuste
+               solo al ancho real disponible en cada pantalla (celular,
+               tablet o PC). #}
             <td class="enlaces-table__info">
                 <p class="enlaces-table__titulo">{{ link.titulo }}</p>
                 <a class="enlaces-table__url" href="{{ link.url }}" target="_blank" rel="noopener" title="{{ link.url }}">{{ link.url }}</a>
+            </td>
+            <td class="enlaces-table__activo">
+                <span class="admin-estado-dot admin-estado-dot--{{ 'activo' if link.activo else 'inactivo' }}" title="{{ 'Activo' if link.activo else 'Inactivo' }}">
+                    <span class="sr-only">{{ 'Activo' if link.activo else 'Inactivo' }}</span>
+                </span>
             </td>
             {# Todos los controles (reordenar, editar, eliminar) en una sola
                fila de iconos, dentro de un <div> interno (2026-09-11): esta
@@ -104,7 +119,7 @@
         </tr>
         {% else %}
         <tr>
-            <td colspan="2">Todavía no has agregado ningún enlace.</td>
+            <td colspan="3">Todavía no has agregado ningún enlace.</td>
         </tr>
         {% endfor %}
     </tbody>

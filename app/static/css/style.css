@@ -31,6 +31,13 @@
        (.tienda-estado-stock--*). */
     --color-stock-pocas: #b45309;
     --color-stock-agotado: #b91c1c;
+    /* Punto de "Activo"/"Inactivo" en las tablas de "Mi tienda" y "Mis
+       enlaces" (2026-09-12) — variables propias (no se reutiliza
+       --color-stock-agotado ni --color-badge-*) porque significan algo
+       distinto: esto es el interruptor manual `activo` del producto o
+       enlace, no un badge de producto ni un estado de stock. */
+    --color-estado-activo: #16a34a;
+    --color-estado-inactivo: #b91c1c;
 }
 
 [data-theme="dark"] {
@@ -50,6 +57,8 @@
     --color-badge-contraste: #0b0b0b;
     --color-stock-pocas: #fbbf24;
     --color-stock-agotado: #f87171;
+    --color-estado-activo: #4ade80;
+    --color-estado-inactivo: #f87171;
 }
 
 .sr-only {
@@ -510,6 +519,32 @@ body {
 .breadcrumb__link {
     color: var(--color-accent);
     text-decoration: none;
+}
+
+/* "e-Link" en negrita, sin ser enlace (2026-09-12, pedido con 5 capturas
+   marcadas en rojo): todas las páginas del panel de vendedor (las 5
+   principales — Home, Enlaces, Tienda, Avisos, Perfil — y sus subpáginas
+   de formulario: producto, categoría, enlace, verificación) simplifican
+   su breadcrumb de "eServicios [/ Mi tienda] / <página>" a solo
+   "e-Link / <página>", sin ningún enlace — antes "eServicios" (y a veces
+   "Mi tienda") se veían coloreados como si fueran clicleables
+   (`.breadcrumb__link`) aunque varios ni siquiera eran `<a>`.
+   **Actualizado el mismo día:** Jose pidió que "e-Link" pase a formar
+   parte de los acentos, cambiando de color según el que elija cada
+   vendedor — por eso ahora toma `var(--color-accent)` en vez de heredar
+   el color apagado de `.breadcrumb`. Esto es seguro de hacer directo
+   (sin una clase modificadora `--acento` como sí necesitan
+   `.admin-nav__link--active`/`.admin-stat-card__value`, que se comparten
+   con el panel de `/admin`): `.breadcrumb__brand` es una clase nueva que
+   solo se usa dentro del panel de vendedor, donde `--color-accent`
+   siempre refleja el acento efectivo del vendedor (el suyo propio, o el
+   azul de eServicios por defecto si nunca eligió uno — ver
+   `resolver_acento_vendor`), inyectado por el context processor de
+   `vendedor_bp` en cada página. Sigue sin ser un enlace: no lleva
+   `text-decoration` ni cursor de mano. */
+.breadcrumb__brand {
+    font-weight: 700;
+    color: var(--color-accent);
 }
 
 .breadcrumb__current {
@@ -1061,12 +1096,78 @@ body {
     width: 4.5rem;
 }
 
+/* Antes mostraba la palabra "Activo" en el encabezado y "Sí"/"No" en cada
+   fila; ahora es un ícono de interruptor en el encabezado (con texto
+   accesible via `.sr-only`, no visible) y un punto de color por fila (ver
+   `.admin-estado-dot` más abajo) — pedido de Jose (2026-09-12), mismo
+   patrón aplicado también en "Mis enlaces" (`.enlaces-table__activo`). */
 .tienda-table__activo {
     width: 2.75rem;
+    text-align: center;
 }
 
 .tienda-table__cantidad {
     width: 4.5rem;
+}
+
+/* Punto de "Activo"/"Inactivo" (2026-09-12): reemplaza el texto "Sí"/"No"
+   en "Mi tienda" (Productos) y trae de vuelta la columna en "Mis enlaces"
+   (ver `.enlaces-table__activo` y el comentario en `enlaces.html` sobre
+   por qué se había quitado) — Jose pidió específicamente el mismo patrón
+   en ambas tablas: un ícono en el encabezado en vez de la palabra
+   "Activo", y un círculo verde/rojo en vez de "Sí"/"No". El texto
+   accesible para lectores de pantalla va en un `.sr-only` adentro del
+   span (ver plantillas), no en el color, que por sí solo no alcanza para
+   accesibilidad. */
+.admin-estado-dot {
+    display: inline-block;
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+}
+
+.admin-estado-dot--activo {
+    background-color: var(--color-estado-activo);
+}
+
+.admin-estado-dot--inactivo {
+    background-color: var(--color-estado-inactivo);
+}
+
+.admin-table__th-icono {
+    display: inline-flex;
+    color: var(--color-text-muted);
+}
+
+/* Columna "Activo" de "Mis enlaces" (2026-09-12): se había quitado en la
+   sección 9-vicies quaterdecies del spec porque mostrar "Sí"/"No" ahí
+   insinuaba una verificación en tiempo real de que el enlace funciona,
+   que no existe. Jose pidió traerla de vuelta pero con el mismo patrón
+   de punto de color que "Mi tienda" — un círculo, no texto, se lee más
+   como "el vendedor lo marcó activo/inactivo" que como una garantía del
+   sistema. Mismo ancho que `.tienda-table__activo` a propósito, para que
+   las 2 tablas se vean consistentes. */
+.enlaces-table__activo {
+    width: 2.75rem;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* Bug real (2026-09-12, reportado por Jose con 2 capturas: el ícono del
+   encabezado se veía corrido hacia la izquierda respecto a los puntos de
+   cada fila): `.admin-table th { text-align: left; }` (más arriba) tiene
+   especificidad (0,1,1) — una clase + un elemento — que le gana a
+   `.tienda-table__activo`/`.enlaces-table__activo { text-align: center; }`
+   (0,1,0, solo una clase), así que el <th> se quedaba alineado a la
+   izquierda pese a la regla de centrado. El <td> no tenía este problema
+   (`.admin-table td` no fija `text-align`), por eso solo se notaba en el
+   encabezado. Se resuelve con una regla más específica que apunta al
+   <th> en concreto — no hace falta tocar `.admin-table th` en sí, que
+   sigue sirviendo de default para el resto de los encabezados de tabla
+   del panel. */
+.admin-table th.tienda-table__activo,
+.admin-table th.enlaces-table__activo {
+    text-align: center;
 }
 
 /* Solo el ancho/nowrap: el `display: flex` de la celda de acciones lo
