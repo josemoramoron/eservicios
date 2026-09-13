@@ -10,7 +10,14 @@
 {% endblock %}
 
 {% block content %}
-<h1 class="admin-page-title">Mi perfil</h1>
+<h1 class="admin-page-title titulo-con-logo">
+    <svg class="titulo-con-logo__logo" viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" aria-hidden="true">
+        <path d="M 74.3 72.1 A 30 30 0 1 1 74.3 31.9"></path>
+        <path d="M 24 52 L 85 52"></path>
+        <circle cx="94" cy="52" r="9"></circle>
+    </svg>
+    Mi perfil
+</h1>
 
 <h2 style="font-size: 1.05rem; margin: 1.5rem 0 0.75rem;">Personalización de tu tienda</h2>
 <form method="post" class="admin-form" enctype="multipart/form-data" action="{{ url_for('vendedor.perfil') }}">
@@ -162,6 +169,8 @@
     </div>
 </form>
 
+<hr class="admin-form__separador">
+
 <h2 style="font-size: 1.05rem; margin: 2rem 0 0.75rem;">Subdominio de tu tienda</h2>
 <div style="padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 0.5rem; max-width: 420px;">
     <p style="margin: 0 0 6px;">Tu tienda es visible en: <strong>{{ vendor.slug }}.eservicios.org</strong></p>
@@ -196,6 +205,8 @@
     </p>
     {% endif %}
 </div>
+
+<hr class="admin-form__separador">
 
 <h2 style="font-size: 1.05rem; margin: 2rem 0 0.75rem;">Seguridad</h2>
 {% if vendor.password_hash %}

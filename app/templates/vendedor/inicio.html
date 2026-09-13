@@ -17,7 +17,14 @@
    vendedor/tienda.html). #}
 {% block content %}
 <div class="admin-page-header">
-    <h1 class="admin-page-title">e-Link</h1>
+    <h1 class="admin-page-title titulo-con-logo">
+        <svg class="titulo-con-logo__logo" viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" aria-hidden="true">
+            <path d="M 74.3 72.1 A 30 30 0 1 1 74.3 31.9"></path>
+            <path d="M 24 52 L 85 52"></path>
+            <circle cx="94" cy="52" r="9"></circle>
+        </svg>
+        e-Link
+    </h1>
     {# Botón "Compartir" movido acá (2026-09-11, pedido señalado con una
        captura): antes vivía dentro de la tarjeta del QR, junto a "QR" y
        "Contacto" — Jose lo quiso como acción principal de la página, al
@@ -27,7 +34,7 @@
        sin importar en qué parte del DOM esté. #}
     <button
         type="button"
-        class="admin-btn"
+        class="admin-btn admin-btn--primary"
         data-compartir-btn
         data-url="https://{{ vendor.slug }}.eservicios.org"
         data-titulo="{{ vendor.nombre_negocio }}"

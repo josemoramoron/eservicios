@@ -592,10 +592,24 @@ body {
 }
 
 .admin-nav__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
     font-weight: 700;
     color: var(--color-text);
     text-decoration: none;
     white-space: nowrap;
+}
+
+/* Logo "e-Link" (Boceto A, elegido por Jose el 2026-09-12 — ver
+   logo-e-link-bocetos.html): un solo <svg> con stroke="currentColor", así
+   que sigue el color de .admin-nav__brand sin reglas propias de color:
+   heredará el azul de acento del vendedor en :hover y en el estado
+   --active/--acento igual que ya hace el texto "e-Link". */
+.admin-nav__logo {
+    width: 1.1rem;
+    height: auto;
+    flex-shrink: 0;
 }
 
 /* "e-Link" volvió a ser un enlace (2026-09-11, ver vendedor/base.html) —
@@ -746,6 +760,27 @@ body {
 
 .admin-page-header .admin-page-title {
     margin: 0;
+}
+
+/* Logo "e-Link" (Boceto A) en los títulos principales del panel de
+   vendedor: Home, Mis enlaces, Mi tienda, Mi perfil y Mis avisos
+   (2026-09-13, pedido de Jose en 2 rondas de capturas) — clase propia
+   .titulo-con-logo (renombrada de .inicio-titulo, su nombre original
+   cuando solo se usaba en Home), no se toca .admin-page-title en sí: esa
+   clase la comparten TODOS los títulos del panel de vendedor y de
+   /admin (ver arriba, incluidos los `<h2>` "Productos"/"Categorías"
+   dentro de "Tienda", que NO llevan logo), así que cualquier cambio en
+   .admin-page-title afectaría pantallas donde Jose no pidió nada. */
+.titulo-con-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.titulo-con-logo__logo {
+    width: 1.35rem;
+    height: auto;
+    flex-shrink: 0;
 }
 
 .admin-stats {

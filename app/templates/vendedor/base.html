@@ -34,7 +34,14 @@
             <a
                 class="admin-nav__brand{% if seccion_activa == "inicio" %} admin-nav__link--active{{ clase_acento }}{% endif %}"
                 href="{{ url_for('vendedor.inicio') }}"
-            >e-Link</a>
+            >
+                <svg class="admin-nav__logo" viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" aria-hidden="true">
+                    <path d="M 74.3 72.1 A 30 30 0 1 1 74.3 31.9"></path>
+                    <path d="M 24 52 L 85 52"></path>
+                    <circle cx="94" cy="52" r="9"></circle>
+                </svg>
+                e-Link
+            </a>
             <a
                 class="admin-nav__link{% if seccion_activa.startswith("enlace") %} admin-nav__link--active{{ clase_acento }}{% endif %}"
                 href="{{ url_for('vendedor.enlaces') }}"
@@ -69,7 +76,14 @@
             {# Sin sesión de vendedor (ej. verificar_email.html a mitad del
                registro): "e-Link" vuelve a ser texto suelto, sin enlace ni
                resto del navbar, porque `vendedor.inicio` requiere sesión. #}
-            <span class="admin-nav__brand">e-Link</span>
+            <span class="admin-nav__brand">
+                <svg class="admin-nav__logo" viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" aria-hidden="true">
+                    <path d="M 74.3 72.1 A 30 30 0 1 1 74.3 31.9"></path>
+                    <path d="M 24 52 L 85 52"></path>
+                    <circle cx="94" cy="52" r="9"></circle>
+                </svg>
+                e-Link
+            </span>
             {% endif %}
         </nav>
     </header>

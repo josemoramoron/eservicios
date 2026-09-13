@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bocetos de logo — e-Link</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #f5f7fa;
+    --surface: #ffffff;
+    --text: #111111;
+    --text-muted: #5a5a5a;
+    --border: #e2e5ea;
+    --accent: #2563eb;
+    --accent-contrast: #ffffff;
+    --dark-bg: #111111;
+    --dark-text: #f5f5f5;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Manrope, -apple-system, "Segoe UI", sans-serif;
+    padding: 0 20px 64px;
+  }
+  .wrap {
+    max-width: 780px;
+    margin: 0 auto;
+  }
+  header.intro {
+    padding: 48px 0 32px;
+  }
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 10px;
+  }
+  h1 {
+    font-size: clamp(1.7rem, 4vw, 2.3rem);
+    font-weight: 800;
+    margin: 0 0 14px;
+    text-wrap: balance;
+    letter-spacing: -0.01em;
+  }
+  .lede {
+    color: var(--text-muted);
+    font-size: 1rem;
+    line-height: 1.6;
+    max-width: 60ch;
+    margin: 0;
+  }
+  .concept {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 28px 30px;
+    margin-bottom: 24px;
+  }
+  .concept__head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+  .concept__letter {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--accent-contrast);
+    background: var(--accent);
+    padding: 3px 9px;
+    border-radius: 999px;
+    letter-spacing: 0.04em;
+  }
+  .concept__title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0;
+  }
+  .concept__blurb {
+    color: var(--text-muted);
+    font-size: 0.92rem;
+    line-height: 1.55;
+    margin: 8px 0 22px;
+    max-width: 62ch;
+  }
+  .swatches {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  @media (max-width: 480px) {
+    .swatches { grid-template-columns: 1fr; }
+  }
+  .swatch {
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 148px;
+    position: relative;
+  }
+  .swatch--light {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    color: var(--accent);
+  }
+  .swatch--dark {
+    background: var(--dark-bg);
+    color: #60a5fa;
+  }
+  .swatch svg {
+    width: 76px;
+    height: auto;
+    overflow: visible;
+  }
+  .swatch__label {
+    position: absolute;
+    bottom: 10px;
+    left: 12px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.66rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    opacity: 0.5;
+  }
+  .lockup-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 18px 20px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 14px;
+  }
+  .lockup-row svg {
+    width: 30px;
+    height: 30px;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .lockup-row .wordmark {
+    font-size: 1.3rem;
+  }
+  .wordmark {
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--text);
+  }
+  .wordmark .e { color: var(--accent); }
+  .wordmark .link-glyph {
+    display: inline-block;
+    width: 0.5em;
+    height: 0.5em;
+    vertical-align: 0.05em;
+    margin: 0 0.03em;
+  }
+  .wordmark .link-glyph svg {
+    width: 100%;
+    height: 100%;
+    color: var(--accent);
+  }
+
+  /* Mockup del navbar real del panel de vendedor, para juzgar el logo en contexto */
+  .navmock {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    background: #ffffff;
+    font-size: 0.86rem;
+    color: #8a8a8a;
+    flex-wrap: wrap;
+  }
+  .navmock .brand {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-weight: 800;
+    color: var(--accent);
+    font-size: 0.95rem;
+  }
+  .navmock .brand svg {
+    width: 18px;
+    height: 18px;
+  }
+  .navmock__caption {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    margin: 8px 2px 0;
+    letter-spacing: 0.02em;
+  }
+
+  footer.close {
+    margin-top: 8px;
+    padding: 22px 4px 0;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    max-width: 62ch;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="intro">
+    <p class="eyebrow">e-Link · exploración de marca</p>
+    <h1>3 bocetos de logo minimalista</h1>
+    <p class="lede">
+      Tres direcciones distintas, todas construidas sobre la misma idea — el "enlace" —
+      pero resueltas de formas distintas: fusionada con la letra, como ícono aparte, o
+      escondida en el detalle de la tipografía. Cada una en el azul de e-Link, sobre
+      fondo claro y oscuro, y en el navbar real del panel para ver cómo se sentiría en uso.
+    </p>
+  </header>
+
+  <!-- CONCEPTO A -->
+  <section class="concept">
+    <div class="concept__head">
+      <span class="concept__letter">Boceto A</span>
+      <h2 class="concept__title">La "e" enlazada</h2>
+    </div>
+    <p class="concept__blurb">
+      La letra "e" dibujada con un solo trazo, cuyo remate se cierra en un pequeño
+      aro — la propia letra "se engancha" a sí misma. Es el más literal de los tres:
+      no hace falta explicar la idea, se lee directo como marca de e-Link.
+    </p>
+
+    <div class="swatches">
+      <div class="swatch swatch--light">
+        <svg viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round">
+          <path d="M 74.3 72.1 A 30 30 0 1 1 74.3 31.9" />
+          <path d="M 24 52 L 85 52" />
+          <circle cx="94" cy="52" r="9" />
+        </svg>
+        <span class="swatch__label">Fondo claro</span>
+      </div>
+      <div class="swatch swatch--dark">
+        <svg viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round">
+          <path d="M 74.3 72.1 A 30 30 0 1 1 74.3 31.9" />
+          <path d="M 24 52 L 85 52" />
+          <circle cx="94" cy="52" r="9" />
+        </svg>
+        <span class="swatch__label">Fondo oscuro</span>
+      </div>
+    </div>
+
+    <div class="navmock">
+      <span class="brand">
+        <svg viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round">
+          <path d="M 74.3 72.1 A 30 30 0 1 1 74.3 31.9" />
+          <path d="M 24 52 L 85 52" />
+          <circle cx="94" cy="52" r="9" />
+        </svg>
+        e-Link
+      </span>
+      <span>Enlaces</span><span>Tienda</span><span>Avisos</span><span>Perfil</span>
+    </div>
+    <p class="navmock__caption">así se vería reemplazando el "e-Link" actual del navbar del panel</p>
+  </section>
+
+  <!-- CONCEPTO B -->
+  <section class="concept">
+    <div class="concept__head">
+      <span class="concept__letter">Boceto B</span>
+      <h2 class="concept__title">Ícono de cadena + nombre</h2>
+    </div>
+    <p class="concept__blurb">
+      El símbolo universal de "enlace" (dos eslabones entrelazados), como ícono
+      independiente junto al nombre. Es el más versátil de los tres: el ícono solo
+      funciona como favicon o avatar, y el nombre se puede tipear en cualquier lugar
+      donde no haya espacio para un ícono.
+    </p>
+
+    <div class="swatches">
+      <div class="swatch swatch--light">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:56px">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+        </svg>
+        <span class="swatch__label">Fondo claro</span>
+      </div>
+      <div class="swatch swatch--dark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:56px">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+        </svg>
+        <span class="swatch__label">Fondo oscuro</span>
+      </div>
+    </div>
+
+    <div class="lockup-row">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+      </svg>
+      <span class="wordmark">e-Link</span>
+    </div>
+
+    <div class="navmock">
+      <span class="brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+        </svg>
+        e-Link
+      </span>
+      <span>Enlaces</span><span>Tienda</span><span>Avisos</span><span>Perfil</span>
+    </div>
+    <p class="navmock__caption">así se vería reemplazando el "e-Link" actual del navbar del panel</p>
+  </section>
+
+  <!-- CONCEPTO C -->
+  <section class="concept">
+    <div class="concept__head">
+      <span class="concept__letter">Boceto C</span>
+      <h2 class="concept__title">Solo tipografía, con el guión convertido en eslabón</h2>
+    </div>
+    <p class="concept__blurb">
+      Sin ícono aparte: el nombre "e-Link" en una tipografía geométrica y sólida, donde
+      el guión del medio se reemplaza por un mini-eslabón. Es el más discreto de los
+      tres — para quien prefiera un logo "solo texto" pero con un detalle que siga
+      contando la idea de "enlace" de cerca.
+    </p>
+
+    <div class="swatches">
+      <div class="swatch swatch--light">
+        <span class="wordmark" style="font-size:2.1rem;">
+          <span class="e">e</span><span class="link-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></span>Link
+        </span>
+        <span class="swatch__label">Fondo claro</span>
+      </div>
+      <div class="swatch swatch--dark">
+        <span class="wordmark" style="font-size:2.1rem; color:#f5f5f5;">
+          <span style="color:#60a5fa;">e</span><span class="link-glyph" style="color:#60a5fa;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></span>Link
+        </span>
+        <span class="swatch__label">Fondo oscuro</span>
+      </div>
+    </div>
+
+    <div class="navmock">
+      <span class="brand" style="font-size:1rem;">
+        <span class="e" style="color:var(--accent)">e</span><span class="link-glyph" style="width:0.55em;height:0.55em;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg></span>Link
+      </span>
+      <span>Enlaces</span><span>Tienda</span><span>Avisos</span><span>Perfil</span>
+    </div>
+    <p class="navmock__caption">así se vería reemplazando el "e-Link" actual del navbar del panel</p>
+  </section>
+
+  <footer class="close">
+    Contame cuál te acomoda más (o si querés que pruebe variantes de color, grosor de
+    trazo, o una combinación entre bocetos) y seguimos desde ahí.
+  </footer>
+
+</div>
+</body>
+</html>
