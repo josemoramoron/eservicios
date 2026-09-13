@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Propuestas de tipografía — e-Link</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&family=IBM+Plex+Sans:wght@400;500&family=Sora:wght@600;700&family=Manrope:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff; --surface:#f5f7fa; --text:#111111; --text-muted:#5a5a5a;
+    --border:#e2e5ea; --accent:#2563eb; --accent-contrast:#ffffff;
+    --page-bg:#eef1f5; --card-bg:#ffffff; --shell-shadow: 0 1px 2px rgba(17,17,17,.04), 0 8px 24px rgba(17,17,17,.06);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--page-bg); color:var(--text);
+    font-family: system-ui, sans-serif;
+    padding: 28px 16px 64px;
+  }
+  .wrap{ max-width: 920px; margin: 0 auto; }
+  .intro{ max-width: 760px; margin: 0 auto 36px; }
+  .intro h1{ font-size: 1.5rem; margin: 0 0 10px; letter-spacing: -0.01em; }
+  .intro p{ font-size: 0.95rem; line-height: 1.55; color: var(--text-muted); margin: 0 0 8px; }
+  .intro .analisis{
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px 18px; margin-top: 16px; font-size: 0.88rem; line-height: 1.6;
+  }
+  .analisis strong{ color: var(--text); }
+  .analisis .marca{ display:inline-block; padding: 1px 7px; border-radius: 5px; font-size: 0.78rem; font-weight: 700; margin-right: 6px;}
+  .marca--lt{ background:#e7fce0; color:#1c6b1f; }
+  .marca--bc{ background:#e9edff; color:#2948F0; }
+
+  .propuesta{
+    background: var(--card-bg); border-radius: 20px; box-shadow: var(--shell-shadow);
+    margin-bottom: 34px; overflow: hidden; border: 1px solid var(--border);
+  }
+  .propuesta__etiqueta{
+    display:flex; align-items:baseline; justify-content:space-between; gap: 12px;
+    padding: 16px 22px 0;
+  }
+  .propuesta__etiqueta h2{ font-size: 1.05rem; margin:0; font-family: system-ui, sans-serif; }
+  .propuesta__etiqueta .fuentes{ font-size: 0.75rem; color: var(--text-muted); font-family: system-ui, sans-serif; text-align:right; }
+  .propuesta__desc{ padding: 6px 22px 18px; font-size: 0.85rem; line-height: 1.55; color: var(--text-muted); font-family: system-ui, sans-serif; }
+  .propuesta__desc strong{ color: var(--text); }
+
+  /* ---- "pantalla" simulada del panel, ancho celular ---- */
+  .telefono{
+    width: 100%; max-width: 380px; margin: 0 auto 22px;
+    background: var(--bg); border-radius: 16px; border: 1px solid var(--border);
+    overflow:hidden;
+  }
+  .nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 12px 16px; border-bottom:1px solid var(--border);
+  }
+  .brand{ display:inline-flex; align-items:center; gap:.4rem; text-decoration:none; color: var(--text); }
+  .brand svg{ width: 1.15rem; height:auto; flex-shrink:0; color: var(--accent); }
+  .brand span{ font-weight: 800; font-size: 1.05rem; letter-spacing: -0.01em; }
+  .salir{ width:16px; height:16px; opacity:.35; }
+
+  .pantalla{ padding: 20px 18px 22px; }
+  .titulo{ display:inline-flex; align-items:center; gap:.5rem; margin: 0 0 4px; }
+  .titulo svg{ width:1.3rem; height:auto; color:var(--accent); flex-shrink:0; }
+  .titulo b{ font-size: 1.3rem; font-weight: 800; letter-spacing: -0.01em; }
+  .subt{ font-size: 0.85rem; color: var(--text-muted); margin: 0 0 16px; line-height:1.5; }
+  .subt q{ font-style: normal; }
+
+  .tarjeta{
+    background: var(--surface); border-radius: 14px; padding: 14px 16px; margin-bottom: 12px;
+    display:flex; align-items:center; justify-content:space-between; gap: 10px;
+  }
+  .tarjeta .info b{ display:block; font-size: 0.95rem; font-weight:700; }
+  .tarjeta .info span{ display:block; font-size: 0.78rem; color: var(--text-muted); margin-top:2px; }
+  .precio{ font-weight: 800; font-size: 1rem; font-variant-numeric: tabular-nums; white-space:nowrap; }
+
+  .botones{ display:flex; gap:10px; margin-top: 6px; }
+  .btn{
+    flex:1; text-align:center; padding: 10px 0; border-radius: 10px; font-size: 0.88rem;
+    font-weight: 700; text-decoration:none; border: 1px solid var(--border); color: var(--text);
+  }
+  .btn--primary{ background: var(--accent); border-color: var(--accent); color: var(--accent-contrast); }
+
+  /* Tipografías: cada tarjeta define su propia fuente para todo lo de adentro */
+  .f-actual .nav, .f-actual .pantalla{ font-family: system-ui, sans-serif; }
+
+  .f-a .brand span, .f-a .titulo b{ font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+  .f-a .subt, .f-a .tarjeta, .f-a .btn{ font-family: 'Inter', system-ui, sans-serif; }
+  .f-a .precio{ font-family: 'Plus Jakarta Sans', system-ui, sans-serif; }
+
+  .f-b .brand span, .f-b .titulo b{ font-family: 'Sora', system-ui, sans-serif; }
+  .f-b .subt, .f-b .tarjeta, .f-b .btn{ font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+  .f-b .precio{ font-family: 'Sora', system-ui, sans-serif; }
+
+  .f-c .nav, .f-c .pantalla{ font-family: 'Manrope', system-ui, sans-serif; }
+
+  footer{ max-width:760px; margin: 40px auto 0; font-size: 0.82rem; color: var(--text-muted); line-height:1.6; font-family: system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="intro">
+    <h1>Tipografía para e-Link — 3 propuestas</h1>
+    <p>Hoy el panel de e-Link no tiene tipografía propia: todo corre en <code>system-ui</code> (la fuente del sistema operativo de cada quien — San Francisco en iPhone, Roboto en Android, Segoe en Windows). Funciona, pero no aporta identidad. Antes de elegir, así se ven Linktree y Beacons hoy mismo (lo revisé directo en sus sitios):</p>
+    <div class="analisis">
+      <p style="margin:0 0 10px;"><span class="marca marca--lt">Linktree</span><strong>Link Sans</strong> — tipografía propia, encargada a un estudio de Melbourne (ATS Type) para verse igual en portugués, inglés, indonesio e hindi a la vez. Títulos muy negros (peso 800/700), letras apretadas (espaciado negativo), formas neutras tipo Inter — prioriza que <em>70 millones de usuarios en decenas de países</em> la lean igual de bien.</p>
+      <p style="margin:0;"><span class="marca marca--bc">Beacons</span><strong>Poppins</strong> — geométrica, redonda, muy compacta (peso 700 en casi todo, espaciado negativo fuerte). Letras circulares (la "o" y la "a" son casi círculos perfectos), tono juguetón y directo — combina con su paleta azul/negro/blanco de alto contraste.</p>
+    </div>
+  </div>
+
+  <!-- ACTUAL -->
+  <div class="propuesta f-actual">
+    <div class="propuesta__etiqueta">
+      <h2>Cómo se ve hoy</h2>
+      <div class="fuentes">system-ui (sin marca propia)</div>
+    </div>
+    <div class="propuesta__desc">La fuente cambia según el teléfono de cada vendedor — nadie ve exactamente lo mismo, y no hay ninguna decisión de marca detrás.</div>
+    <div class="telefono">
+      <div class="nav">
+        <a class="brand" href="#">
+          <svg viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round"><path d="M 74.3 72.1 A 30 30 0 1 1 74.3 31.9"></path><path d="M 24 52 L 85 52"></path><circle cx="94" cy="52" r="9"></circle></svg>
+          <span>e-Link</span>
+        </a>
+        <svg class="salir" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+      </div>
+      <div class="pantalla">
+        <div class="titulo">
+          <svg viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round"><path d="M 74.3 72.1 A 30 30 0 1 1 74.3 31.9"></path><path d="M 24 52 L 85 52"></path><circle cx="94" cy="52" r="9"></circle></svg>
+          <b>Mis enlaces</b>
+        </div>
+        <p class="subt">"¡Avísame cuando vuelva!". Personas que pidieron que les avises cuando un producto marcado como "Agotado" vuelva a tener stock.</p>
+        <div class="tarjeta">
+          <div class="info"><b>Combo desayuno x2</b><span>eservicios.link/panaderia-ana</span></div>
+          <div class="precio">$8.500</div>
+        </div>
+        <div class="botones">
+          <a class="btn btn--primary" href="#">Compartir</a>
+          <a class="btn" href="#">QR</a>
+          <a class="btn" href="#">Contacto</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROPUESTA A -->
+  <div class="propuesta f-a">
+    <div class="propuesta__etiqueta">
+      <h2>Propuesta A — Cercana y clara</h2>
+      <div class="fuentes">Plus Jakarta Sans + Inter</div>
+    </div>
+    <div class="propuesta__desc"><strong>Recomendada.</strong> Inter es una de las fuentes más probadas del mundo para pantallas pequeñas y para español (tildes, "ñ", signos "¿¡" bien resueltos) — es, de hecho, la misma familia en la que se apoya Link Sans de Linktree cuando falta soporte de idioma. Plus Jakarta Sans suma un toque cálido y propio solo en títulos/precios, sin la dureza geométrica de Poppins. Resultado: profesional como corresponde a un marketplace de servicios, pero no frío.</div>
+    <div class="telefono">
+      <div class="nav">
+        <a class="brand" href="#">
+          <svg viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round"><path d="M 74.3 72.1 A 30 30 0 1 1 74.3 31.9"></path><path d="M 24 52 L 85 52"></path><circle cx="94" cy="52" r="9"></circle></svg>
+          <span>e-Link</span>
+        </a>
+        <svg class="salir" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+      </div>
+      <div class="pantalla">
+        <div class="titulo">
+          <svg viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round"><path d="M 74.3 72.1 A 30 30 0 1 1 74.3 31.9"></path><path d="M 24 52 L 85 52"></path><circle cx="94" cy="52" r="9"></circle></svg>
+          <b>Mis enlaces</b>
+        </div>
+        <p class="subt">"¡Avísame cuando vuelva!". Personas que pidieron que les avises cuando un producto marcado como "Agotado" vuelva a tener stock.</p>
+        <div class="tarjeta">
+          <div class="info"><b>Combo desayuno x2</b><span>eservicios.link/panaderia-ana</span></div>
+          <div class="precio">$8.500</div>
+        </div>
+        <div class="botones">
+          <a class="btn btn--primary" href="#">Compartir</a>
+          <a class="btn" href="#">QR</a>
+          <a class="btn" href="#">Contacto</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROPUESTA B -->
+  <div class="propuesta f-b">
+    <div class="propuesta__etiqueta">
+      <h2>Propuesta B — Con carácter propio</h2>
+      <div class="fuentes">Sora + IBM Plex Sans</div>
+    </div>
+    <div class="propuesta__desc">Sora tiene cortes geométricos algo inesperados (mirá la "S" y la "a" de "Mis enlaces") que le dan a e-Link una personalidad más de "producto de tecnología" — un punto medio entre lo neutro de Linktree y lo juguetón de Beacons, sin copiar a ninguno. IBM Plex Sans mantiene el texto de todos los días muy legible. Es la opción más "distinta" de las tres.</div>
+    <div class="telefono">
+      <div class="nav">
+        <a class="brand" href="#">
+          <svg viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round"><path d="M 74.3 72.1 A 30 30 0 1 1 74.3 31.9"></path><path d="M 24 52 L 85 52"></path><circle cx="94" cy="52" r="9"></circle></svg>
+          <span>e-Link</span>
+        </a>
+        <svg class="salir" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+      </div>
+      <div class="pantalla">
+        <div class="titulo">
+          <svg viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round"><path d="M 74.3 72.1 A 30 30 0 1 1 74.3 31.9"></path><path d="M 24 52 L 85 52"></path><circle cx="94" cy="52" r="9"></circle></svg>
+          <b>Mis enlaces</b>
+        </div>
+        <p class="subt">"¡Avísame cuando vuelva!". Personas que pidieron que les avises cuando un producto marcado como "Agotado" vuelva a tener stock.</p>
+        <div class="tarjeta">
+          <div class="info"><b>Combo desayuno x2</b><span>eservicios.link/panaderia-ana</span></div>
+          <div class="precio">$8.500</div>
+        </div>
+        <div class="botones">
+          <a class="btn btn--primary" href="#">Compartir</a>
+          <a class="btn" href="#">QR</a>
+          <a class="btn" href="#">Contacto</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROPUESTA C -->
+  <div class="propuesta f-c">
+    <div class="propuesta__etiqueta">
+      <h2>Propuesta C — Una sola familia, minimalista</h2>
+      <div class="fuentes">Manrope (una sola fuente, todos los pesos)</div>
+    </div>
+    <div class="propuesta__desc">Misma lógica que el logo "Boceto A" que ya elegiste: una sola línea, sin adornos. Manrope hace todo — títulos en 800, botones en 700, texto normal en 400/500 — con una sola familia tipográfica, así que es la más simple de implementar (una sola fuente para descargar) y la más "silenciosa": deja que el color de acento de cada vendedor sea lo único que le da personalidad a su tienda.</div>
+    <div class="telefono">
+      <div class="nav">
+        <a class="brand" href="#">
+          <svg viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round"><path d="M 74.3 72.1 A 30 30 0 1 1 74.3 31.9"></path><path d="M 24 52 L 85 52"></path><circle cx="94" cy="52" r="9"></circle></svg>
+          <span>e-Link</span>
+        </a>
+        <svg class="salir" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+      </div>
+      <div class="pantalla">
+        <div class="titulo">
+          <svg viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round"><path d="M 74.3 72.1 A 30 30 0 1 1 74.3 31.9"></path><path d="M 24 52 L 85 52"></path><circle cx="94" cy="52" r="9"></circle></svg>
+          <b>Mis enlaces</b>
+        </div>
+        <p class="subt">"¡Avísame cuando vuelva!". Personas que pidieron que les avises cuando un producto marcado como "Agotado" vuelva a tener stock.</p>
+        <div class="tarjeta">
+          <div class="info"><b>Combo desayuno x2</b><span>eservicios.link/panaderia-ana</span></div>
+          <div class="precio">$8.500</div>
+        </div>
+        <div class="botones">
+          <a class="btn btn--primary" href="#">Compartir</a>
+          <a class="btn" href="#">QR</a>
+          <a class="btn" href="#">Contacto</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Las 3 usan Google Fonts (gratis, con buen soporte de español) y se implementan igual de simple: un <code>&lt;link&gt;</code> en <code>base.html</code> más una línea de <code>font-family</code> en <code>style.css</code>. Ninguna toca el sistema de color de acento por vendedor — el acento sigue siendo lo único que varía tienda por tienda. Contame cuál te gusta (o si querés mezclar, ej. títulos de B con texto de A) y lo dejo armado.
+  </footer>
+
+</div>
+</body>
+</html>

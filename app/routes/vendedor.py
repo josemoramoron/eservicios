@@ -254,7 +254,7 @@ def registro():
     y `registro_url_antigua()` más abajo para el porqué (2026-09-11).
     """
     if vendor_actual() is not None:
-        return redirect(url_for("vendedor.dashboard"))
+        return redirect(url_for("vendedor.inicio"))
 
     valores = {
         "email": "",
@@ -370,7 +370,7 @@ def login():
     y `login_url_antigua()` más abajo para el porqué (2026-09-11).
     """
     if vendor_actual() is not None:
-        return redirect(url_for("vendedor.dashboard"))
+        return redirect(url_for("vendedor.inicio"))
     if request.method == "POST":
         _verificar_csrf()
         vendor = autenticar_vendor(request.form.get("email", ""), request.form.get("password", ""))
@@ -385,7 +385,7 @@ def login():
             return redirect(url_for("vendedor.verificar_email"))
         else:
             iniciar_sesion_vendor(vendor)
-            destino = request.args.get("next") or url_for("vendedor.dashboard")
+            destino = request.args.get("next") or url_for("vendedor.inicio")
             return redirect(destino)
     return render_template("vendedor/login.html")
 
@@ -421,7 +421,7 @@ def auth_google():
     no volver a pedirlos en `registro_completar_google`.
     """
     if vendor_actual() is not None:
-        return redirect(url_for("vendedor.dashboard"))
+        return redirect(url_for("vendedor.inicio"))
 
     datos_previos = {
         campo: request.args.get(campo, "").strip()
@@ -476,7 +476,7 @@ def auth_google_callback():
             return redirect(url_for("vendedor.login"))
         iniciar_sesion_vendor(vendor)
         flash(f'¡Bienvenido de nuevo, {vendor.nombre_negocio}!', "success")
-        return redirect(url_for("vendedor.dashboard"))
+        return redirect(url_for("vendedor.inicio"))
 
     session["google_pendiente"] = {
         "google_id": google_id,
@@ -499,7 +499,7 @@ def registro_completar_google():
     Google, así que este paso no pasa por `verificar_email`.
     """
     if vendor_actual() is not None:
-        return redirect(url_for("vendedor.dashboard"))
+        return redirect(url_for("vendedor.inicio"))
     pendiente = session.get("google_pendiente")
     if not pendiente:
         return redirect(url_for("vendedor.registro"))
@@ -544,7 +544,7 @@ def registro_completar_google():
         session.pop("google_pendiente", None)
         iniciar_sesion_vendor(vendor)
         flash(f'¡Listo! Tu tienda "{vendor.nombre_negocio}" ya está en línea.', "success")
-        return redirect(url_for("vendedor.dashboard"))
+        return redirect(url_for("vendedor.inicio"))
 
     return render_template("vendedor/registro_completar_google.html", valores=valores, email=pendiente["email"])
 
@@ -572,7 +572,7 @@ def verificar_email():
             session.pop("vendor_pendiente_id", None)
             iniciar_sesion_vendor(vendor)
             flash("¡Correo verificado! Bienvenido a tu panel.", "success")
-            return redirect(url_for("vendedor.dashboard"))
+            return redirect(url_for("vendedor.inicio"))
         flash("Ese código no es correcto o ya venció. Intenta de nuevo o pide uno nuevo.", "error")
 
     return render_template("vendedor/verificar_email.html", email=vendor.email)

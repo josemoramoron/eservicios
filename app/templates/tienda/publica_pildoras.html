@@ -2,6 +2,12 @@
 <html lang="es" data-theme="light">
 <head>
     {% include "tienda/_cabecera_meta.html" %}
+    {# Tipografía propia de e-Link (2026-09-13): misma Propuesta A del
+       panel de vendedor (Plus Jakarta Sans + Inter, ver style.css) —
+       "Píldoras" tampoco tenía tipografía propia (a diferencia de
+       Editorial/Minimalista) y comparte .tienda-nombre/.tienda-card__precio
+       con la Clásica, así que recibe el mismo tratamiento. #}
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@700&display=swap">
 </head>
 <body class="tienda-body pildoras-body tienda-body--acento" style="--color-accent: {{ acento.color }}; --color-accent-contrast: {{ acento.contraste }}; --color-portada-inicio: {{ acento.color }}; --color-portada-fin: {{ acento.gradiente_fin }}; --color-portada-contraste: {{ acento.contraste }};">
 

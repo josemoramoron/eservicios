@@ -80,6 +80,27 @@ body {
     margin: 0;
 }
 
+/* Tipografía propia del panel de e-Link (2026-09-13): Jose comparó cómo
+   se ven Linktree (tipografía propia "Link Sans") y Beacons (Poppins) y
+   eligió "Propuesta A" — Plus Jakarta Sans para títulos/marca/cifras
+   destacadas + Inter para el resto del texto — en vez de dejar que cada
+   quien vea el panel en la fuente de su propio sistema operativo
+   (`system-ui` de arriba, que sigue siendo el fallback si Google Fonts
+   no carga). Acotado con `.vendedor-panel` (clase puesta en el <body> de
+   vendedor/base.html) a propósito: .admin-nav__brand, .admin-page-title
+   y .admin-stat-card__value se comparten con el panel de /admin (ver
+   comentarios más abajo), que no pidió este cambio — así que /admin
+   sigue viéndose exactamente igual que antes. */
+.vendedor-panel {
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+.vendedor-panel .admin-nav__brand,
+.vendedor-panel .admin-page-title,
+.vendedor-panel .admin-stat-card__value {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
 .site-header {
     border-bottom: 1px solid var(--color-border);
 }

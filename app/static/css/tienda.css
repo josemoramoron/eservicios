@@ -8,6 +8,32 @@
     font-family: system-ui, sans-serif;
 }
 
+/* Tipografía propia de e-Link (2026-09-13) para las plantillas de tienda
+   pública que todavía no tenían ninguna identidad tipográfica propia:
+   "Clásica" (publica.html) y "Píldoras" (publica_pildoras.html), las dos
+   sin más clase de tema que .tienda-body, y que además comparten
+   literalmente .tienda-nombre/.tienda-card__precio entre sí. Se les
+   aplica la misma Propuesta A que ya eligió Jose para el panel de
+   vendedor (ver .vendedor-panel en style.css): Plus Jakarta Sans para
+   el nombre de la tienda y los precios, Inter para el resto del texto.
+   Editorial (.editorial-body, más abajo: Fraunces + Work Sans) y
+   Minimalista (.minimalista-body, más abajo: Manrope + IBM Plex Sans)
+   quedan afuera a propósito (`:not()`) — ya tienen su propia identidad
+   tipográfica de plantilla Plus, y no fue lo que Jose pidió cambiar. El
+   modal de producto (_modal_producto.html) es compartido por las 4
+   plantillas y ya resuelve su tipografía por herencia (`font-family:
+   inherit` en Editorial/Minimalista, ver más abajo), así que en Clásica
+   y Píldoras hereda Plus Jakarta Sans/Inter automáticamente. */
+.tienda-body:not(.editorial-body):not(.minimalista-body) {
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+.tienda-body:not(.editorial-body):not(.minimalista-body) .tienda-nombre,
+.tienda-body:not(.editorial-body):not(.minimalista-body) .tienda-card__precio,
+.tienda-body:not(.editorial-body):not(.minimalista-body) .tienda-modal__precio {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
 /* Color de acento propio (punto 12 del roadmap) — toda tienda lo tiene
    (unificación del 2026-09-11: `resolver_acento_vendor` ya no devuelve
    None, ver vendor_service.py), así que esta clase va siempre en el

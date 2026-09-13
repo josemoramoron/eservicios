@@ -9,8 +9,17 @@
        de administración — evita duplicar ~40 reglas de CSS solo por el
        nombre. Candidato a renombrar a .panel-* en una limpieza futura. #}
     <link rel="stylesheet" href="{{ estatico_v('css/style.css') }}">
+    {# Tipografía propia del panel de e-Link (2026-09-13, Propuesta A de
+       la comparación con Linktree/Beacons que pidió Jose): Plus Jakarta
+       Sans para títulos/marca/cifras + Inter para el resto del texto.
+       Google Fonts, cargada solo acá (no en admin/base.html) — ver
+       `.vendedor-panel` en style.css, que es lo que de verdad acota el
+       cambio al panel de vendedor. #}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@700&display=swap" rel="stylesheet">
 </head>
-<body{% if acento %} style="--color-accent: {{ acento.color }}; --color-accent-contrast: {{ acento.contraste }};"{% endif %}>
+<body class="vendedor-panel"{% if acento %} style="--color-accent: {{ acento.color }}; --color-accent-contrast: {{ acento.contraste }};"{% endif %}>
     {# Bloque nuevo (2026-09-11): por defecto es el navbar de siempre del
        panel de vendedor (abajo), pero `registro.html`/`login.html` lo
        sobreescriben con el navbar del SITIO PRINCIPAL — pedido puntual de
