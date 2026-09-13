@@ -1441,7 +1441,13 @@
     background-color: var(--color-surface);
     color: var(--color-text);
     font-weight: 600;
-    font-size: 14px;
+    /* Subido de 14px a 15px + un poco de espaciado entre letras
+       (2026-09-13, pedido de Jose: el nombre de la red social se veía
+       muy chico para el tamaño de la pastilla) — el resto de la
+       pastilla (padding, ícono) no cambió, así que sigue habiendo lugar
+       de sobra para el texto un poco más grande. */
+    font-size: 15px;
+    letter-spacing: 0.3px;
     text-decoration: none;
     transition: border-color 0.15s ease, color 0.15s ease;
 }

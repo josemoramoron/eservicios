@@ -25,11 +25,22 @@
             {% endif %}
         </h1>
         <p class="minimalista-subdominio">{{ vendor.slug }}.eservicios.org</p>
+        {# Orden ajustado a pedido de Jose (2026-09-13, en 2 rondas): primero
+           pidió invertir cupón/disponibilidad (quedaron en extremos
+           opuestos); después pidió que "Disponible ahora" vaya arriba del
+           cupón — ahora van juntos, uno debajo del otro, cerca del nombre de
+           la tienda. #}
         {% if disponibilidad is not none %}
         <p class="tienda-disponibilidad{% if disponibilidad %} tienda-disponibilidad--activa{% endif %}">
             <span class="tienda-disponibilidad__punto" aria-hidden="true"></span>
             {{ "Disponible ahora" if disponibilidad else "Fuera de horario" }}
         </p>
+        {% endif %}
+        {% if cupon %}
+        <div class="tienda-cupon">
+            <span class="tienda-cupon__etiqueta">CUPÓN</span>
+            <button type="button" class="tienda-cupon__codigo" data-cupon-copiar data-codigo="{{ cupon }}">{{ cupon }}</button>
+        </div>
         {% endif %}
         {% if vendor.bio %}<p class="minimalista-bio">{{ vendor.bio }}</p>{% endif %}
 
@@ -37,13 +48,6 @@
             <a class="minimalista-accion minimalista-accion--whatsapp" href="{{ whatsapp_href_tienda }}" target="_blank" rel="noopener">WhatsApp</a>
             <button type="button" class="minimalista-accion" data-compartir-btn data-url="{{ request.url }}" data-titulo="{{ vendor.nombre_negocio }}">Compartir</button>
         </div>
-
-        {% if cupon %}
-        <div class="tienda-cupon">
-            <span class="tienda-cupon__etiqueta">CUPÓN</span>
-            <button type="button" class="tienda-cupon__codigo" data-cupon-copiar data-codigo="{{ cupon }}">{{ cupon }}</button>
-        </div>
-        {% endif %}
 
         {% if enlaces %}
         <div class="minimalista-enlaces">

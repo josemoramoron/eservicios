@@ -29,11 +29,22 @@
         {% endif %}
     </h1>
     <p class="tienda-subdominio">{{ vendor.slug }}.eservicios.org</p>
+    {# Orden ajustado a pedido de Jose (2026-09-13, en 2 rondas): primero
+       pidió invertir cupón/disponibilidad (quedaron en extremos
+       opuestos); después pidió que "Disponible ahora" vaya arriba del
+       cupón — ahora van juntos, uno debajo del otro, cerca del nombre de
+       la tienda. #}
     {% if disponibilidad is not none %}
     <p class="tienda-disponibilidad{% if disponibilidad %} tienda-disponibilidad--activa{% endif %}">
         <span class="tienda-disponibilidad__punto" aria-hidden="true"></span>
         {{ "Disponible ahora" if disponibilidad else "Fuera de horario" }}
     </p>
+    {% endif %}
+    {% if cupon %}
+    <div class="tienda-cupon">
+        <span class="tienda-cupon__etiqueta">CUPÓN</span>
+        <button type="button" class="tienda-cupon__codigo" data-cupon-copiar data-codigo="{{ cupon }}">{{ cupon }}</button>
+    </div>
     {% endif %}
     {% if vendor.bio %}<p class="tienda-bio">{{ vendor.bio }}</p>{% endif %}
 
@@ -63,13 +74,6 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.6" y1="10.5" x2="15.4" y2="6.5"></line><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"></line></svg>
         </button>
     </div>
-
-    {% if cupon %}
-    <div class="tienda-cupon">
-        <span class="tienda-cupon__etiqueta">CUPÓN</span>
-        <button type="button" class="tienda-cupon__codigo" data-cupon-copiar data-codigo="{{ cupon }}">{{ cupon }}</button>
-    </div>
-    {% endif %}
 </header>
 
 {% if enlaces %}

@@ -28,11 +28,22 @@
         {% endif %}
     </h1>
     <p class="tienda-subdominio">{{ vendor.slug }}.eservicios.org</p>
+    {# Orden ajustado a pedido de Jose (2026-09-13, en 2 rondas): primero
+       pidió invertir cupón/disponibilidad (quedaron en extremos
+       opuestos); después pidió que "Disponible ahora" vaya arriba del
+       cupón — ahora van juntos, uno debajo del otro, cerca del nombre de
+       la tienda. #}
     {% if disponibilidad is not none %}
     <p class="tienda-disponibilidad{% if disponibilidad %} tienda-disponibilidad--activa{% endif %}">
         <span class="tienda-disponibilidad__punto" aria-hidden="true"></span>
         {{ "Disponible ahora" if disponibilidad else "Fuera de horario" }}
     </p>
+    {% endif %}
+    {% if cupon %}
+    <div class="tienda-cupon">
+        <span class="tienda-cupon__etiqueta">CUPÓN</span>
+        <button type="button" class="tienda-cupon__codigo" data-cupon-copiar data-codigo="{{ cupon }}">{{ cupon }}</button>
+    </div>
     {% endif %}
     {% if vendor.bio %}<p class="tienda-bio">{{ vendor.bio }}</p>{% endif %}
 
@@ -40,13 +51,6 @@
         {{ icono_red("whatsapp") | safe }}
         Escribir por WhatsApp
     </a>
-
-    {% if cupon %}
-    <div class="tienda-cupon">
-        <span class="tienda-cupon__etiqueta">CUPÓN</span>
-        <button type="button" class="tienda-cupon__codigo" data-cupon-copiar data-codigo="{{ cupon }}">{{ cupon }}</button>
-    </div>
-    {% endif %}
 
     <button
         type="button"
