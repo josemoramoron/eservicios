@@ -1,4 +1,4 @@
-{# Pie de la tienda pública — compartido por las 3 plantillas.
+{# Pie de la tienda pública — compartido por las 4 plantillas.
    Deliberadamente sin identidad visual propia por plantilla: es
    información de confianza (badge, términos, reportar), no parte del
    diseño que el vendedor Plus elige. #}
@@ -24,3 +24,11 @@
         </form>
     </details>
 </footer>
+
+{# Botón "volver arriba" (pedido de Jose, 2026-09-13): aparece tras bajar
+   un poco (ver app/static/js/volver_arriba.js) y sube con scroll suave
+   al pulsarlo — mismo botón para las 4 plantillas, position: fixed en
+   tienda.css así que su lugar en el DOM no importa. #}
+<button type="button" class="tienda-volver-arriba" data-volver-arriba aria-label="Volver arriba" title="Volver arriba">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+</button>

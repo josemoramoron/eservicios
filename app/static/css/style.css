@@ -80,6 +80,32 @@ body {
     margin: 0;
 }
 
+/* Suavidad general pedida por Jose (2026-09-13): un scroll suave para
+   cualquier salto de ancla (ej. el botón "Catálogo" de la plantilla
+   Píldoras, que baja hasta #pildoras-productos) y una transición corta
+   por defecto en los elementos interactivos que todavía no tenían una
+   propia — las clases más específicas (.pildoras-accion, .admin-btn,
+   etc.) ya declaran su propia `transition` con más detalle y esa sigue
+   ganando por especificidad, esto es solo el piso mínimo para lo que no
+   tiene nada. Aplica en todo el sitio (panel, /admin y tienda pública),
+   porque style.css lo cargan los 3. "Solo un poco": duraciones cortas
+   (0.15s), nada vistoso. */
+html {
+    scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+}
+
+a,
+button,
+summary {
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
 /* Tipografía propia del panel de e-Link (2026-09-13): Jose comparó cómo
    se ven Linktree (tipografía propia "Link Sans") y Beacons (Poppins) y
    eligió "Propuesta A" — Plus Jakarta Sans para títulos/marca/cifras

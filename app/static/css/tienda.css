@@ -1464,10 +1464,63 @@
 }
 
 /* El ancla "Catálogo" hace scroll hasta #pildoras-productos en la misma
-   página — con desplazamiento suave donde el visitante no pidió
-   reducir el movimiento (regla de accesibilidad de .clinerules). */
-@media (prefers-reduced-motion: no-preference) {
-    .pildoras-body {
-        scroll-behavior: smooth;
+   página. Este `scroll-behavior: smooth` puesto en .pildoras-body (el
+   propio <body>) no llegaba a suavizar el salto — el elemento que
+   realmente controla el scroll del documento es <html>, no <body>, así
+   que esta regla no tenía ningún efecto real (Jose reportó el salto
+   abrupto el 2026-09-13, con razón). Reemplazado por un
+   `scroll-behavior: smooth` en `html` dentro de style.css, que sí
+   funciona y de paso cubre cualquier otro salto de ancla del sitio, no
+   solo este. Ver esa regla (con su guarda de
+   prefers-reduced-motion) en style.css, justo después de `body {}`. */
+
+/* Botón flotante "volver arriba" (pedido de Jose junto con lo de
+   arriba, 2026-09-13) — compartido por las 4 plantillas de tienda
+   pública vía tienda/_pie_tienda.html y app/static/js/volver_arriba.js.
+   Mismo lenguaje visual que .pildoras-accion (círculo neutro que pasa a
+   acento al pasar el mouse), oculto con opacidad/traslado hasta que el
+   visitante baja lo suficiente (ver el JS). */
+.tienda-volver-arriba {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 25;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(10px);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.tienda-volver-arriba--visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.tienda-volver-arriba:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+
+.tienda-volver-arriba svg {
+    width: 20px;
+    height: 20px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tienda-volver-arriba {
+        transition: opacity 0.2s ease;
+        transform: none;
     }
 }
