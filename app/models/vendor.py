@@ -162,6 +162,48 @@ class Vendor(db.Model):
     # plan actual en tiempo real: `plan` es la fuente de verdad hasta que
     # exista el proceso de vencimiento automático (roadmap, Fase 2-bis).
     plan_expira_en: Mapped[datetime | None] = mapped_column(nullable=True)
+    # Solicitud de pago manual a e-link Plus, pendiente de revisión — el
+    # vendedor la envía desde /vendedor/perfil/plan/solicitar (roadmap,
+    # Fase 3-bis, "Pago manual + reporte, autoservicio"): elige cuántos
+    # meses quiere pagar, escribe los detalles de la transacción
+    # (referencia, fecha, método usado) y sube una foto/captura del
+    # comprobante a R2 (ver vendor_service.solicitar_plan_plus). Mismo
+    # patrón que solicitud_verificacion_* de arriba: los 4 campos son
+    # nullable a propósito, None/None/None/None = sin solicitud activa, y
+    # solicitud_plan_en no-None = hay una pendiente de revisión. El
+    # equipo de eServicios la revisa desde /admin/vendedores/<id> — al
+    # aprobarla (vendor_admin_service.aprobar_solicitud_plan) se le
+    # otorga Plus por los meses pedidos (vía cambiar_plan_vendor) y se
+    # limpian los 4 campos; al rechazarla (rechazar_solicitud_plan) se
+    # limpian igual, sin tocar el plan. Reenviar mientras hay una
+    # pendiente simplemente la reemplaza. Además de quedar acá para la
+    # cola de revisión, cada envío también dispara un correo a
+    # info@eservicios.org (ver vendor_service.solicitar_plan_plus) — el
+    # aviso por correo es solo eso, un aviso: la fuente de verdad para
+    # aprobar/rechazar sigue siendo esta cola en /admin, no el correo.
+    solicitud_plan_mensaje: Mapped[str | None] = mapped_column(Text, nullable=True)
+    solicitud_plan_comprobante_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    solicitud_plan_meses: Mapped[int | None] = mapped_column(nullable=True)
+    solicitud_plan_en: Mapped[datetime | None] = mapped_column(nullable=True)
+    # Prueba gratuita de e-link Plus por 7 días (pedido de Jose,
+    # 2026-09-14): un vendedor free puede activarla una sola vez por
+    # cuenta desde /vendedor/prueba (aviso en /vendedor/inicio) para
+    # notar la diferencia con Plus antes de pagar. None = nunca la
+    # activó (todavía puede hacerlo). Una vez activada, este campo NUNCA
+    # vuelve a ponerse en None — sirve a la vez para calcular "está
+    # vigente ahora" (activada_en + DIAS_PRUEBA_PLUS, ver
+    # vendor_service.prueba_plus_vigente) y para saber "ya la usó" para
+    # siempre, aunque ya haya vencido — así se garantiza que sea de una
+    # sola vez por cuenta. IMPORTANTE: la prueba desbloquea las mismas
+    # funciones que plan_plus_vigente() (ver vendor_service.
+    # plan_plus_o_prueba_vigente, usado en los resolvers de color/
+    # plantilla/disponibilidad/cupón/badge/estado de stock/categorías)
+    # pero NUNCA cuenta para solicitar la insignia "Vendedor verificado"
+    # — ese requisito sigue chequeando plan_plus_vigente() a secas
+    # (decisión explícita de Jose: la prueba "no cuenta para la
+    # insignia, se mantiene por los canales regulares, o si el admin
+    # desea otorgarsela").
+    prueba_plus_activada_en: Mapped[datetime | None] = mapped_column(nullable=True)
     activo: Mapped[bool] = mapped_column(default=True, nullable=False)
     creado_en: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
 

@@ -1,4 +1,5 @@
 {% extends "vendedor/base.html" %}
+{% from "vendedor/_breadcrumb.html" import migas %}
 
 {% block title %}{{ 'Editar' if producto else 'Nuevo' }} producto — Mi Tienda{% endblock %}
 
@@ -7,10 +8,7 @@
 {% endblock %}
 
 {% block breadcrumb %}
-<nav class="breadcrumb">
-    <span class="breadcrumb__brand">e-Link</span>
-    <span class="breadcrumb__current">{{ 'Editar producto' if producto else 'Nuevo producto' }}</span>
-</nav>
+{{ migas([("e-Link", none), ("Tienda", "vendedor.dashboard"), ("Editar producto" if producto else "Nuevo producto", none)]) }}
 {% endblock %}
 
 {% block content %}

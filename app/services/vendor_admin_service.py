@@ -31,6 +31,8 @@ DIAS_POR_MES_PLUS = 30
 # el query string `?estado=` de la lista del panel.
 ESTADO_ACTIVOS = "activos"
 ESTADO_SUSPENDIDOS = "suspendidos"
+ESTADO_PLAN_PENDIENTE = "plan_pendiente"
+ESTADO_INSIGNIA_PENDIENTE = "insignia_pendiente"
 
 
 def listar_vendors_admin(*, busqueda: str | None = None, estado: str | None = None) -> list[Vendor]:
@@ -40,8 +42,11 @@ def listar_vendors_admin(*, busqueda: str | None = None, estado: str | None = No
         busqueda: Texto a buscar (sin distinguir mayúsculas) contra el
             nombre de la tienda, el subdominio o el email del vendedor.
             None o cadena vacía para no filtrar.
-        estado: `ESTADO_ACTIVOS`, `ESTADO_SUSPENDIDOS`, o None/otro
-            valor para no filtrar por estado.
+        estado: `ESTADO_ACTIVOS`, `ESTADO_SUSPENDIDOS`, `ESTADO_PLAN_PENDIENTE`
+            (tiendas con una solicitud de pago de e-link Plus sin
+            resolver), `ESTADO_INSIGNIA_PENDIENTE` (tiendas con una
+            solicitud de la insignia "Vendedor verificado" sin
+            resolver), o None/otro valor para no filtrar por estado.
 
     Returns:
         Lista de `Vendor`, más recientes primero.
@@ -60,6 +65,10 @@ def listar_vendors_admin(*, busqueda: str | None = None, estado: str | None = No
         query = query.filter_by(activo=True)
     elif estado == ESTADO_SUSPENDIDOS:
         query = query.filter_by(activo=False)
+    elif estado == ESTADO_PLAN_PENDIENTE:
+        query = query.filter(Vendor.solicitud_plan_en.isnot(None))
+    elif estado == ESTADO_INSIGNIA_PENDIENTE:
+        query = query.filter(Vendor.solicitud_verificacion_en.isnot(None))
     return query.order_by(Vendor.creado_en.desc()).all()
 
 
@@ -81,8 +90,10 @@ def estadisticas_globales() -> dict:
     Returns:
         Diccionario con `total`, `activos`, `suspendidos` (conteo de
         tiendas), `solicitudes_verificacion_pendientes` (tiendas con una
-        solicitud de verificación sin resolver), y `vistas`/
-        `clics_whatsapp` (suma de todas las tiendas en los últimos
+        solicitud de la insignia "Vendedor verificado" sin resolver —
+        no confundir con la solicitud de plan), `solicitudes_plan_pendientes`
+        (tiendas con una solicitud de pago de e-link Plus sin resolver), y
+        `vistas`/`clics_whatsapp` (suma de todas las tiendas en los últimos
         `dias` días — misma ventana que `estadisticas_service.
         resumen_estadisticas`, para que los números sean comparables).
     """
@@ -96,6 +107,9 @@ def estadisticas_globales() -> dict:
         "suspendidos": total - activos,
         "solicitudes_verificacion_pendientes": Vendor.query.filter(
             Vendor.solicitud_verificacion_en.isnot(None)
+        ).count(),
+        "solicitudes_plan_pendientes": Vendor.query.filter(
+            Vendor.solicitud_plan_en.isnot(None)
         ).count(),
         "vistas": base.filter(VendorEvento.tipo == TipoEventoVendor.VISTA).count(),
         "clics_whatsapp": base.filter(VendorEvento.tipo == TipoEventoVendor.CLIC_WHATSAPP).count(),
@@ -221,6 +235,62 @@ def cambiar_plan_vendor(vendor: Vendor, *, plan: PlanVendor, meses: int | None =
     else:
         vendor.plan = PlanVendor.FREE
         vendor.plan_expira_en = None
+    db.session.commit()
+
+
+def aprobar_solicitud_plan(vendor: Vendor) -> None:
+    """Aprueba la solicitud de pago manual a e-link Plus pendiente, y otorga el plan.
+
+    Contraparte de `vendor_service.solicitar_plan_plus` (roadmap, Fase
+    3-bis, "Pago manual + reporte, autoservicio"): el equipo de
+    eServicios revisó el comprobante y los detalles de la transacción
+    (ver `Vendor.solicitud_plan_*`) y confirma que el pago es válido.
+
+    Otorga Plus por los `solicitud_plan_meses` que el vendedor pidió
+    (vía `cambiar_plan_vendor`, mismo mecanismo que el alta manual desde
+    el formulario de "Plan" — si la tienda ya tenía Plus vigente, los
+    meses se suman a partir de su vencimiento actual) y limpia los 4
+    campos de la solicitud, borrando también el comprobante de R2 —
+    mismo criterio de privacidad que `marcar_verificado`: no vale la
+    pena conservar un comprobante de pago más tiempo del necesario una
+    vez ya revisado.
+
+    Args:
+        vendor: Tienda cuya solicitud se aprueba.
+
+    Raises:
+        ValueError: Si la tienda no tiene ninguna solicitud pendiente
+            (`solicitud_plan_meses` es None) — no hay meses que otorgar.
+    """
+    if not vendor.solicitud_plan_meses:
+        raise ValueError("Esta tienda no tiene ninguna solicitud de plan pendiente.")
+    cambiar_plan_vendor(vendor, plan=PlanVendor.PLUS, meses=vendor.solicitud_plan_meses)
+    eliminar_imagen(vendor.solicitud_plan_comprobante_url)
+    vendor.solicitud_plan_mensaje = None
+    vendor.solicitud_plan_comprobante_url = None
+    vendor.solicitud_plan_meses = None
+    vendor.solicitud_plan_en = None
+    db.session.commit()
+
+
+def rechazar_solicitud_plan(vendor: Vendor) -> None:
+    """Rechaza la solicitud de pago a e-link Plus pendiente, sin otorgar el plan.
+
+    Limpia los 4 campos de la solicitud y borra el comprobante adjunto
+    de R2, mismo criterio que `aprobar_solicitud_plan`. El vendedor
+    puede enviar una solicitud nueva en cualquier momento desde
+    `/vendedor/perfil/plan/solicitar` — rechazar no es un baneo, solo
+    dice "este comprobante no fue suficiente" (ej. no se ve claro, no
+    coincide el monto, etc.).
+
+    Args:
+        vendor: Tienda cuya solicitud se rechaza.
+    """
+    eliminar_imagen(vendor.solicitud_plan_comprobante_url)
+    vendor.solicitud_plan_mensaje = None
+    vendor.solicitud_plan_comprobante_url = None
+    vendor.solicitud_plan_meses = None
+    vendor.solicitud_plan_en = None
     db.session.commit()
 
 

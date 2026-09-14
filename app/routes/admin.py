@@ -42,7 +42,10 @@ from app.services.catalogo_service import (
 from app.services.estadisticas_service import resumen_estadisticas
 from app.services.vendor_admin_service import (
     ESTADO_ACTIVOS,
+    ESTADO_INSIGNIA_PENDIENTE,
+    ESTADO_PLAN_PENDIENTE,
     ESTADO_SUSPENDIDOS,
+    aprobar_solicitud_plan,
     cambiar_plan_vendor,
     eliminar_vendor_permanente,
     estadisticas_globales,
@@ -51,6 +54,7 @@ from app.services.vendor_admin_service import (
     obtener_vendor_por_id,
     quitar_verificacion,
     reactivar_vendor,
+    rechazar_solicitud_plan,
     rechazar_solicitud_verificacion,
     restablecer_password_vendor,
     suspender_vendor,
@@ -574,6 +578,8 @@ def vendedores_lista():
         estado_seleccionado=estado,
         estado_activos=ESTADO_ACTIVOS,
         estado_suspendidos=ESTADO_SUSPENDIDOS,
+        estado_plan_pendiente=ESTADO_PLAN_PENDIENTE,
+        estado_insignia_pendiente=ESTADO_INSIGNIA_PENDIENTE,
     )
 
 
@@ -708,6 +714,47 @@ def vendedor_cambiar_plan(vendor_id: int):
         flash(f'Tienda "{vendor.nombre_negocio}" volvió al plan gratis.', "success")
     else:
         flash("Plan no reconocido.", "error")
+    return redirect(url_for("admin.vendedor_detalle", vendor_id=vendor.id))
+
+
+@admin_bp.route("/vendedores/<int:vendor_id>/aprobar-solicitud-plan", methods=["POST"])
+@requiere_admin
+def vendedor_aprobar_solicitud_plan(vendor_id: int):
+    """Aprueba la solicitud de pago manual a e-link Plus pendiente (roadmap, Fase 3-bis).
+
+    Distinta del "cambiar-plan" de arriba: esa es la herramienta manual
+    de siempre (el admin elige los meses a mano, con o sin solicitud de
+    por medio); esta otorga exactamente los meses que el vendedor pidió
+    en su solicitud (`Vendor.solicitud_plan_meses`) y además limpia la
+    cola de revisión — ver `vendor_admin_service.aprobar_solicitud_plan`.
+    """
+    _verificar_csrf()
+    vendor = obtener_vendor_por_id(vendor_id)
+    if vendor is None:
+        abort(404)
+    try:
+        aprobar_solicitud_plan(vendor)
+    except ValueError as exc:
+        flash(str(exc), "error")
+        return redirect(url_for("admin.vendedor_detalle", vendor_id=vendor.id))
+    flash(
+        f'Tienda "{vendor.nombre_negocio}" pasó a Plus, vigente hasta el '
+        f'{vendor.plan_expira_en.strftime("%d/%m/%Y")}.',
+        "success",
+    )
+    return redirect(url_for("admin.vendedor_detalle", vendor_id=vendor.id))
+
+
+@admin_bp.route("/vendedores/<int:vendor_id>/rechazar-solicitud-plan", methods=["POST"])
+@requiere_admin
+def vendedor_rechazar_solicitud_plan(vendor_id: int):
+    """Rechaza la solicitud de pago a e-link Plus pendiente, sin otorgar el plan."""
+    _verificar_csrf()
+    vendor = obtener_vendor_por_id(vendor_id)
+    if vendor is None:
+        abort(404)
+    rechazar_solicitud_plan(vendor)
+    flash(f'Se rechazó la solicitud de plan de "{vendor.nombre_negocio}".', "success")
     return redirect(url_for("admin.vendedor_detalle", vendor_id=vendor.id))
 
 

@@ -22,7 +22,11 @@
     </div>
     <div class="admin-stat-card">
         <span class="admin-stat-card__value">{{ estadisticas.solicitudes_verificacion_pendientes }}</span>
-        <span class="admin-stat-card__label">Solicitudes de verificación pendientes</span>
+        <span class="admin-stat-card__label">Solicitudes de insignia "Vendedor verificado" pendientes</span>
+    </div>
+    <div class="admin-stat-card">
+        <span class="admin-stat-card__value">{{ estadisticas.solicitudes_plan_pendientes }}</span>
+        <span class="admin-stat-card__label">Solicitudes de plan pendientes</span>
     </div>
     <div class="admin-stat-card">
         <span class="admin-stat-card__value">{{ estadisticas.vistas }}</span>
@@ -42,6 +46,8 @@
         <option value="" {% if not estado_seleccionado %}selected{% endif %}>Todos</option>
         <option value="{{ estado_activos }}" {% if estado_seleccionado == estado_activos %}selected{% endif %}>Activos</option>
         <option value="{{ estado_suspendidos }}" {% if estado_seleccionado == estado_suspendidos %}selected{% endif %}>Suspendidos</option>
+        <option value="{{ estado_plan_pendiente }}" {% if estado_seleccionado == estado_plan_pendiente %}selected{% endif %}>Solicitud de plan pendiente</option>
+        <option value="{{ estado_insignia_pendiente }}" {% if estado_seleccionado == estado_insignia_pendiente %}selected{% endif %}>Solicitud de insignia pendiente</option>
     </select>
     <button class="admin-btn" type="submit">Filtrar</button>
 </form>
@@ -76,7 +82,10 @@
                 {% if vendor.verificado %}
                 <span class="admin-badge">Verificada</span>
                 {% elif vendor.solicitud_verificacion_en %}
-                <span class="admin-badge admin-badge--pendiente">Verificación pendiente</span>
+                <span class="admin-badge admin-badge--pendiente">Insignia pendiente</span>
+                {% endif %}
+                {% if vendor.solicitud_plan_en %}
+                <span class="admin-badge admin-badge--pendiente">Plan pendiente</span>
                 {% endif %}
             </td>
             <td>{{ vendor.productos | length }}</td>

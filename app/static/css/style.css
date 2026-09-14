@@ -568,6 +568,21 @@ summary {
     text-decoration: none;
 }
 
+/* Separador "/ " para un enlace intermedio en una miga de más de 2
+   niveles (ej. "e-Link / Perfil / e-link Plus / Solicitar" en el panel
+   de vendedor, o "Servicios y Productos / <categoría> / <producto>" en
+   producto/detalle.html) — antes solo `.breadcrumb__current` lo tenía,
+   así que dos `.breadcrumb__link` seguidos quedaban pegados sin "/"
+   entre ellos. `:not(:first-child)` evita afectar al primer paso
+   (la marca, cuando también es un enlace, como en login.html/registro.html). */
+.breadcrumb__link:not(:first-child) {
+    margin-left: 0.4rem;
+}
+
+.breadcrumb__link:not(:first-child)::before {
+    content: "/ ";
+}
+
 /* "e-Link" en negrita, sin ser enlace (2026-09-12, pedido con 5 capturas
    marcadas en rojo): todas las páginas del panel de vendedor (las 5
    principales — Home, Enlaces, Tienda, Avisos, Perfil — y sus subpáginas
@@ -2056,6 +2071,110 @@ summary {
 .admin-plantillas__opcion input:focus-visible + .admin-plantillas__caja {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
+}
+
+/* --- Selector de duración de e-link Plus (vendedor/perfil_plan.html,
+   2026-09-14) --- Mismo patrón que .admin-plantillas__opcion de arriba
+   (radio nativo oculto + sibling checked): antes el plan de 12 meses se
+   pintaba con el color de acento sin que el vendedor tocara nada, lo
+   que parecía un plan ya elegido — Jose pidió que TODAS las tarjetas
+   empiecen iguales (borde gris, sin relleno) y que el color de acento
+   solo aparezca al pulsar la que se quiera solicitar; la de 12 meses
+   solo se distingue por la palabra "Recomendado". El mes elegido no se
+   envía desde este radio (esta pantalla no tiene formulario propio) —
+   el script en perfil_plan.html lo agrega como `?meses=` al enlace de
+   "Solicitar/Reenviar solicitud". */
+.plan-precio-opcion {
+    display: block;
+    cursor: pointer;
+}
+
+.plan-precio-opcion input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.plan-precio-caja {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1.5px solid var(--color-border);
+    border-radius: 0.5rem;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.plan-precio-meses {
+    font-size: 0.88rem;
+    transition: color 0.15s ease;
+}
+
+.plan-precio-info {
+    text-align: right;
+    color: var(--color-text-muted);
+    transition: color 0.15s ease;
+}
+
+.plan-precio-recomendado {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 700;
+    color: var(--color-accent);
+    margin-left: 6px;
+    transition: color 0.15s ease;
+}
+
+.plan-precio-opcion input:checked + .plan-precio-caja {
+    border-color: var(--color-accent);
+    background-color: var(--color-accent);
+}
+
+.plan-precio-opcion input:checked + .plan-precio-caja .plan-precio-meses,
+.plan-precio-opcion input:checked + .plan-precio-caja .plan-precio-info,
+.plan-precio-opcion input:checked + .plan-precio-caja .plan-precio-recomendado {
+    color: #fff;
+}
+
+.plan-precio-opcion input:focus-visible + .plan-precio-caja {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+/* Botón de WhatsApp de soporte en perfil_plan_solicitar.html
+   (2026-09-14, pedido de Jose) — misma pastilla verde que ya usa la
+   tienda pública (.tienda-whatsapp-btn en tienda.css), pero definida
+   acá porque tienda.css no se carga en el panel de vendedor (solo
+   style.css). Icono vía icono_red("whatsapp") — mismo helper que el
+   botón flotante global (ver base.html). */
+.vendedor-whatsapp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    background-color: var(--color-whatsapp);
+    color: var(--color-whatsapp-contrast);
+    font-weight: 600;
+    font-size: 0.88rem;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.vendedor-whatsapp-btn svg {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+}
+
+.vendedor-whatsapp-btn:hover {
+    opacity: 0.9;
 }
 
 /* --- Círculos de color rápido para el acento propio (2026-08-31) ---

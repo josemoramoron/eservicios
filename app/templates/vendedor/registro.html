@@ -111,13 +111,23 @@
         <input class="admin-form__input" type="password" id="password_confirmacion" name="password_confirmacion" minlength="8" data-coincide-con="password">
     </div>
 
-    <div class="admin-auth__divisor">o</div>
+    <div class="admin-auth__divisor">o prefieres</div>
     {% set en_formulario = true %}
     {% include "vendedor/_boton_google.html" %}
 
+    {# Sin `required` a propósito (2026-09-14, corrige bug reportado por
+       Jose): el checkbox de términos vive en el mismo <form> que el botón
+       de Google (`type="submit" formaction=...`, ver _boton_google.html),
+       así que con `required` el navegador bloqueaba también ese botón con
+       su aviso nativo — aceptar los términos debe ser el último paso antes
+       de "Crear mi tienda" nada más, no una condición para poder entrar
+       con Google. Ya no hace falta el atributo nativo: `registro_vendedor.js`
+       mantiene "Crear mi tienda" deshabilitado hasta que este checkbox esté
+       marcado (ver `actualizarBotonCrear`), así que la vía manual sigue
+       exigiéndolo igual. #}
     <div class="admin-form__checkbox-row">
         <label class="admin-form__checkbox">
-            <input type="checkbox" id="acepta_terminos" name="acepta_terminos" required>
+            <input type="checkbox" id="acepta_terminos" name="acepta_terminos">
             He leído y acepto los <a class="admin-link" href="{{ url_for('legal.terminos') }}" target="_blank">Términos y condiciones</a>
         </label>
     </div>

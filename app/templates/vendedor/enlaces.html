@@ -1,12 +1,10 @@
 {% extends "vendedor/base.html" %}
+{% from "vendedor/_breadcrumb.html" import migas %}
 
 {% block title %}Mis enlaces — {{ vendor.nombre_negocio }}{% endblock %}
 
 {% block breadcrumb %}
-<nav class="breadcrumb">
-    <span class="breadcrumb__brand">e-Link</span>
-    <span class="breadcrumb__current">Enlaces</span>
-</nav>
+{{ migas([("e-Link", none), ("Enlaces", none)]) }}
 {% endblock %}
 
 {% block content %}

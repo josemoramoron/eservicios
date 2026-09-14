@@ -1,0 +1,170 @@
+{% extends "vendedor/base.html" %}
+{% from "vendedor/_breadcrumb.html" import migas %}
+
+{% block title %}e-link Plus — {{ vendor.nombre_negocio }}{% endblock %}
+
+{% block breadcrumb %}
+{{ migas([("e-Link", none), ("Perfil", "vendedor.perfil"), ("e-link Plus", none)]) }}
+{% endblock %}
+
+{% block content %}
+<h1 class="admin-page-title">e-link Plus</h1>
+
+{% if plan_plus_activo %}
+<div style="padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 0.5rem; max-width: 480px; margin-bottom: 1.5rem;">
+    <p style="margin: 0 0 6px;">Ya tienes <strong>e-link Plus</strong>{% if vendor.plan_expira_en %}, vigente hasta el {{ vendor.plan_expira_en.strftime('%d/%m/%Y') }}{% endif %}.</p>
+    <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0;">
+        ¿Quieres extender la vigencia? Puedes enviar otra <a class="admin-link" href="{{ url_for('vendedor.perfil_plan_solicitar') }}">solicitud de pago</a> cuando quieras — los meses se suman a partir de la fecha en la que ya vencía.
+    </p>
+</div>
+{% elif vendor.solicitud_plan_en %}
+<div style="padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 0.5rem; max-width: 480px; margin-bottom: 1.5rem;">
+    <p style="margin: 0 0 6px;">Tienes una solicitud <strong>pendiente de revisión</strong> por el equipo de eServicios — enviada el {{ vendor.solicitud_plan_en.strftime('%d/%m/%Y') }}, por {{ vendor.solicitud_plan_meses }} mes{{ "es" if vendor.solicitud_plan_meses != 1 else "" }}.</p>
+    <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0;">
+        Te avisamos apenas la revisemos. Si necesitas corregir algo, puedes <a class="admin-link" href="{{ url_for('vendedor.perfil_plan_solicitar') }}">reenviarla</a> — reemplaza la anterior.
+    </p>
+</div>
+{% elif prueba_activa %}
+{# Prueba gratuita de 7 días en curso (2026-09-14, pedido de Jose) —
+   estado distinto de "ya tienes Plus": no hay nada pagado todavía, así
+   que el aviso invita a mandar una solicitud real antes de que venza en
+   vez de hablar de "vigencia" como en el bloque de arriba. #}
+<div style="padding: 14px 16px; border: 1px solid var(--color-accent); border-radius: 0.5rem; max-width: 480px; margin-bottom: 1.5rem;">
+    <p style="margin: 0 0 6px;">Tu <strong>prueba gratuita de e-link Plus</strong> está activa, vence el {{ prueba_expira_en.strftime('%d/%m/%Y') }} a las {{ prueba_expira_en.strftime('%H:%M') }}.</p>
+    <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0;">
+        Al terminar vuelves al plan gratis automáticamente. Si ya notaste la diferencia, hazlo permanente enviando una <a class="admin-link" href="{{ url_for('vendedor.perfil_plan_solicitar') }}">solicitud de pago</a> antes de que venza.
+    </p>
+</div>
+{% else %}
+<p style="color: var(--color-text-muted); max-width: 560px;">
+    Con e-link Plus desbloqueas la personalización y las herramientas de venta de tu tienda. Estas son las diferencias con el plan gratis:
+</p>
+{% if prueba_disponible %}
+<p style="color: var(--color-text-muted); max-width: 560px; font-size: 0.85rem;">
+    ¿Quieres probar antes de pagar? <a class="admin-link" href="{{ url_for('vendedor.prueba') }}">Activa tu prueba gratuita de 7 días</a> — es de una sola vez por cuenta.
+</p>
+{% endif %}
+{% endif %}
+
+{# Cross-link a la insignia (2026-09-14, pedido de Jose): pedirla tiene
+   su propio flujo y sus propios requisitos (ver
+   `vendedor.perfil_verificacion`) — este aviso existe para que quien
+   llega buscando la insignia no se quede pensando que este formulario
+   de pago sirve para eso. Requiere Plus igual que esta pantalla, pero
+   se explica ahí junto al resto de los requisitos, no acá. #}
+{% if not vendor.verificado %}
+<div style="padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 0.5rem; max-width: 560px; margin-bottom: 1.5rem;">
+    {# Mismo ícono de la insignia que se ve en la tienda pública (ver
+       tienda/_insignia_verificado.html) — acá sin la clase
+       .tienda-verificado porque tienda.css no se carga en el panel de
+       vendedor (solo style.css), así que el color fijo de marca
+       (--color-eservicios-azul, definido ahí) se aplica inline. #}
+    <p style="margin: 0 0 6px; display: flex; align-items: center; gap: 6px;">
+        <span style="display: inline-flex; color: var(--color-eservicios-azul); flex: 0 0 auto;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 1.5 14.6 4l3.5-.6.9 3.5 3.1 1.9-1.6 3.2 1.6 3.2-3.1 1.9-.9 3.5-3.5-.6L12 22.5 9.4 20l-3.5.6-.9-3.5-3.1-1.9 1.6-3.2-1.6-3.2 3.1-1.9.9-3.5 3.5.6L12 1.5Z"></path>
+                <path d="m8.5 12.3 2.4 2.4 4.6-4.9" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
+        </span>
+        ¡Solicita tu insignia "Vendedor verificado"!
+    </p>
+    <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0;">
+        {% if vendor.solicitud_verificacion_en %}
+        Ya tienes una solicitud pendiente de revisión — <a class="admin-link" href="{{ url_for('vendedor.perfil_verificacion') }}">revísala aquí</a>.
+        {% else %}
+        Es un formulario aparte, con sus propios requisitos — <a class="admin-link" href="{{ url_for('vendedor.perfil_verificacion') }}">revísalos y solicítala aquí</a>.
+        {% endif %}
+    </p>
+</div>
+{% endif %}
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; margin: 1.25rem 0 1.5rem;">
+    <div style="flex: 1 1 260px; min-width: 240px; padding: 16px 18px; border: 1px solid var(--color-border); border-radius: 0.75rem;">
+        <h2 style="font-size: 1rem; margin: 0 0 10px;">Plan gratis</h2>
+        <ul style="margin: 0; padding-left: 1.1rem; font-size: 0.88rem; color: var(--color-text-muted); line-height: 1.7;">
+            <li>2 colores de acento (azul o rosado)</li>
+            <li>Plantilla Clásica</li>
+            <li>Cambio de moneda (26 monedas)</li>
+            <li>Insignia "Vendedor verificado" (gratis para cualquier plan, activada por eServicios)</li>
+        </ul>
+    </div>
+    <div style="flex: 1 1 260px; min-width: 240px; padding: 16px 18px; border: 1px solid var(--color-accent); border-radius: 0.75rem;">
+        <h2 style="font-size: 1rem; margin: 0 0 10px; color: var(--color-accent);">e-link Plus</h2>
+        <ul style="margin: 0 0 14px; padding-left: 1.1rem; font-size: 0.88rem; color: var(--color-text); line-height: 1.7;">
+            <li>Todo lo del plan gratis, más:</li>
+            <li>10 colores curados + color 100% personalizado</li>
+            <li>3 plantillas adicionales: Editorial, Minimalista y Píldoras</li>
+            <li>Producto destacado ("Más vendido", "Oferta", "Nuevo")</li>
+            <li>Indicador "Disponible ahora" / "Fuera de horario"</li>
+            <li>Cupón o código de descuento copiable</li>
+            <li>Estado de stock + botón "Avísame cuando vuelva"</li>
+            <li>Categorías de producto, con filtro en tu tienda pública</li>
+            <li>Consulta de varios productos a la vez por WhatsApp</li>
+        </ul>
+        {# Precios definidos por Jose el 2026-09-14 (ver
+           vendor_service.PRECIOS_PLAN_PLUS/planes_plus_con_precio) — los
+           métodos de pago en sí siguen por definir, ver
+           perfil_plan_solicitar.html.
+
+           Tarjetas pulsables (2026-09-14, corrección de Jose): antes el
+           plan de 12 meses se pintaba de una vez con el color de acento,
+           lo que parecía un plan ya elegido sin que el vendedor hubiera
+           hecho nada. Ahora TODAS las tarjetas empiezan iguales (borde
+           gris, sin relleno) y solo la que se pulsa (radio nativo
+           oculto + sibling `:checked`, mismo patrón que
+           .admin-plantillas__opcion) toma el borde y el fondo de
+           acento — el de 12 meses solo se distingue por la
+           palabra "Recomendado" en el color de acento. Cada plan de más
+           de 1 mes sigue mostrando su equivalente mensual y % de ahorro
+           frente a pagar mes a mes. El mes elegido no se envía desde
+           acá (esta pantalla no tiene formulario propio): el script de
+           abajo lo agrega como `?meses=` al enlace de "Solicitar/
+           Reenviar", y `perfil_plan_solicitar()` lo recoge para
+           preseleccionar la misma opción en su `<select>`. #}
+        <div style="display: flex; flex-direction: column; gap: 8px; margin: 0 0 14px;">
+            {% for plan in planes %}
+            <label class="plan-precio-opcion">
+                <input type="radio" name="meses_elegido" value="{{ plan.meses }}" {% if vendor.solicitud_plan_meses == plan.meses %}checked{% endif %}>
+                <span class="plan-precio-caja">
+                    <span class="plan-precio-meses">
+                        {{ plan.meses }} mes{{ "es" if plan.meses != 1 else "" }}
+                        {% if plan.destacado %}
+                        <span class="plan-precio-recomendado">Recomendado</span>
+                        {% endif %}
+                    </span>
+                    <span class="plan-precio-info">
+                        <strong style="font-size: 0.88rem;">${{ plan.precio }}</strong>
+                        {% if plan.ahorro_pct is not none %}
+                        <br><span style="font-size: 0.72rem;">${{ plan.precio_por_mes }}/mes · ahorra {{ plan.ahorro_pct }}%</span>
+                        {% endif %}
+                    </span>
+                </span>
+            </label>
+            {% endfor %}
+        </div>
+        {% if not plan_plus_activo %}
+        <a class="admin-btn admin-btn--primary" id="boton-solicitar-plan" href="{{ url_for('vendedor.perfil_plan_solicitar') }}">
+            {% if vendor.solicitud_plan_en %}Reenviar solicitud{% else %}Solicitar e-link Plus{% endif %}
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+{% if not plan_plus_activo %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const boton = document.getElementById("boton-solicitar-plan");
+    if (!boton) return;
+    const hrefBase = boton.getAttribute("href");
+    function actualizarEnlace() {
+        const elegido = document.querySelector('input[name="meses_elegido"]:checked');
+        boton.href = elegido ? `${hrefBase}?meses=${elegido.value}` : hrefBase;
+    }
+    document.querySelectorAll('input[name="meses_elegido"]').forEach((radio) => {
+        radio.addEventListener("change", actualizarEnlace);
+    });
+    actualizarEnlace();
+});
+</script>
+{% endif %}
+{% endblock %}

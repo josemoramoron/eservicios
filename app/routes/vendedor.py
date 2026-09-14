@@ -55,6 +55,7 @@ from app.services.vendor_service import (
     DIAS_REDIRECCION_SLUG_ANTERIOR,
     MAX_CAMBIOS_SLUG,
     MAX_FOTOS_PRODUCTO,
+    MESES_PLAN_SOLICITABLES,
     CambioSlugMuyRecienteError,
     CategoriaInvalidaError,
     EmailDuplicadoError,
@@ -64,14 +65,17 @@ from app.services.vendor_service import (
     PasswordActualIncorrectaError,
     PasswordNuevaInvalidaError,
     PerfilInvalidoError,
+    PruebaPlusInvalidaError,
     SlugDuplicadoError,
     SlugInvalidoError,
     SlugReservadoError,
+    SolicitudPlanInvalidaError,
     SolicitudVerificacionInvalidaError,
     actualizar_categoria,
     actualizar_link,
     actualizar_perfil,
     actualizar_producto,
+    activar_prueba_plus,
     cambiar_password,
     cambiar_slug,
     construir_vcard,
@@ -82,6 +86,7 @@ from app.services.vendor_service import (
     eliminar_link,
     eliminar_producto,
     estado_cambio_slug,
+    href_whatsapp_soporte_pago,
     listar_avisos_de_vendor,
     listar_categorias_de_vendor,
     listar_links_de_vendor,
@@ -93,11 +98,17 @@ from app.services.vendor_service import (
     listar_paleta_acento,
     obtener_vendor_por_email,
     obtener_vendor_por_google_id,
+    plan_plus_o_prueba_vigente,
     plan_plus_vigente,
+    planes_plus_con_precio,
+    prueba_plus_disponible,
+    prueba_plus_expira_en,
+    prueba_plus_vigente,
     registrar_vendor,
     registrar_vendor_google,
     resolver_acento_vendor,
     slug_disponible,
+    solicitar_plan_plus,
     solicitar_verificacion_vendedor,
     validar_formato_slug,
     vincular_google,
@@ -637,7 +648,51 @@ def inicio():
     return render_template(
         "vendedor/inicio.html",
         estadisticas=resumen_estadisticas(vendor),
+        plan_plus_activo=plan_plus_vigente(vendor),
+        prueba_activa=prueba_plus_vigente(vendor),
+        prueba_disponible=prueba_plus_disponible(vendor),
+        prueba_expira_en=prueba_plus_expira_en(vendor),
     )
+
+
+@vendedor_bp.route("/prueba")
+@requiere_vendor
+def prueba():
+    """Explica y permite activar la prueba gratuita de 7 días de e-link Plus.
+
+    Punto de llegada del aviso en `/vendedor/inicio` (pedido de Jose,
+    2026-09-14) — sugiere probar primero las funciones gratis de la
+    tienda para notar la diferencia, antes de activarla. Aclara que la
+    prueba NUNCA cuenta para solicitar la insignia "Vendedor verificado"
+    (ver `vendor_service.activar_prueba_plus`/`plan_plus_o_prueba_vigente`).
+    """
+    vendor = vendor_actual()
+    return render_template(
+        "vendedor/prueba.html",
+        vendor=vendor,
+        plan_plus_activo=plan_plus_vigente(vendor),
+        prueba_activa=prueba_plus_vigente(vendor),
+        prueba_disponible=prueba_plus_disponible(vendor),
+        prueba_expira_en=prueba_plus_expira_en(vendor),
+    )
+
+
+@vendedor_bp.route("/prueba/activar", methods=["POST"])
+@requiere_vendor
+def prueba_activar():
+    """Activa la prueba gratuita de 7 días, si el vendedor todavía puede usarla."""
+    vendor = vendor_actual()
+    _verificar_csrf()
+    try:
+        activar_prueba_plus(vendor)
+    except PruebaPlusInvalidaError as exc:
+        flash(str(exc), "error")
+    else:
+        flash(
+            "¡Prueba activada! Ya puedes usar las funciones de e-link Plus durante 7 días.",
+            "success",
+        )
+    return redirect(url_for("vendedor.prueba"))
 
 
 # --- Tienda: productos y categorías, en pestañas ---
@@ -711,9 +766,16 @@ def contacto_vcard():
 @vendedor_bp.route("/perfil", methods=["GET", "POST"])
 @requiere_vendor
 def perfil():
-    """Personalización de la tienda: nombre, WhatsApp, bio, moneda, logo, portada, acento, plantilla y cupón."""
+    """Personalización de la tienda: nombre, WhatsApp, bio, moneda, logo, portada, acento, plantilla y cupón.
+
+    `plan_plus_activo` acá cuenta la prueba gratuita de 7 días además
+    del plan Plus real (ver `plan_plus_o_prueba_vigente`, 2026-09-14):
+    mientras la tienda esté en prueba, este formulario ya debe mostrar
+    el selector de plantillas, el interruptor de disponibilidad y la
+    paleta de colores ampliada, igual que con Plus pagado.
+    """
     vendor = vendor_actual()
-    plan_plus_activo = plan_plus_vigente(vendor)
+    plan_plus_activo = plan_plus_o_prueba_vigente(vendor)
     if request.method == "POST":
         _verificar_csrf()
         nombre_negocio = request.form.get("nombre_negocio", "")
@@ -836,9 +898,18 @@ def perfil():
 @vendedor_bp.route("/perfil/password", methods=["POST"])
 @requiere_vendor
 def perfil_password():
-    """Cambia la contraseña del vendedor (sección de seguridad del perfil)."""
+    """Cambia la contraseña del vendedor, o la crea si entró siempre con Google.
+
+    Misma ruta para las dos situaciones (ver `cambiar_password` en
+    `vendor_service.py`, que ya distingue el caso): perfil.html muestra un
+    formulario con "Contraseña actual" cuando la tienda ya tiene una, o
+    sin ese campo cuando todavía no tiene ninguna (cuenta creada con
+    "Iniciar sesión con Google") — acá solo se ajusta el mensaje de éxito
+    según cuál era el caso antes del cambio.
+    """
     _verificar_csrf()
     vendor = vendor_actual()
+    tenia_password_antes = bool(vendor.password_hash)
     password_actual = request.form.get("password_actual", "")
     password_nueva = request.form.get("password_nueva", "")
     password_nueva_confirmacion = request.form.get("password_nueva_confirmacion", "")
@@ -853,7 +924,10 @@ def perfil_password():
         flash(str(exc), "error")
         return redirect(url_for("vendedor.perfil"))
 
-    flash("Contraseña actualizada.", "success")
+    if tenia_password_antes:
+        flash("Contraseña actualizada.", "success")
+    else:
+        flash("Contraseña creada. Ya puedes entrar también con correo y contraseña.", "success")
     return redirect(url_for("vendedor.perfil"))
 
 
@@ -936,25 +1010,41 @@ def perfil_verificacion():
     opcional de respaldo), no una casilla más del formulario de
     personalización.
 
-    **Solicitarla requiere plan Plus vigente** (decisión de Jose,
-    2026-08-31) — a diferencia del badge en sí, que sigue siendo gratis
-    para cualquier plan una vez otorgado (`vendor.verificado` se lee
-    directo en las plantillas, sin ningún resolver de gating). Si la
-    tienda ya está verificada, se muestra ese estado sin importar el
-    plan. Si tiene una solicitud pendiente, se muestra igual aunque el
-    Plus haya vencido después de enviarla (no se le "cancela" la
-    revisión por eso) — pero para reenviarla o mandar una nueva hace
-    falta Plus vigente en ese momento, chequeo real en
-    `vendor_service.solicitar_verificacion_vendedor`.
+    **Sigue requiriendo plan Plus vigente** (decisión de Jose,
+    2026-08-31 — Jose aclaró el 2026-09-14 que Plus nunca dejó de ser un
+    requisito real: lo único que cambió es la presentación). Antes, sin
+    Plus, esta pantalla mandaba derecho a `/vendedor/perfil/plan`; ahora
+    se queda acá y lista "Plan e-link Plus vigente" como uno más de los
+    requisitos (junto con el mensaje y el documento opcional), con su
+    propio enlace para activarlo — la plantilla nunca deja al vendedor
+    sin contexto de qué le falta. Si la tienda ya está verificada, se
+    muestra ese estado sin importar el plan. Si tiene una solicitud
+    pendiente, se muestra igual aunque el Plus haya vencido después de
+    enviarla (no se le "cancela" la revisión por eso) — pero para
+    reenviarla o mandar una nueva hace falta Plus vigente en ese
+    momento, chequeo real en `vendor_service.solicitar_verificacion_
+    vendedor`. El badge en sí sigue siendo gratis para cualquier plan
+    una vez otorgado (`vendor.verificado` se lee directo en las
+    plantillas, sin ningún resolver de gating).
     """
     vendor = vendor_actual()
+    # A propósito NO uso plan_plus_o_prueba_vigente acá: la prueba
+    # gratuita nunca debe habilitar pedir la insignia (ver
+    # vendor_service.plan_plus_o_prueba_vigente) — este chequeo se queda
+    # con el plan Plus real a secas. `prueba_activa` solo se usa para
+    # que la plantilla aclare, si aplica, que la prueba en curso no
+    # cuenta para este requisito.
     plan_plus_activo = plan_plus_vigente(vendor)
+    prueba_activa = prueba_plus_vigente(vendor)
     if request.method == "POST":
         _verificar_csrf()
         if not plan_plus_activo:
-            flash("Solicitar la verificación es una función de e-link Plus.", "error")
+            flash("Solicitar la verificación requiere e-link Plus vigente.", "error")
             return render_template(
-                "vendedor/perfil_verificacion.html", vendor=vendor, plan_plus_activo=plan_plus_activo
+                "vendedor/perfil_verificacion.html",
+                vendor=vendor,
+                plan_plus_activo=plan_plus_activo,
+                prueba_activa=prueba_activa,
             )
         mensaje = request.form.get("mensaje", "")
 
@@ -964,7 +1054,10 @@ def perfil_verificacion():
         if error_documento:
             flash(error_documento, "error")
             return render_template(
-                "vendedor/perfil_verificacion.html", vendor=vendor, plan_plus_activo=plan_plus_activo
+                "vendedor/perfil_verificacion.html",
+                vendor=vendor,
+                plan_plus_activo=plan_plus_activo,
+                prueba_activa=prueba_activa,
             )
 
         documento_anterior = vendor.solicitud_verificacion_documento_url
@@ -973,7 +1066,10 @@ def perfil_verificacion():
         except SolicitudVerificacionInvalidaError as exc:
             flash(str(exc), "error")
             return render_template(
-                "vendedor/perfil_verificacion.html", vendor=vendor, plan_plus_activo=plan_plus_activo
+                "vendedor/perfil_verificacion.html",
+                vendor=vendor,
+                plan_plus_activo=plan_plus_activo,
+                prueba_activa=prueba_activa,
             )
 
         if documento_url is not None and documento_anterior:
@@ -985,7 +1081,142 @@ def perfil_verificacion():
         flash("Solicitud enviada. El equipo de eServicios la va a revisar pronto.", "success")
         return redirect(url_for("vendedor.perfil_verificacion"))
     return render_template(
-        "vendedor/perfil_verificacion.html", vendor=vendor, plan_plus_activo=plan_plus_activo
+        "vendedor/perfil_verificacion.html",
+        vendor=vendor,
+        plan_plus_activo=plan_plus_activo,
+        prueba_activa=prueba_activa,
+    )
+
+
+@vendedor_bp.route("/perfil/plan")
+@requiere_vendor
+def perfil_plan():
+    """Compara el plan gratis con e-link Plus y muestra el estado de la tienda.
+
+    Punto de llegada de los "contáctanos para activarlo en tu cuenta"
+    que aparecían sueltos en `/vendedor/perfil` (color, plantilla,
+    disponibilidad, cupón — 2026-09-14, pedido de Jose) — antes esas
+    funciones Plus no explicaban en ningún lado qué eran ni cómo
+    conseguirlas. Esta pantalla no tiene lógica propia más allá de
+    mostrar el estado actual (ya con Plus vigente, con una solicitud
+    pendiente, o ninguna de las dos) — la solicitud en sí se manda desde
+    `/vendedor/perfil/plan/solicitar`.
+
+    La insignia "Vendedor verificado" SÍ sigue requiriendo Plus para
+    solicitarse, pero su propio enlace en `/vendedor/perfil` va directo
+    a `vendedor.perfil_verificacion`, nunca acá (corrección de Jose,
+    2026-09-14: antes sí mandaba a esta pantalla) — es esa otra pantalla
+    la que explica el requisito de Plus junto con el resto. Esta acá
+    solo la menciona de pasada (aviso "¡Solicita tu insignia!") para
+    quien llega buscándola por error.
+
+    También muestra el estado de la prueba gratuita de 7 días
+    (`prueba_activa`/`prueba_disponible`/`prueba_expira_en`, 2026-09-14)
+    y la tabla de precios (`planes`, ver
+    `vendor_service.planes_plus_con_precio`) — todo junto en la misma
+    pantalla de "estado del plan".
+    """
+    vendor = vendor_actual()
+    return render_template(
+        "vendedor/perfil_plan.html",
+        vendor=vendor,
+        plan_plus_activo=plan_plus_vigente(vendor),
+        prueba_activa=prueba_plus_vigente(vendor),
+        prueba_disponible=prueba_plus_disponible(vendor),
+        prueba_expira_en=prueba_plus_expira_en(vendor),
+        planes=planes_plus_con_precio(),
+    )
+
+
+@vendedor_bp.route("/perfil/plan/solicitar", methods=["GET", "POST"])
+@requiere_vendor
+def perfil_plan_solicitar():
+    """Formulario de pago manual, autoservicio (roadmap, Fase 3-bis).
+
+    El vendedor elige cuántos meses quiere pagar, escribe los detalles
+    de la transacción y sube una foto/captura del comprobante — ver
+    `vendor_service.solicitar_plan_plus`, que además del guardado dispara
+    un correo de aviso a info@eservicios.org. El equipo de eServicios
+    revisa y aprueba/rechaza desde `/admin/vendedores/<id>` (no hay
+    activación automática).
+
+    A diferencia de `/vendedor/perfil/verificacion`, no exige plan Plus
+    vigente para usarse — sería contradictorio pedir Plus para poder
+    solicitar Plus.
+
+    Acepta un `?meses=N` opcional en la URL (2026-09-14, pedido de Jose):
+    el selector de precios de `/vendedor/perfil/plan` ahora deja elegir
+    un plan pulsando su tarjeta, y ese mes elegido viaja hasta acá para
+    preseleccionar la misma opción en el `<select>` del formulario, en
+    vez de que el vendedor tenga que volver a elegirla. Si no viene, o
+    viene inválido, se usa `vendor.solicitud_plan_meses` como antes (útil
+    al reenviar una solicitud existente).
+    """
+    vendor = vendor_actual()
+    if request.method == "POST":
+        _verificar_csrf()
+        try:
+            meses = int(request.form.get("meses", "0"))
+        except ValueError:
+            meses = 0
+        mensaje = request.form.get("mensaje", "")
+
+        comprobante_url, error_comprobante = _subir_imagen_opcional(
+            "comprobante", f"vendors/{vendor.slug}/solicitud-plan"
+        )
+        if error_comprobante:
+            flash(error_comprobante, "error")
+            return render_template(
+                "vendedor/perfil_plan_solicitar.html",
+                vendor=vendor,
+                planes=planes_plus_con_precio(),
+                meses_preseleccionado=meses,
+                whatsapp_soporte_url=href_whatsapp_soporte_pago(),
+            )
+
+        comprobante_anterior = vendor.solicitud_plan_comprobante_url
+        try:
+            solicitar_plan_plus(
+                vendor, meses=meses, mensaje=mensaje, comprobante_url=comprobante_url or ""
+            )
+        except SolicitudPlanInvalidaError as exc:
+            # El comprobante recién subido no se usó (la solicitud no se
+            # guardó) — se borra para no dejarlo huérfano en R2, sin
+            # tocar el de un envío anterior si había uno.
+            if comprobante_url:
+                r2_service.eliminar_imagen(comprobante_url)
+            flash(str(exc), "error")
+            return render_template(
+                "vendedor/perfil_plan_solicitar.html",
+                vendor=vendor,
+                planes=planes_plus_con_precio(),
+                meses_preseleccionado=meses,
+                whatsapp_soporte_url=href_whatsapp_soporte_pago(),
+            )
+
+        if comprobante_anterior:
+            # Se reemplazó el comprobante de un envío anterior por uno
+            # nuevo — se borra el viejo para no dejarlo huérfano en R2
+            # (mismo criterio que el documento de verificación).
+            r2_service.eliminar_imagen(comprobante_anterior)
+
+        flash("Solicitud enviada. El equipo de eServicios la va a revisar pronto.", "success")
+        return redirect(url_for("vendedor.perfil_plan"))
+
+    meses_preseleccionado = vendor.solicitud_plan_meses
+    try:
+        meses_de_url = int(request.args.get("meses", ""))
+    except (TypeError, ValueError):
+        meses_de_url = None
+    if meses_de_url in MESES_PLAN_SOLICITABLES:
+        meses_preseleccionado = meses_de_url
+
+    return render_template(
+        "vendedor/perfil_plan_solicitar.html",
+        vendor=vendor,
+        planes=planes_plus_con_precio(),
+        meses_preseleccionado=meses_preseleccionado,
+        whatsapp_soporte_url=href_whatsapp_soporte_pago(),
     )
 
 
@@ -1170,9 +1401,14 @@ def asistente_ia_perfil():
 @vendedor_bp.route("/productos/nuevo", methods=["GET", "POST"])
 @requiere_vendor
 def producto_nuevo():
-    """Formulario para subir un producto nuevo a la tienda (hasta 5 fotos)."""
+    """Formulario para subir un producto nuevo a la tienda (hasta 5 fotos).
+
+    `plan_plus_activo` cuenta la prueba gratuita además del plan Plus
+    real (ver `plan_plus_o_prueba_vigente`) — durante la prueba también
+    se puede elegir badge, estado de stock y categoría.
+    """
     vendor = vendor_actual()
-    plan_plus_activo = plan_plus_vigente(vendor)
+    plan_plus_activo = plan_plus_o_prueba_vigente(vendor)
     if request.method == "POST":
         _verificar_csrf()
         datos, error = _leer_datos_producto(request.form)
@@ -1253,9 +1489,14 @@ def producto_nuevo():
 @vendedor_bp.route("/productos/<int:producto_id>/editar", methods=["GET", "POST"])
 @requiere_vendor
 def producto_editar(producto_id: int):
-    """Formulario para editar un producto existente de la tienda (hasta 5 fotos)."""
+    """Formulario para editar un producto existente de la tienda (hasta 5 fotos).
+
+    `plan_plus_activo` cuenta la prueba gratuita además del plan Plus
+    real (ver `plan_plus_o_prueba_vigente`) — durante la prueba también
+    se puede cambiar badge, estado de stock y categoría.
+    """
     vendor = vendor_actual()
-    plan_plus_activo = plan_plus_vigente(vendor)
+    plan_plus_activo = plan_plus_o_prueba_vigente(vendor)
     producto = obtener_producto_de_vendor(vendor, producto_id)
     if producto is None:
         abort(404)

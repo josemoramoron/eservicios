@@ -1,12 +1,10 @@
 {% extends "vendedor/base.html" %}
+{% from "vendedor/_breadcrumb.html" import migas %}
 
 {% block title %}e-Link — {{ vendor.nombre_negocio }}{% endblock %}
 
 {% block breadcrumb %}
-<nav class="breadcrumb">
-    <span class="breadcrumb__brand">e-Link</span>
-    <span class="breadcrumb__current">Home</span>
-</nav>
+{{ migas([("e-Link", none), ("Home", none)]) }}
 {% endblock %}
 
 {# Home del panel (2026-09-11): antes este contenido (link de la tienda, QR,
@@ -48,6 +46,33 @@
     Tu tienda está en línea en
     <a class="admin-link" href="https://{{ vendor.slug }}.eservicios.org" target="_blank" rel="noopener">{{ vendor.slug }}.eservicios.org</a>
 </p>
+
+{# Aviso de la prueba gratuita de e-link Plus (2026-09-14, pedido de
+   Jose: "coloca el aviso en el inicio dashboard del vendedor"). Solo un
+   estado se muestra a la vez: si está activa, un aviso de vigencia; si
+   nunca la usó y no tiene Plus real, la invitación a activarla — ambos
+   enlazan a /vendedor/prueba en vez de activar nada directo desde acá,
+   para dejar la explicación completa (y la sugerencia de probar gratis
+   primero) en esa pantalla dedicada. Si ya usó la prueba y venció, o si
+   ya tiene Plus real, no se muestra nada — es de una sola vez y no
+   tendría sentido insistir. #}
+{% if prueba_activa %}
+<div style="padding: 14px 16px; border: 1px solid var(--color-accent); border-radius: 0.5rem; max-width: 560px; margin-bottom: 20px;">
+    <p style="margin: 0 0 6px;"><strong>Tu prueba de e-link Plus está activa</strong> — vence el {{ prueba_expira_en.strftime('%d/%m/%Y') }} a las {{ prueba_expira_en.strftime('%H:%M') }}.</p>
+    <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0;">
+        Al terminar vuelves al plan gratis automáticamente, a menos que actives e-link Plus antes.
+        <a class="admin-link" href="{{ url_for('vendedor.prueba') }}">Ver detalles</a>
+    </p>
+</div>
+{% elif prueba_disponible and not plan_plus_activo %}
+<div style="padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 0.5rem; max-width: 560px; margin-bottom: 20px;">
+    <p style="margin: 0 0 6px;"><strong>Prueba e-link Plus gratis por 7 días</strong></p>
+    <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0 0 10px;">
+        Desbloquea colores y plantillas extra, producto destacado, cupón, estado de stock, categorías y más — sin pagar nada durante una semana. Es de una sola vez por cuenta.
+    </p>
+    <a class="admin-btn admin-btn--pequeno" href="{{ url_for('vendedor.prueba') }}">Ver detalles y activar</a>
+</div>
+{% endif %}
 
 <div style="display: flex; align-items: center; gap: 16px; margin: 0 0 24px; padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 0.5rem; max-width: 420px;">
     <img

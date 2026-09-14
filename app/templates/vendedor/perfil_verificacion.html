@@ -1,12 +1,10 @@
 {% extends "vendedor/base.html" %}
+{% from "vendedor/_breadcrumb.html" import migas %}
 
 {% block title %}Verificación — {{ vendor.nombre_negocio }}{% endblock %}
 
 {% block breadcrumb %}
-<nav class="breadcrumb">
-    <span class="breadcrumb__brand">e-Link</span>
-    <span class="breadcrumb__current">Verificación</span>
-</nav>
+{{ migas([("e-Link", none), ("Perfil", "vendedor.perfil"), ("Verificación", none)]) }}
 {% endblock %}
 
 {% block content %}
@@ -18,26 +16,46 @@
 </div>
 {% else %}
 
+{# Requisitos siempre visibles (2026-09-14, corrección de Jose): Plus
+   SIGUE siendo un requisito real para solicitarla (no se quitó, ver
+   `vendor_service.solicitar_verificacion_vendedor`) — lo que cambió es
+   que antes, sin Plus, esta pantalla mandaba derecho a
+   `/vendedor/perfil/plan` en vez de explicar acá mismo qué hace falta.
+   Ahora se queda en esta página y lo lista como un requisito más, con
+   su enlace para resolverlo. #}
+<div style="padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 0.5rem; max-width: 480px; margin-bottom: 1.5rem;">
+    <p style="margin: 0 0 8px;"><strong>Requisitos para solicitar la insignia</strong></p>
+    <ul style="margin: 0; padding-left: 1.1rem; font-size: 0.85rem; color: var(--color-text-muted); line-height: 1.6;">
+        <li>
+            Plan <strong>e-link Plus</strong> vigente
+            <span style="font-size: 0.8rem;">(un plan real, pagado o aprobado por el equipo — la prueba gratuita de 7 días no cuenta para esto)</span>
+            {% if plan_plus_activo %}
+            — ya lo tienes.
+            {% elif prueba_activa %}
+            — todavía te falta: tu prueba gratuita está activa, pero no habilita este requisito. <a class="admin-link" href="{{ url_for('vendedor.perfil_plan') }}">Ver e-link Plus</a>.
+            {% else %}
+            — todavía te falta. <a class="admin-link" href="{{ url_for('vendedor.perfil_plan') }}">Actívalo aquí</a>.
+            {% endif %}
+        </li>
+        <li>Contarnos brevemente por qué debería verificarse tu tienda.</li>
+        <li>Documento de respaldo (opcional) — acelera la revisión.</li>
+    </ul>
+</div>
+
 {% if vendor.solicitud_verificacion_en %}
 <div style="padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 0.5rem; max-width: 480px; margin-bottom: 1.5rem;">
     <p style="margin: 0 0 6px;">Tienes una solicitud <strong>pendiente de revisión</strong> por el equipo de eServicios.</p>
-    {% if plan_plus_activo %}
     <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0;">
+        {% if plan_plus_activo %}
         Puedes reenviarla en cualquier momento con el formulario de abajo — reemplaza el mensaje (y el documento, si adjuntas uno nuevo) de tu envío anterior.
+        {% else %}
+        Sigue en revisión con normalidad aunque tu Plus haya vencido después de enviarla. Para reenviarla o corregirla hace falta e-link Plus vigente otra vez (ver el requisito arriba).
+        {% endif %}
     </p>
-    {% else %}
-    <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0;">
-        Sigue en revisión con normalidad. Si quieres reenviarla o corregirla, necesitas <strong>e-link Plus</strong> vigente — contáctanos para activarlo en tu cuenta.
-    </p>
-    {% endif %}
 </div>
 {% elif plan_plus_activo %}
 <p style="color: var(--color-text-muted); max-width: 480px;">
     Cuéntanos brevemente por qué debería verificarse tu tienda; el equipo de eServicios revisa cada solicitud a mano. Una vez que tu tienda quede verificada, el ícono se mantiene aunque tu plan cambie más adelante.
-</p>
-{% else %}
-<p style="color: var(--color-text-muted); max-width: 480px;">
-    Solicitar la verificación es una función de <strong>e-link Plus</strong> — contáctanos para activarlo en tu cuenta. Una vez otorgada, la insignia queda para siempre, sin importar el plan que tengas después.
 </p>
 {% endif %}
 

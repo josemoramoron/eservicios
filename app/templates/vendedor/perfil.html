@@ -1,4 +1,5 @@
 {% extends "vendedor/base.html" %}
+{% from "vendedor/_breadcrumb.html" import migas %}
 
 {% block title %}Mi perfil — {{ vendor.nombre_negocio }}{% endblock %}
 
@@ -7,10 +8,7 @@
 {% endblock %}
 
 {% block breadcrumb %}
-<nav class="breadcrumb">
-    <span class="breadcrumb__brand">e-Link</span>
-    <span class="breadcrumb__current">Perfil</span>
-</nav>
+{{ migas([("e-Link", none), ("Perfil", none)]) }}
 {% endblock %}
 
 {% block content %}
@@ -114,7 +112,7 @@
     {% else %}
     <input type="hidden" id="color_acento" name="color_acento" value="{{ vendor.color_acento or '#2563eb' }}">
     <p class="admin-form__hint">
-        Con el plan gratis puedes elegir entre azul (el de siempre) o rosado. El resto de colores y un color totalmente personalizado son función de <strong>e-link Plus</strong> — contáctanos para activarlo en tu cuenta.
+        Con el plan gratis puedes elegir entre azul (el de siempre) o rosado. El resto de colores y un color totalmente personalizado son función de <strong>e-link Plus</strong> — <a class="admin-link" href="{{ url_for('vendedor.perfil_plan') }}">contáctanos para activarlo en tu cuenta</a>.
     </p>
     {% endif %}
 
@@ -144,7 +142,7 @@
     </p>
     {% else %}
     <p class="admin-form__hint">
-        Elegir una plantilla prediseñada para tu tienda es una función de <strong>e-link Plus</strong> — contáctanos para activarlo en tu cuenta.
+        Elegir una plantilla prediseñada para tu tienda es una función de <strong>e-link Plus</strong> — <a class="admin-link" href="{{ url_for('vendedor.perfil_plan') }}">contáctanos para activarlo en tu cuenta</a>.
     </p>
     {% endif %}
 
@@ -160,7 +158,7 @@
     </p>
     {% else %}
     <p class="admin-form__hint">
-        Mostrar un indicador de "Disponible ahora" / "Fuera de horario" en tu tienda es una función de <strong>e-link Plus</strong> — contáctanos para activarlo en tu cuenta.
+        Mostrar un indicador de "Disponible ahora" / "Fuera de horario" en tu tienda es una función de <strong>e-link Plus</strong> — <a class="admin-link" href="{{ url_for('vendedor.perfil_plan') }}">contáctanos para activarlo en tu cuenta</a>.
     </p>
     {% endif %}
 
@@ -173,7 +171,7 @@
     </p>
     {% else %}
     <p class="admin-form__hint">
-        Mostrar un cupón/código de descuento copiable en tu tienda es una función de <strong>e-link Plus</strong> — contáctanos para activarlo en tu cuenta.
+        Mostrar un cupón/código de descuento copiable en tu tienda es una función de <strong>e-link Plus</strong> — <a class="admin-link" href="{{ url_for('vendedor.perfil_plan') }}">contáctanos para activarlo en tu cuenta</a>.
     </p>
     {% endif %}
 
@@ -200,22 +198,18 @@
     {% elif vendor.solicitud_verificacion_en %}
     <p style="margin: 0 0 6px;">Tienes una solicitud <strong>pendiente de revisión</strong>.</p>
     <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0 0 12px;">
-        {% if plan_plus_activo %}
-        Puedes reenviarla para corregirla o completarla mientras esperas respuesta.
-        {% else %}
-        Sigue en revisión con normalidad. Necesitas e-link Plus vigente para reenviarla.
-        {% endif %}
+        Revisa el estado o reenvíala desde su propia pantalla.
     </p>
-    <a class="admin-btn" href="{{ url_for('vendedor.perfil_verificacion') }}">Ver{% if plan_plus_activo %}/editar{% endif %} solicitud</a>
-    {% elif plan_plus_activo %}
+    <a class="admin-btn" href="{{ url_for('vendedor.perfil_verificacion') }}">Ver/editar solicitud</a>
+    {% else %}
+    {# El enlace va siempre a la pantalla de la insignia, nunca directo a
+       la de planes (corrección de Jose, 2026-09-14): requiere e-link
+       Plus vigente, pero eso se explica ahí como un requisito más, junto
+       al resto — no reemplaza toda la explicación de la insignia. #}
     <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0 0 12px;">
-        Cuéntale al equipo de eServicios por qué debería verificarse tu tienda — una vez otorgada, la insignia queda gratis para siempre, sin importar tu plan después.
+        Requiere e-link Plus vigente, entre otros requisitos — revísalos y solicítala desde su propia pantalla. Una vez otorgada, la insignia queda para siempre, sin importar tu plan después.
     </p>
     <a class="admin-btn" href="{{ url_for('vendedor.perfil_verificacion') }}">Solicitar verificación</a>
-    {% else %}
-    <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0;">
-        Solicitarla es una función de <strong>e-link Plus</strong> — contáctanos para activarlo en tu cuenta. Una vez otorgada, la insignia queda gratis para siempre.
-    </p>
     {% endif %}
 </div>
 
@@ -240,10 +234,30 @@
     </div>
 </form>
 {% else %}
-<p class="admin-form__hint" style="max-width: 420px;">
-    Tu tienda se registró con "Iniciar sesión con Google" y no tiene contraseña propia — entra siempre con el botón de Google desde
-    <a class="admin-link" href="{{ url_for('vendedor.login') }}">la pantalla de inicio de sesión</a>.
-</p>
+{# Antes solo decía que la cuenta entra siempre con Google, sin ofrecer
+   alternativa (2026-09-14, pedido de Jose) — ahora se puede crear una
+   contraseña propia, sin perder la opción de Google. Mismo formulario y
+   misma ruta que la rama de arriba (`vendedor.perfil_password`), solo que
+   sin el campo "Contraseña actual": `cambiar_password()` ya sabe que si
+   la tienda no tiene `password_hash` no hay nada que verificar primero
+   (ver el comentario ahí). #}
+<form method="post" class="admin-form admin-form--narrow" action="{{ url_for('vendedor.perfil_password') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <p class="admin-form__hint" style="max-width: 420px; margin-top: 0;">
+        Tu tienda se registró con "Iniciar sesión con Google" y no tiene contraseña propia. Si deseas, puedes crear una para también entrar con correo y contraseña.
+    </p>
+
+    <label class="admin-form__label" for="password_nueva">Contraseña nueva (mínimo 8 caracteres)</label>
+    <input class="admin-form__input" type="password" id="password_nueva" name="password_nueva" minlength="8" required>
+
+    <label class="admin-form__label" for="password_nueva_confirmacion">Confirma la contraseña nueva</label>
+    <input class="admin-form__input" type="password" id="password_nueva_confirmacion" name="password_nueva_confirmacion" minlength="8" data-coincide-con="password_nueva" required>
+
+    <div class="admin-form__actions">
+        <button class="admin-btn admin-btn--primary" type="submit">Crear contraseña</button>
+    </div>
+</form>
 {% endif %}
 {% endblock %}
 

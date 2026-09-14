@@ -1,0 +1,64 @@
+{% extends "vendedor/base.html" %}
+{% from "vendedor/_breadcrumb.html" import migas %}
+
+{% block title %}Prueba gratis de e-link Plus — {{ vendor.nombre_negocio }}{% endblock %}
+
+{% block breadcrumb %}
+{{ migas([("e-Link", none), ("Home", "vendedor.inicio"), ("Prueba gratis", none)]) }}
+{% endblock %}
+
+{% block content %}
+<h1 class="admin-page-title">Prueba gratuita de e-link Plus</h1>
+
+{% if plan_plus_activo %}
+<div style="padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 0.5rem; max-width: 480px;">
+    <p style="margin: 0;">Ya tienes <strong>e-link Plus</strong> vigente — no necesitas la prueba. <a class="admin-link" href="{{ url_for('vendedor.perfil_plan') }}">Ver el estado de tu plan</a>.</p>
+</div>
+{% elif prueba_activa %}
+<div style="padding: 14px 16px; border: 1px solid var(--color-accent); border-radius: 0.5rem; max-width: 560px; margin-bottom: 1.5rem;">
+    <p style="margin: 0 0 6px;">Tu prueba está <strong>activa</strong>, vence el {{ prueba_expira_en.strftime('%d/%m/%Y') }} a las {{ prueba_expira_en.strftime('%H:%M') }}.</p>
+    <p style="font-size: 0.85rem; color: var(--color-text-muted); margin: 0;">
+        Al terminar vuelves al plan gratis automáticamente. Si ya notaste la diferencia, hazlo permanente enviando una <a class="admin-link" href="{{ url_for('vendedor.perfil_plan_solicitar') }}">solicitud de pago</a> antes de que venza.
+    </p>
+</div>
+{% elif not prueba_disponible %}
+<div style="padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 0.5rem; max-width: 480px;">
+    <p style="margin: 0;">Ya usaste tu prueba gratuita de e-link Plus — es de una sola vez por cuenta. <a class="admin-link" href="{{ url_for('vendedor.perfil_plan') }}">Ver planes y precios</a>.</p>
+</div>
+{% else %}
+<p style="color: var(--color-text-muted); max-width: 560px;">
+    Activa 7 días de e-link Plus gratis, sin pagar nada, para notar la diferencia antes de decidirte. Se activa una sola vez por cuenta.
+</p>
+
+{# Sugerencia de probar primero las funciones gratis (pedido explícito
+   de Jose, 2026-09-14) — antes del botón de activar, no después, para
+   que quien recién llega a esta pantalla la vea primero. #}
+<div style="padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 0.5rem; max-width: 560px; margin: 1rem 0 1.5rem;">
+    <p style="margin: 0;">
+        <strong>Antes de activarla:</strong> te sugerimos probar primero las funciones gratuitas de tu tienda (colores, moneda, tus productos) para que puedas notar mejor la diferencia con e-link Plus cuando la actives.
+    </p>
+</div>
+
+<div style="padding: 16px 18px; border: 1px solid var(--color-accent); border-radius: 0.75rem; max-width: 480px; margin-bottom: 1.5rem;">
+    <h2 style="font-size: 1rem; margin: 0 0 10px; color: var(--color-accent);">Durante los 7 días desbloqueas:</h2>
+    <ul style="margin: 0; padding-left: 1.1rem; font-size: 0.88rem; color: var(--color-text); line-height: 1.7;">
+        <li>10 colores curados + color 100% personalizado</li>
+        <li>3 plantillas adicionales: Editorial, Minimalista y Píldoras</li>
+        <li>Producto destacado ("Más vendido", "Oferta", "Nuevo")</li>
+        <li>Indicador "Disponible ahora" / "Fuera de horario"</li>
+        <li>Cupón o código de descuento copiable</li>
+        <li>Estado de stock + botón "Avísame cuando vuelva"</li>
+        <li>Categorías de producto, con filtro en tu tienda pública</li>
+        <li>Consulta de varios productos a la vez por WhatsApp</li>
+    </ul>
+    <p style="font-size: 0.8rem; color: var(--color-text-muted); margin: 12px 0 0;">
+        La insignia "Vendedor verificado" no está en esta lista a propósito: esa siempre requiere un plan Plus real, pagado o aprobado por el equipo de eServicios — la prueba gratuita no cuenta para solicitarla.
+    </p>
+</div>
+
+<form method="post" action="{{ url_for('vendedor.prueba_activar') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="admin-btn admin-btn--primary" type="submit">Activar prueba de 7 días</button>
+</form>
+{% endif %}
+{% endblock %}

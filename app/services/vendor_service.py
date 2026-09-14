@@ -15,6 +15,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 from urllib.parse import quote
 
+from flask import current_app
 from sqlalchemy import func
 
 from app.extensions import db
@@ -29,9 +30,36 @@ from app.models import (
     VendorSlugHistorial,
 )
 from app.services.badges_producto_service import BADGES_PRODUCTO, obtener_badge_producto
+from app.services.email_service import EnvioCorreoError, enviar_correo, renderizar_plantilla_correo
 from app.services.estados_stock_service import ESTADOS_STOCK, obtener_estado_stock
 from app.services.monedas_service import MONEDAS, detectar_moneda_por_whatsapp
 from app.services.plantillas_tienda_service import PLANTILLAS_TIENDA, obtener_plantilla_tienda
+from app.services.site_info_service import obtener_info_sitio
+
+# Duraciones que el vendedor puede pedir desde /vendedor/perfil/plan/solicitar
+# (ver solicitar_plan_plus) — mismas 4 opciones que ya ofrece el alta manual
+# de admin (`admin/vendedor_detalle.html`, formulario de "Plan"), para que
+# lo que el vendedor pide y lo que el admin puede otorgar sea siempre lo
+# mismo.
+MESES_PLAN_SOLICITABLES = {1, 3, 6, 12}
+
+# Precios de e-link Plus por duración (definidos por Jose, 2026-09-14) —
+# mismas claves que MESES_PLAN_SOLICITABLES, para que el formulario de
+# solicitud y la pantalla de comparación de planes (/vendedor/perfil/plan)
+# usen siempre la misma fuente de verdad. Strings, no float/Decimal: son
+# solo texto para mostrar (ver planes_plus_con_precio()), nunca se usan
+# para cobrar nada — no hay pago automático todavía (solicitar_plan_plus
+# es un formulario de "pago manual + reporte", ver más abajo).
+PRECIOS_PLAN_PLUS: dict[int, str] = {
+    1: "4.99",
+    3: "13.99",
+    6: "27.49",
+    12: "53.99",
+}
+
+# Duración de la prueba gratuita de e-link Plus (ver activar_prueba_plus/
+# prueba_plus_vigente más abajo) — pedido de Jose, 2026-09-14.
+DIAS_PRUEBA_PLUS = 7
 
 # Formato exigido para Vendor.color_acento — "#" + 6 dígitos hexadecimales,
 # el mismo formato que produce un <input type="color"> nativo del navegador
@@ -100,6 +128,14 @@ class AvisoInvalidoError(Exception):
 
 class SolicitudVerificacionInvalidaError(Exception):
     """El mensaje de la solicitud de verificación viene vacío, o la tienda ya está verificada."""
+
+
+class SolicitudPlanInvalidaError(Exception):
+    """Los datos de la solicitud de pago a e-link Plus no son válidos (meses, mensaje o comprobante)."""
+
+
+class PruebaPlusInvalidaError(Exception):
+    """La tienda ya usó su prueba gratuita de e-link Plus, o ya tiene Plus real vigente."""
 
 
 class LimiteCambiosSlugError(Exception):
@@ -597,13 +633,26 @@ def solicitar_verificacion_vendedor(
     se adjuntó uno nuevo) — no hace falta que el vendedor espere una
     respuesta para corregir o completar lo que ya mandó.
 
-    Solicitarla requiere plan Plus vigente (decisión de Jose, 2026-08-31)
-    — a diferencia del badge en sí, que sigue siendo gratis para
-    cualquier plan una vez otorgado (`Vendor.verificado` no tiene ningún
-    resolver de gating, se lee directo en las plantillas). Es decir: el
-    plan Plus es la puerta para *pedir* la verificación, no una
-    condición para conservarla — una tienda ya verificada la mantiene
-    aunque su Plus venza después.
+    Requiere plan Plus vigente (decisión de Jose, 2026-08-31). Jose
+    aclaró el 2026-09-14 que esto NUNCA se quitó — la confusión de una
+    pasada anterior fue de presentación, no de reglas: antes, sin Plus,
+    `/vendedor/perfil/verificacion` mandaba derecho a
+    `/vendedor/perfil/plan`; ahora esa misma pantalla se queda donde
+    está y lista "Plan e-link Plus vigente" como uno más de sus
+    requisitos, con su propio enlace para resolverlo — el chequeo real
+    sigue siendo este de acá. A diferencia del badge en sí, que sigue
+    siendo gratis para cualquier plan una vez otorgado
+    (`Vendor.verificado` no tiene ningún resolver de gating, se lee
+    directo en las plantillas): el plan Plus es la puerta para *pedir*
+    la verificación, no una condición para conservarla — una tienda ya
+    verificada la mantiene aunque su Plus venza después.
+
+    Al enviarla con éxito se manda además un correo de aviso a
+    info@eservicios.org (mismo patrón que `solicitar_plan_plus`) para
+    que el equipo no dependa de entrar a `/admin` a cada rato — ese
+    correo es solo un aviso, la cola en `/admin` sigue siendo la fuente
+    de verdad. Si el envío falla, la solicitud igual queda guardada: el
+    error se registra en el log sin hacer fallar el envío del vendedor.
 
     Args:
         vendor: Tienda que solicita la verificación.
@@ -628,7 +677,7 @@ def solicitar_verificacion_vendedor(
         raise SolicitudVerificacionInvalidaError("Tu tienda ya está verificada.")
     if not plan_plus_vigente(vendor):
         raise SolicitudVerificacionInvalidaError(
-            "Solicitar la verificación es una función de e-link Plus."
+            "Solicitar la verificación requiere e-link Plus vigente."
         )
 
     vendor.solicitud_verificacion_mensaje = mensaje
@@ -636,6 +685,128 @@ def solicitar_verificacion_vendedor(
         vendor.solicitud_verificacion_documento_url = documento_url
     vendor.solicitud_verificacion_en = datetime.utcnow()
     db.session.commit()
+
+    try:
+        destinatario = obtener_info_sitio().contacto.email
+        documento_final = vendor.solicitud_verificacion_documento_url
+        cuerpo_html = renderizar_plantilla_correo(
+            "email/solicitud_verificacion.html",
+            nombre_negocio=vendor.nombre_negocio,
+            slug=vendor.slug,
+            email=vendor.email,
+            mensaje=mensaje,
+            documento_url=documento_final,
+        )
+        cuerpo_texto = (
+            f'Nueva solicitud de la insignia "Vendedor verificado"\n\n'
+            f"Tienda: {vendor.nombre_negocio} ({vendor.slug}.eservicios.org)\n"
+            f"Correo del vendedor: {vendor.email}\n\n"
+            f"Por qué debería verificarse:\n{mensaje}\n\n"
+            + (
+                f"Documento adjunto: {documento_final}\n\n"
+                if documento_final
+                else "Sin documento adjunto.\n\n"
+            )
+            + f"Revisar y aprobar/rechazar desde /admin/vendedores/{vendor.id}."
+        )
+        enviar_correo(
+            destinatario,
+            f'Solicitud de insignia "Vendedor verificado" — {vendor.nombre_negocio}',
+            cuerpo_texto,
+            cuerpo_html=cuerpo_html,
+        )
+    except EnvioCorreoError as error:
+        current_app.logger.error(
+            "No se pudo enviar el aviso de solicitud de verificación de %s: %s", vendor.slug, error
+        )
+
+
+def solicitar_plan_plus(vendor: Vendor, *, meses: int, mensaje: str, comprobante_url: str) -> None:
+    """Envía la solicitud de pago manual a e-link Plus, autoservicio (roadmap, Fase 3-bis).
+
+    A diferencia de `solicitar_verificacion_vendedor`, acá SÍ hace falta
+    un comprobante nuevo en cada envío (no tiene sentido reusar la
+    "foto del pago anterior" para justificar un pago distinto) — la
+    subida a R2 ya se resuelve en la ruta antes de llamar aquí, mismo
+    patrón de siempre (ver `routes/vendedor.py._subir_imagen_opcional`).
+
+    Dos cosas pasan al enviarla: (1) queda guardada en la tienda para
+    que el equipo de eServicios la revise desde `/admin/vendedores/<id>`
+    y la apruebe (`vendor_admin_service.aprobar_solicitud_plan`, que
+    otorga Plus por los meses pedidos) o la rechace
+    (`rechazar_solicitud_plan`); (2) se manda un correo de aviso a
+    info@eservicios.org con los mismos datos, para que Jose no dependa
+    de entrar a `/admin` a cada rato para enterarse de una solicitud
+    nueva — ese correo es solo un aviso, la cola en `/admin` sigue
+    siendo la fuente de verdad para aprobar o rechazar. Si el envío del
+    correo falla (SMTP caído, etc.) la solicitud igual queda guardada:
+    el error se registra en el log, sin hacer fallar el envío del
+    vendedor por un problema que no es culpa suya.
+
+    Reenviar mientras una solicitud sigue pendiente simplemente la
+    reemplaza (meses, mensaje y comprobante nuevos, fecha actualizada).
+
+    Args:
+        vendor: Tienda que solicita el plan Plus.
+        meses: Cantidad de meses que dice haber pagado. Debe ser uno de
+            `MESES_PLAN_SOLICITABLES` (1, 3, 6 o 12 — las mismas 4
+            opciones que ofrece el alta manual de admin).
+        mensaje: Detalles de la transacción (método usado, referencia,
+            fecha, quién pagó, etc.). No puede venir vacío.
+        comprobante_url: URL en R2 de la foto/captura del comprobante de
+            pago. No puede venir vacío.
+
+    Raises:
+        SolicitudPlanInvalidaError: Si `meses` no es una de las
+            duraciones permitidas, si `mensaje` viene vacío, o si
+            `comprobante_url` viene vacío.
+    """
+    if meses not in MESES_PLAN_SOLICITABLES:
+        raise SolicitudPlanInvalidaError("Elige una de las duraciones disponibles.")
+    mensaje = (mensaje or "").strip()
+    if not mensaje:
+        raise SolicitudPlanInvalidaError(
+            "Cuéntanos los detalles de tu pago (método usado, referencia, fecha)."
+        )
+    if not comprobante_url:
+        raise SolicitudPlanInvalidaError("Adjunta una foto o captura del comprobante de pago.")
+
+    vendor.solicitud_plan_meses = meses
+    vendor.solicitud_plan_mensaje = mensaje
+    vendor.solicitud_plan_comprobante_url = comprobante_url
+    vendor.solicitud_plan_en = datetime.utcnow()
+    db.session.commit()
+
+    try:
+        destinatario = obtener_info_sitio().contacto.email
+        cuerpo_html = renderizar_plantilla_correo(
+            "email/solicitud_plan.html",
+            nombre_negocio=vendor.nombre_negocio,
+            slug=vendor.slug,
+            email=vendor.email,
+            meses=meses,
+            mensaje=mensaje,
+            comprobante_url=comprobante_url,
+        )
+        cuerpo_texto = (
+            f"Nueva solicitud de e-link Plus\n\n"
+            f"Tienda: {vendor.nombre_negocio} ({vendor.slug}.eservicios.org)\n"
+            f"Correo del vendedor: {vendor.email}\n"
+            f"Meses pedidos: {meses}\n\n"
+            f"Detalles de la transacción:\n{mensaje}\n\n"
+            f"Comprobante: {comprobante_url}\n\n"
+            f"Revisar y aprobar/rechazar desde /admin/vendedores/{vendor.id}."
+        )
+        enviar_correo(
+            destinatario,
+            f"Solicitud de e-link Plus — {vendor.nombre_negocio}",
+            cuerpo_texto,
+            cuerpo_html=cuerpo_html,
+        )
+    except EnvioCorreoError as error:
+        current_app.logger.error(
+            "No se pudo enviar el aviso de solicitud de plan de %s: %s", vendor.slug, error
+        )
 
 
 def plan_plus_vigente(vendor: Vendor) -> bool:
@@ -661,6 +832,151 @@ def plan_plus_vigente(vendor: Vendor) -> bool:
     if vendor.plan_expira_en is None:
         return True
     return vendor.plan_expira_en > datetime.utcnow()
+
+
+def planes_plus_con_precio() -> list[dict[str, object]]:
+    """Arma la tabla de precios de e-link Plus para /vendedor/perfil/plan y el formulario de solicitud.
+
+    Fuente única de precios (`PRECIOS_PLAN_PLUS`) convertida a un formato
+    listo para las plantillas: precio total, equivalente mensual (2
+    decimales) y, para los planes de más de un mes, el porcentaje de
+    ahorro frente a pagar mes a mes esa misma cantidad de meses (con el
+    precio de 1 mes como base). El plan de 12 meses se marca
+    `destacado=True` para el tratamiento visual de "mejor precio" que
+    pidió Jose para el pago anual.
+
+    Returns:
+        Una entrada por cada mes de `MESES_PLAN_SOLICITABLES` (ordenadas
+        de menor a mayor duración), cada una con `meses` (int), `precio`
+        (str, ej. "13.99"), `precio_por_mes` (str, ej. "4.66"),
+        `ahorro_pct` (int, o None para el plan de 1 mes) y `destacado`
+        (bool).
+    """
+    precio_mensual = Decimal(PRECIOS_PLAN_PLUS[1])
+    planes: list[dict[str, object]] = []
+    for meses in sorted(MESES_PLAN_SOLICITABLES):
+        precio = Decimal(PRECIOS_PLAN_PLUS[meses])
+        precio_por_mes = precio / meses
+        if meses == 1:
+            ahorro_pct = None
+        else:
+            base = precio_mensual * meses
+            ahorro_pct = int(round((1 - precio / base) * 100))
+        planes.append(
+            {
+                "meses": meses,
+                "precio": f"{precio:.2f}",
+                "precio_por_mes": f"{precio_por_mes:.2f}",
+                "ahorro_pct": ahorro_pct,
+                "destacado": meses == 12,
+            }
+        )
+    return planes
+
+
+def prueba_plus_expira_en(vendor: Vendor) -> datetime | None:
+    """Fecha y hora en que vence (o venció) la prueba gratuita de e-link Plus de la tienda.
+
+    Args:
+        vendor: Tienda a evaluar.
+
+    Returns:
+        None si nunca activó la prueba (`vendor.prueba_plus_activada_en`
+        es None). Si la activó, esa fecha más `DIAS_PRUEBA_PLUS` días —
+        pasada o futura, sin importar si sigue vigente ahora mismo (ver
+        `prueba_plus_vigente` para eso).
+    """
+    if vendor.prueba_plus_activada_en is None:
+        return None
+    return vendor.prueba_plus_activada_en + timedelta(days=DIAS_PRUEBA_PLUS)
+
+
+def prueba_plus_vigente(vendor: Vendor) -> bool:
+    """Indica si la prueba gratuita de 7 días de e-link Plus está activa ahora mismo.
+
+    Args:
+        vendor: Tienda a evaluar.
+
+    Returns:
+        True si el vendedor activó la prueba (`activar_prueba_plus`) y
+        todavía no pasaron `DIAS_PRUEBA_PLUS` días desde entonces.
+    """
+    expira = prueba_plus_expira_en(vendor)
+    return expira is not None and datetime.utcnow() < expira
+
+
+def prueba_plus_disponible(vendor: Vendor) -> bool:
+    """Indica si el vendedor todavía puede activar la prueba gratuita (nunca la usó).
+
+    Condición para mostrar el aviso de activación en `/vendedor/inicio`
+    — a propósito no chequea si la tienda ya tiene Plus real (eso lo
+    decide cada ruta, para no ofrecerle la prueba a quien ya paga).
+
+    Args:
+        vendor: Tienda a evaluar.
+
+    Returns:
+        True si `vendor.prueba_plus_activada_en` sigue en None. La
+        prueba es de una sola vez por cuenta, para siempre, aunque ya
+        haya vencido — por eso esto NO vuelve a dar True cuando la
+        prueba expiró.
+    """
+    return vendor.prueba_plus_activada_en is None
+
+
+def plan_plus_o_prueba_vigente(vendor: Vendor) -> bool:
+    """Indica si la tienda puede usar las funciones de e-link Plus ahora mismo (real o de prueba).
+
+    Puerta general para las funciones de personalización y venta de Plus
+    (color, plantilla, disponibilidad, cupón, badge de producto, estado
+    de stock, categorías, consulta múltiple) — a diferencia de
+    `plan_plus_vigente()` a secas, esta SÍ cuenta la prueba gratuita de
+    7 días (ver `prueba_plus_vigente`), agregada 2026-09-14 a pedido de
+    Jose.
+
+    IMPORTANTE: esta función nunca debe usarse para decidir si el
+    vendedor puede *solicitar* la insignia "Vendedor verificado" — ese
+    chequeo (`solicitar_verificacion_vendedor` y la ruta
+    `vendedor.perfil_verificacion`) sigue usando `plan_plus_vigente()` a
+    secas, a propósito: la prueba no cuenta para la insignia (decisión
+    explícita de Jose) — solo un plan Plus real, pagado y aprobado (o un
+    admin que la otorgue a mano vía `marcar_verificado`), la habilita.
+
+    Args:
+        vendor: Tienda a evaluar.
+
+    Returns:
+        True si `plan_plus_vigente(vendor)` o `prueba_plus_vigente(vendor)`.
+    """
+    return plan_plus_vigente(vendor) or prueba_plus_vigente(vendor)
+
+
+def activar_prueba_plus(vendor: Vendor) -> None:
+    """Activa, una única vez por cuenta, la prueba gratuita de 7 días de e-link Plus.
+
+    Se llama desde `/vendedor/prueba` (aviso en `/vendedor/inicio`,
+    pedido de Jose 2026-09-14) — pensada para que un vendedor free note
+    la diferencia con Plus antes de decidirse a pagar. No otorga ningún
+    plan real ni toca `vendor.plan`/`vendor.plan_expira_en`: solo marca
+    `vendor.prueba_plus_activada_en`, que es lo único que
+    `plan_plus_o_prueba_vigente` consulta para la prueba.
+
+    Args:
+        vendor: Tienda que activa la prueba.
+
+    Raises:
+        PruebaPlusInvalidaError: Si ya usó su prueba antes (vigente o ya
+            vencida — es de una sola vez para siempre), o si ya tiene
+            e-link Plus real vigente ahora mismo (no tendría sentido).
+    """
+    if not prueba_plus_disponible(vendor):
+        raise PruebaPlusInvalidaError(
+            "Ya usaste tu prueba gratuita de e-link Plus — es de una sola vez por cuenta."
+        )
+    if plan_plus_vigente(vendor):
+        raise PruebaPlusInvalidaError("Tu tienda ya tiene e-link Plus vigente, no hace falta la prueba.")
+    vendor.prueba_plus_activada_en = datetime.utcnow()
+    db.session.commit()
 
 
 def _contraste_legible(color_hex: str) -> str:
@@ -741,11 +1057,13 @@ def resolver_acento_vendor(vendor: Vendor) -> dict[str, str]:
     """
     color = vendor.color_acento
     if color and _PATRON_COLOR_HEX.match(color):
-        if not plan_plus_vigente(vendor) and color.lower() not in {c.lower() for c in PALETA_ACENTO_GRATIS}:
-            # Color exclusivo de Plus, guardado cuando el plan estaba
-            # vigente — ahora vencido, cae de vuelta al azul/rosado
-            # gratis hasta que el vendedor vuelva a Plus (el valor sigue
-            # guardado en la base, no se pierde: ver actualizar_perfil).
+        if not plan_plus_o_prueba_vigente(vendor) and color.lower() not in {c.lower() for c in PALETA_ACENTO_GRATIS}:
+            # Color exclusivo de Plus (cuenta la prueba gratuita, ver
+            # plan_plus_o_prueba_vigente), guardado cuando el plan
+            # estaba vigente — ahora vencido, cae de vuelta al
+            # azul/rosado gratis hasta que el vendedor vuelva a Plus (el
+            # valor sigue guardado en la base, no se pierde: ver
+            # actualizar_perfil).
             color = None
     else:
         color = None
@@ -771,13 +1089,13 @@ def resolver_cupon_vendor(vendor: Vendor) -> str | None:
 
     Returns:
         None cuando la tienda no tiene ningún cupón guardado, o cuando
-        no tiene el plan Plus vigente ahora mismo (ver
-        `plan_plus_vigente`) — en ese caso el texto puede seguir
-        guardado en `vendor.cupon`, listo para reactivarse solo con
-        volver a Plus. Si aplica, el texto del cupón tal cual el
+        no tiene Plus (real o de prueba) vigente ahora mismo (ver
+        `plan_plus_o_prueba_vigente`) — en ese caso el texto puede
+        seguir guardado en `vendor.cupon`, listo para reactivarse solo
+        con volver a Plus. Si aplica, el texto del cupón tal cual el
         vendedor lo escribió.
     """
-    if not vendor.cupon or not plan_plus_vigente(vendor):
+    if not vendor.cupon or not plan_plus_o_prueba_vigente(vendor):
         return None
     return vendor.cupon
 
@@ -822,8 +1140,8 @@ def listar_paleta_acento(plan_plus_activo: bool) -> list[str]:
     """Devuelve la paleta curada de colores de acento disponible para el plan del vendedor.
 
     Args:
-        plan_plus_activo: Si la tienda tiene e-link Plus vigente ahora
-            mismo (ver `plan_plus_vigente`).
+        plan_plus_activo: Si la tienda tiene Plus vigente ahora mismo,
+            real o de prueba (ver `plan_plus_o_prueba_vigente`).
 
     Returns:
         `PALETA_ACENTO_PLUS` (10 colores) si `plan_plus_activo`,
@@ -852,13 +1170,14 @@ def resolver_plantilla_vendor(vendor: Vendor) -> str:
 
     Returns:
         `"clasica"` cuando la tienda no eligió ninguna plantilla premium,
-        cuando la clave guardada ya no es válida, o cuando no tiene el
-        plan Plus vigente ahora mismo (ver `plan_plus_vigente`) — en ese
-        último caso el valor sigue guardado en `vendor.plantilla`, listo
-        para reactivarse solo con volver a Plus. Si todo lo anterior
-        aplica, la clave guardada tal cual (ej. `"editorial"`).
+        cuando la clave guardada ya no es válida, o cuando no tiene Plus
+        (real o de prueba) vigente ahora mismo (ver
+        `plan_plus_o_prueba_vigente`) — en ese último caso el valor
+        sigue guardado en `vendor.plantilla`, listo para reactivarse
+        solo con volver a Plus. Si todo lo anterior aplica, la clave
+        guardada tal cual (ej. `"editorial"`).
     """
-    if not vendor.plantilla or not plan_plus_vigente(vendor):
+    if not vendor.plantilla or not plan_plus_o_prueba_vigente(vendor):
         return PLANTILLA_POR_DEFECTO
     if obtener_plantilla_tienda(vendor.plantilla) is None:
         return PLANTILLA_POR_DEFECTO
@@ -879,14 +1198,14 @@ def resolver_badge_producto(vendor: Vendor, producto: VendorProduct) -> dict[str
 
     Returns:
         None cuando el producto no tiene badge guardado, cuando la
-        tienda no tiene el plan Plus vigente ahora mismo (ver
-        `plan_plus_vigente`), o cuando la clave guardada ya no es válida
-        — en cualquiera de esos casos el valor puede seguir guardado en
-        `producto.badge`, listo para reactivarse solo con volver a Plus.
-        Si aplica, un diccionario con `clave` y `nombre` (ver
-        `badges_producto_service.obtener_badge_producto`).
+        tienda no tiene Plus (real o de prueba) vigente ahora mismo (ver
+        `plan_plus_o_prueba_vigente`), o cuando la clave guardada ya no
+        es válida — en cualquiera de esos casos el valor puede seguir
+        guardado en `producto.badge`, listo para reactivarse solo con
+        volver a Plus. Si aplica, un diccionario con `clave` y `nombre`
+        (ver `badges_producto_service.obtener_badge_producto`).
     """
-    if not producto.badge or not plan_plus_vigente(vendor):
+    if not producto.badge or not plan_plus_o_prueba_vigente(vendor):
         return None
     return obtener_badge_producto(producto.badge)
 
@@ -903,13 +1222,13 @@ def resolver_disponibilidad_vendor(vendor: Vendor) -> bool | None:
         vendor: Tienda a evaluar.
 
     Returns:
-        None cuando la tienda no tiene el plan Plus vigente ahora mismo
-        (ver `plan_plus_vigente`) — en ese caso la tienda pública no
-        debe mostrar ningún indicador, aunque `vendor.disponible_ahora`
-        siga guardado. Si el plan está vigente, `True` o `False` según
-        el interruptor guardado.
+        None cuando la tienda no tiene Plus (real o de prueba) vigente
+        ahora mismo (ver `plan_plus_o_prueba_vigente`) — en ese caso la
+        tienda pública no debe mostrar ningún indicador, aunque
+        `vendor.disponible_ahora` siga guardado. Si Plus está vigente,
+        `True` o `False` según el interruptor guardado.
     """
-    if not plan_plus_vigente(vendor):
+    if not plan_plus_o_prueba_vigente(vendor):
         return None
     return vendor.disponible_ahora
 
@@ -929,14 +1248,14 @@ def resolver_estado_stock_producto(vendor: Vendor, producto: VendorProduct) -> d
 
     Returns:
         None cuando el producto está en stock normal, cuando la tienda
-        no tiene el plan Plus vigente ahora mismo (ver
-        `plan_plus_vigente`), o cuando la clave guardada ya no es válida
-        — en cualquiera de esos casos el valor puede seguir guardado en
-        `producto.estado_stock`, listo para reactivarse solo con volver
-        a Plus. Si aplica, un diccionario con `clave` y `nombre` (ver
-        `estados_stock_service.obtener_estado_stock`).
+        no tiene Plus (real o de prueba) vigente ahora mismo (ver
+        `plan_plus_o_prueba_vigente`), o cuando la clave guardada ya no
+        es válida — en cualquiera de esos casos el valor puede seguir
+        guardado en `producto.estado_stock`, listo para reactivarse solo
+        con volver a Plus. Si aplica, un diccionario con `clave` y
+        `nombre` (ver `estados_stock_service.obtener_estado_stock`).
     """
-    if not producto.estado_stock or not plan_plus_vigente(vendor):
+    if not producto.estado_stock or not plan_plus_o_prueba_vigente(vendor):
         return None
     return obtener_estado_stock(producto.estado_stock)
 
@@ -953,30 +1272,41 @@ def resolver_categorias_producto(vendor: Vendor) -> list[VendorCategoria]:
         vendor: Tienda a evaluar.
 
     Returns:
-        Lista vacía cuando la tienda no tiene el plan Plus vigente ahora
-        mismo (ver `plan_plus_vigente`) — en ese caso la tienda pública
-        no debe mostrar el filtro de categorías, aunque sigan guardadas.
-        Si el plan está vigente, todas las categorías de la tienda (ver
-        `listar_categorias_de_vendor`).
+        Lista vacía cuando la tienda no tiene Plus (real o de prueba)
+        vigente ahora mismo (ver `plan_plus_o_prueba_vigente`) — en ese
+        caso la tienda pública no debe mostrar el filtro de categorías,
+        aunque sigan guardadas. Si Plus está vigente, todas las
+        categorías de la tienda (ver `listar_categorias_de_vendor`).
     """
-    if not plan_plus_vigente(vendor):
+    if not plan_plus_o_prueba_vigente(vendor):
         return []
     return listar_categorias_de_vendor(vendor)
 
 
 def cambiar_password(vendor: Vendor, *, password_actual: str, password_nueva: str) -> None:
-    """Cambia la contraseña del vendedor, verificando la actual primero.
+    """Cambia la contraseña del vendedor, o la crea si todavía no tiene una.
+
+    Una tienda registrada solo con "Iniciar sesión con Google" no tiene
+    `password_hash` (ver `Vendor.password_hash`) — para esos casos no hay
+    contraseña actual que verificar, así que `password_actual` se ignora
+    y se crea la primera contraseña directamente (2026-09-14, pedido de
+    Jose: la sección "Seguridad" del perfil ahora le ofrece a esas cuentas
+    crear una contraseña propia, además de seguir entrando con Google).
+    Cuando sí hay una contraseña guardada, el comportamiento es el de
+    siempre: hay que confirmarla primero.
 
     Args:
-        vendor: Tienda cuya contraseña se va a cambiar.
+        vendor: Tienda cuya contraseña se va a cambiar o crear.
         password_actual: Contraseña actual, para confirmar la identidad.
+            Se ignora si la tienda todavía no tiene ninguna contraseña.
         password_nueva: Contraseña nueva en texto plano.
 
     Raises:
-        PasswordActualIncorrectaError: Si `password_actual` no coincide con la guardada.
+        PasswordActualIncorrectaError: Si la tienda ya tenía contraseña y
+            `password_actual` no coincide con la guardada.
         PasswordNuevaInvalidaError: Si `password_nueva` tiene menos de 8 caracteres.
     """
-    if not vendor.check_password(password_actual):
+    if vendor.password_hash and not vendor.check_password(password_actual):
         raise PasswordActualIncorrectaError("La contraseña actual no es correcta.")
     if len(password_nueva) < 8:
         raise PasswordNuevaInvalidaError("La nueva contraseña debe tener al menos 8 caracteres.")
@@ -1246,6 +1576,27 @@ def href_whatsapp_producto(vendor: Vendor, producto: VendorProduct) -> str:
     )
 
 
+def href_whatsapp_soporte_pago() -> str:
+    """Link de WhatsApp de soporte de eServicios para dudas de pago de e-link Plus.
+
+    Se usa en `/vendedor/perfil/plan/solicitar` mientras los métodos de
+    pago propios siguen "por definir" (2026-09-14, pedido de Jose):
+    reutiliza el mismo número de contacto general de eServicios (ver
+    `site_info_service.obtener_info_sitio`, el mismo del botón flotante
+    y el pie de página en `base.html`), no el `whatsapp_numero` del
+    vendedor — esta pregunta es para el equipo de eServicios, no para
+    la tienda del vendedor.
+
+    Returns:
+        URL `wa.me` lista para usar en un `<a href>`.
+    """
+    numero = re.sub(r"\D", "", obtener_info_sitio().contacto.whatsapp_numero)
+    return construir_whatsapp_href(
+        numero,
+        "Hola, quiero consultar los métodos de pago disponibles para e-link Plus.",
+    )
+
+
 def resolver_consulta_multiple_habilitada(vendor: Vendor) -> bool:
     """Indica si el vendedor puede usar la consulta combinada de varios productos.
 
@@ -1255,7 +1606,8 @@ def resolver_consulta_multiple_habilitada(vendor: Vendor) -> bool:
     punto se quedó con la clasificación por defecto del roadmap (Premium):
     Jose no pidió ningún override explícito para él, así que sigue el
     mismo patrón que color de acento/plantillas/badges/estado de
-    stock/categorías — gateado por `plan_plus_vigente()`.
+    stock/categorías — gateado por `plan_plus_o_prueba_vigente()`
+    (cuenta la prueba gratuita de 7 días, 2026-09-14).
 
     A diferencia de esos otros puntos, esta función no tiene ningún valor
     que "guardar siempre" — no es una preferencia del vendedor, es una
@@ -1266,9 +1618,9 @@ def resolver_consulta_multiple_habilitada(vendor: Vendor) -> bool:
         vendor: Tienda a evaluar.
 
     Returns:
-        True si el plan Plus está vigente en este momento.
+        True si Plus (real o de prueba) está vigente en este momento.
     """
-    return plan_plus_vigente(vendor)
+    return plan_plus_o_prueba_vigente(vendor)
 
 
 def construir_mensaje_consulta_multiple(vendor: Vendor, productos: list[VendorProduct]) -> str:

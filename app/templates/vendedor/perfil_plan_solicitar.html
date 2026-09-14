@@ -1,0 +1,66 @@
+{% extends "vendedor/base.html" %}
+{% from "vendedor/_breadcrumb.html" import migas %}
+
+{% block title %}Solicitar e-link Plus — {{ vendor.nombre_negocio }}{% endblock %}
+
+{% block breadcrumb %}
+{{ migas([("e-Link", none), ("Perfil", "vendedor.perfil"), ("e-link Plus", "vendedor.perfil_plan"), ("Solicitar", none)]) }}
+{% endblock %}
+
+{% block content %}
+<h1 class="admin-page-title">Solicitar e-link Plus</h1>
+
+<p style="color: var(--color-text-muted); max-width: 520px;">
+    Realiza el pago por uno de los métodos de abajo y cuéntanos los detalles de tu transacción. El equipo de eServicios revisa cada solicitud a mano y activa tu plan apenas la confirme.
+</p>
+
+{# Métodos de pago todavía por definir (2026-09-14) — mientras tanto se
+   dirige a soporte de eServicios por WhatsApp para que cada vendedor
+   reciba el método según su región/preferencia. Reemplazar este aviso
+   cuando Jose defina los métodos reales (Zelle, transferencia, Binance
+   Pay, etc.) y sus datos de cuenta; `whatsapp_soporte_url` (armado en
+   `vendedor.perfil_plan_solicitar`, ver `vendor_service.href_whatsapp_soporte_pago`)
+   puede quedarse igual como canal de soporte general. #}
+<div style="padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 0.5rem; max-width: 480px; margin: 1rem 0 1.5rem;">
+    <p style="margin: 0 0 8px; font-size: 0.85rem; color: var(--color-text-muted);">Métodos de pago disponibles</p>
+    <p style="margin: 0 0 12px;">Soporte e-Link te aportará los métodos de pagos de tu preferencia o tu región.</p>
+    <a class="vendedor-whatsapp-btn" href="{{ whatsapp_soporte_url }}" target="_blank" rel="noopener">
+        <span aria-hidden="true">{{ icono_red("whatsapp") | safe }}</span>
+        Escribir a soporte por WhatsApp
+    </a>
+</div>
+
+<form method="post" class="admin-form admin-form--narrow" enctype="multipart/form-data" action="{{ url_for('vendedor.perfil_plan_solicitar') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <label class="admin-form__label" for="meses">¿Por cuántos meses pagaste?</label>
+    <select class="admin-form__input" id="meses" name="meses" required>
+        {% for plan in planes %}
+        <option value="{{ plan.meses }}" {% if plan.meses == meses_preseleccionado %}selected{% endif %}>{{ plan.meses }} mes{{ "es" if plan.meses != 1 else "" }} — ${{ plan.precio }}</option>
+        {% endfor %}
+    </select>
+
+    <label class="admin-form__label" for="mensaje">Detalles de tu pago</label>
+    <textarea class="admin-form__textarea" id="mensaje" name="mensaje" rows="4" maxlength="600" data-contador required>{{ vendor.solicitud_plan_mensaje or '' }}</textarea>
+    <p class="admin-form__hint">
+        Método usado, referencia o número de confirmación, fecha y a nombre de quién se hizo el pago.
+    </p>
+
+    <label class="admin-form__label" for="comprobante">Comprobante de pago</label>
+    {% if vendor.solicitud_plan_comprobante_url %}
+    <p class="admin-form__hint" style="margin-bottom: 6px;">
+        Cada solicitud necesita su propio comprobante — sube el de este pago, aunque ya hayas adjuntado uno en un envío anterior.
+    </p>
+    {% endif %}
+    <input class="admin-form__input" type="file" id="comprobante" name="comprobante" accept="image/jpeg,image/png,image/webp" required>
+    <p class="admin-form__hint">
+        Una foto o captura de pantalla del pago — JPG, PNG o WEBP, máximo 10 MB.
+    </p>
+
+    <div class="admin-form__actions">
+        <button class="admin-btn admin-btn--primary" type="submit">
+            {% if vendor.solicitud_plan_en %}Reenviar solicitud{% else %}Enviar solicitud{% endif %}
+        </button>
+    </div>
+</form>
+{% endblock %}

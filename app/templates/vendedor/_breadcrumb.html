@@ -1,0 +1,38 @@
+{#
+    Macro de migas de pan del panel de vendedor (2026-09-14, pedido de
+    Jose tras notar que perfil_plan.html se saltaba el nivel "Perfil").
+    Antes cada plantilla escribía a mano su <nav class="breadcrumb">
+    entero — fácil de copiar mal, de olvidar un nivel, o de dejarlo
+    desalineado cuando una página se anida más profundo que otra. Ahora
+    cada plantilla arma su lista de pasos y llama a este macro una vez.
+
+    `pasos` es una lista de tuplas (etiqueta, endpoint):
+      - El primer paso es la marca ("e-Link") — pasa `none` como
+        endpoint; nunca es un enlace (decisión de Jose, 2026-09-12: ver
+        el comentario junto a `.breadcrumb__brand` en style.css).
+      - El último paso es la página actual — también `none` como
+        endpoint; tampoco es un enlace.
+      - Cualquier paso intermedio SÍ lleva un `endpoint` real (string,
+        el mismo que recibiría `url_for`) y se muestra como enlace.
+
+    Ejemplo (perfil_plan_solicitar.html, 4 niveles):
+        {{ migas([
+            ("e-Link", none),
+            ("Perfil", "vendedor.perfil"),
+            ("e-link Plus", "vendedor.perfil_plan"),
+            ("Solicitar", none),
+        ]) }}
+#}
+{% macro migas(pasos) %}
+<nav class="breadcrumb">
+    {%- for etiqueta, endpoint in pasos %}
+    {%- if loop.first %}
+    <span class="breadcrumb__brand">{{ etiqueta }}</span>
+    {%- elif loop.last %}
+    <span class="breadcrumb__current">{{ etiqueta }}</span>
+    {%- else %}
+    <a class="breadcrumb__link" href="{{ url_for(endpoint) }}">{{ etiqueta }}</a>
+    {%- endif %}
+    {%- endfor %}
+</nav>
+{% endmacro %}

@@ -169,6 +169,37 @@
 </div>
 
 <h2 class="admin-section-title">Plan</h2>
+{% if vendor.solicitud_plan_en %}
+{# Solicitud de pago manual, autoservicio (roadmap, Fase 3-bis) — el
+   vendedor la mandó desde /vendedor/perfil/plan/solicitar (ver
+   vendor_service.solicitar_plan_plus). Mismo patrón visual que la
+   tarjeta de "Solicitud de verificación pendiente" de arriba. Aprobar
+   otorga exactamente los meses pedidos y limpia esta cola (ver
+   vendor_admin_service.aprobar_solicitud_plan); rechazar solo la
+   limpia, sin tocar el plan. #}
+<div style="padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 0.5rem; max-width: 480px; margin-bottom: 16px;">
+    <p style="margin: 0 0 6px;">
+        <strong>Solicitud de e-link Plus pendiente</strong> — enviada el {{ vendor.solicitud_plan_en.strftime('%d/%m/%Y') }},
+        pide {{ vendor.solicitud_plan_meses }} mes{{ "es" if vendor.solicitud_plan_meses != 1 else "" }}.
+    </p>
+    <p style="margin: 0 0 12px; white-space: pre-wrap;">{{ vendor.solicitud_plan_mensaje }}</p>
+    {% if vendor.solicitud_plan_comprobante_url %}
+    <p style="margin: 0 0 12px;">
+        <a href="{{ vendor.solicitud_plan_comprobante_url }}" target="_blank" rel="noopener">Ver comprobante de pago</a>
+    </p>
+    {% endif %}
+    <div style="display: flex; gap: 8px;">
+        <form method="post" action="{{ url_for('admin.vendedor_aprobar_solicitud_plan', vendor_id=vendor.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="admin-btn admin-btn--primary" type="submit">Aprobar</button>
+        </form>
+        <form method="post" action="{{ url_for('admin.vendedor_rechazar_solicitud_plan', vendor_id=vendor.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="admin-btn" type="submit">Rechazar</button>
+        </form>
+    </div>
+</div>
+{% endif %}
 <div style="padding: 14px 16px; border: 1px solid var(--color-border); border-radius: 0.5rem; max-width: 420px;">
     <p class="admin-form__hint" style="margin: 0 0 12px;">
         Alta manual: confirma el pago por fuera del sistema (transferencia, reporte de pago, etc.)
