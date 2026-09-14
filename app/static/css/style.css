@@ -830,6 +830,35 @@ summary {
     flex-shrink: 0;
 }
 
+/* Logo "e-Link" grande y centrado en login.html/registro.html (2026-09-14,
+   Jose comparó con Linktree/Beacons: ahí el logo es lo primero que se ve,
+   grande, separado del texto de la pantalla — acá antes era chico y
+   compartía línea con el <h1>, como en .titulo-con-logo). Clase aparte a
+   propósito, NO se reusa/agranda .titulo-con-logo: esa la comparten los 5
+   títulos del panel ya logueado (Home, Enlaces, Tienda, Perfil, Avisos) y
+   agrandarla ahí no lo pidió Jose. */
+.admin-auth__marca {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    margin-bottom: 0.6rem;
+    color: var(--color-accent);
+}
+
+.admin-auth__marca-logo {
+    width: 2.75rem;
+    height: auto;
+    flex-shrink: 0;
+}
+
+.admin-auth__marca-texto {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    font-size: 2.1rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
 .admin-stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -999,13 +1028,63 @@ summary {
     color: #ffffff;
 }
 
-.admin-form__grupo-oculto:not([hidden]) {
-    /* Permite ocultar/mostrar un grupo de campos (p. ej. contraseña) con
-       el atributo `hidden` sin que sus hijos dejen de ser hijos directos
-       de `.admin-form` — así conservan el ancho completo que les da el
-       `align-items: stretch` del flex del formulario. Reutilizable para
-       cualquier otro revelado progresivo futuro. */
-    display: contents;
+/* Botones deshabilitados (2026-09-14, registro: "Continuar con Google" se
+   apaga al escribir el correo manual, "Crear mi tienda" se apaga hasta
+   elegir un medio y aceptar los términos) — gris genérico con los mismos
+   tokens que el resto de la UI, en vez de solo bajar la opacidad (el
+   fondo negro fijo de .admin-btn--google necesita este override propio,
+   si no se quedaría negro con apariencia de habilitado). Un botón
+   `disabled` ya no recibe :hover del navegador, así que no hace falta
+   pisar esas reglas aparte. */
+.admin-btn:disabled {
+    cursor: not-allowed;
+}
+
+.admin-btn--primary:disabled,
+.admin-btn--google:disabled {
+    background-color: var(--color-border);
+    border-color: var(--color-border);
+    color: var(--color-text-muted);
+}
+
+/* Mismo apagado que arriba, pero para un `<a>` (el login usa un enlace
+   normal para "Continuar con Google", no un <button> dentro de un
+   <form> como el registro — ver _boton_google.html) — un <a> no tiene
+   atributo `disabled` nativo, así que login_vendedor.js alterna esta
+   clase en vez de la propiedad `.disabled`, y bloquea el clic mientras
+   esté puesta (ver ese script). */
+.admin-btn--deshabilitado {
+    pointer-events: none;
+    cursor: not-allowed;
+    background-color: var(--color-border);
+    border-color: var(--color-border);
+    color: var(--color-text-muted);
+}
+
+/* Revelado progresivo de los campos de contraseña en el registro
+   (2026-09-14) — antes usaba el atributo `hidden` (display: contents al
+   quitarlo) y aparecía de golpe, sin transición posible (display no se
+   anima). Ahora es siempre un contenedor flex propio (sus hijos igual
+   quedan con el ancho completo por el `align-items: stretch` heredado,
+   ya no hace falta el truco de `display: contents`) que anima
+   max-height/opacity — la clase `--visible` la alterna
+   registro_vendedor.js al escribir en el correo. 400px es un techo
+   generoso (no el alto real medido) para que un mensaje de error de
+   `data-coincide-con` (ver validacion_formulario.js), que puede aparecer
+   después de que el grupo ya esté visible, nunca quede recortado. */
+.admin-form__grupo-oculto {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.25s ease;
+}
+
+.admin-form__grupo-oculto--visible {
+    max-height: 400px;
+    opacity: 1;
 }
 
 .admin-auth__divisor {
@@ -2034,4 +2113,77 @@ summary {
 
 .admin-stat-card__value--acento {
     color: var(--color-accent);
+}
+
+/* --- Asistente de IA y recorte de imagen (perfil y ficha de producto,
+   2026-09-14) --- */
+
+/* Botón compacto, para ir pegado a una etiqueta en vez de al pie de un
+   formulario — el botón "Escribir con IA" (ver app/static/js/asistente_ia.js)
+   y el "Recortar imagen (opcional)" que agrega
+   app/static/js/recorte_imagen.js junto a cada campo de foto de
+   producto. */
+.admin-btn--pequeno {
+    padding: 0.35rem 0.8rem;
+    font-size: 0.82rem;
+    margin: 0.35rem 0 0.5rem;
+}
+
+/* Modal de recorte de imagen (logo 1:1, portada 3:1, y opcionalmente
+   fotos de producto sin proporción fija) — ver
+   app/static/js/recorte_imagen.js. Un solo modal compartido por
+   perfil.html y producto_form.html, creado una vez por JS y reutilizado
+   para cada campo. Cropper.js (cargado por CDN solo en esas dos
+   plantillas, ver el bloque head_extra en vendedor/base.html) es quien
+   dibuja el recuadro de recorte adentro de .recorte-modal__lienzo. */
+.recorte-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.55);
+    padding: 16px;
+}
+
+.recorte-modal--visible {
+    display: flex;
+}
+
+.recorte-modal__caja {
+    background-color: var(--color-surface);
+    border-radius: 14px;
+    padding: 18px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.recorte-modal__titulo {
+    margin: 0;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.recorte-modal__lienzo {
+    max-height: 60vh;
+    overflow: hidden;
+    border-radius: 8px;
+    background-color: var(--color-border);
+}
+
+.recorte-modal__img {
+    display: block;
+    max-width: 100%;
+}
+
+.recorte-modal__acciones {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
 }

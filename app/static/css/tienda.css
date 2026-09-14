@@ -222,9 +222,10 @@
 
 /* Filtro de categorías (punto 18, e-link Plus) — pastillas puramente
    client-side (ver static/js/categoria_filtro.js), no recargan la
-   página. .tienda-card[hidden] asegura que ocultar una tarjeta filtrada
-   gane sobre el display propio de .tienda-card (una clase tiene más
-   especificidad que el selector de atributo [hidden] del navegador). */
+   página. El atributo `hidden` que pone el filtro va en
+   .tienda-card-wrap (no en .tienda-card) — ver la regla
+   .tienda-card-wrap[hidden] más abajo, junto al resto de las reglas de
+   .tienda-card-wrap, y su comentario para el porqué. */
 .tienda-categorias {
     display: flex;
     flex-wrap: wrap;
@@ -250,10 +251,6 @@
     color: var(--color-accent-contrast);
 }
 
-.tienda-card[hidden] {
-    display: none !important;
-}
-
 /* Consulta de múltiples productos (punto 19, e-link Plus) — el checkbox
    de cada tarjeta vive SIEMPRE fuera del <button> de la tarjeta (nunca
    anidado dentro): .tienda-card-wrap es el elemento que en realidad
@@ -265,9 +262,23 @@
    - Filas horizontales (lista editorial, lista minimalista, sin foto
      grande): .tienda-card-wrap--fila convierte al wrapper en un flex
      row, con el checkbox como primer hijo normal (no absoluto) y el
-     <button> ocupando el resto del ancho. */
+     <button> ocupando el resto del ancho.
+   Precisamente porque el checkbox vive fuera de .tienda-card, el filtro
+   de categorías (punto 18, arriba) tiene que ocultar este wrapper
+   entero, no solo el <button> — si solo se ocultaba .tienda-card, el
+   checkbox quedaba flotando solo, sin su tarjeta, para los productos de
+   otra categoría (bug reportado por Jose, corregido 2026-09-14).
+   .tienda-card-wrap[hidden] con !important es necesario porque
+   .tienda-card-wrap--fila (más abajo) le pone su propio `display: flex`
+   — misma especificidad que un selector de atributo, así que sin
+   !important el orden en la hoja decidiría el ganador en vez del
+   estado real de la tarjeta. */
 .tienda-card-wrap {
     position: relative;
+}
+
+.tienda-card-wrap[hidden] {
+    display: none !important;
 }
 
 .tienda-card-wrap--fila {

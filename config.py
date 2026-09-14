@@ -103,3 +103,25 @@ class Config:
     # cuál elijas) — tiene que coincidir exacto con el idioma aprobado,
     # si no la API rechaza el envío.
     WHATSAPP_TEMPLATE_IDIOMA: str = os.environ.get("WHATSAPP_TEMPLATE_IDIOMA", "es_MX")
+
+    # Asistente de IA para redactar descripciones de producto y la bio de
+    # la tienda (roadmap, "Ideas para más adelante", anotada 2026-09-13
+    # — ver app/services/asistente_ia_service.py). Llama directo a la API
+    # de Mensajes de Anthropic con `requests` (ya es dependencia del
+    # proyecto), sin agregar el SDK oficial solo para esto — mismo
+    # criterio que BREVO_* usa smtplib en vez de un cliente HTTP propio.
+    #
+    # PENDIENTE (2026-09-14): Jose todavía no decidió/creó la cuenta del
+    # proveedor de IA, así que AI_API_KEY queda vacía a propósito.
+    # Mientras lo esté, asistente_ia_service.asistente_ia_disponible()
+    # devuelve False y los botones "Escribir con IA" del panel de
+    # vendedor no se muestran (no hay ningún botón roto esperando por
+    # ahí) — el día que se cree la cuenta en console.anthropic.com y se
+    # ponga la API key acá, la función se activa sola, sin tocar nada
+    # de este código.
+    AI_API_KEY: str = os.environ.get("AI_API_KEY", "")
+    # Ajusta este valor al modelo vigente en Anthropic el día que se
+    # active la cuenta (ver la lista de modelos disponibles en la
+    # documentación de Anthropic) — un modelo económico y rápido alcanza
+    # de sobra para textos tan cortos como estos.
+    AI_MODEL: str = os.environ.get("AI_MODEL", "claude-haiku-4-5")

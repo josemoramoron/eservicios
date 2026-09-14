@@ -4,8 +4,16 @@
  * Puramente del lado del cliente, sin recargar la página. Cada pastilla
  * trae la categoría a filtrar en `data-categoria-pill` (vacío = "Todas"),
  * y cada tarjeta de producto ya trae la suya en `data-categoria` (ver
- * `_filtro_categorias.html` y las 3 plantillas de tienda pública) —
+ * `_filtro_categorias.html` y las 4 plantillas de tienda pública) —
  * este script solo compara y muestra/oculta con el atributo `hidden`.
+ *
+ * Importante: el `hidden` se pone en `.tienda-card-wrap` (el contenedor),
+ * no en `.tienda-card` (el <button> con la info del producto). El
+ * checkbox de "consulta múltiple" (punto 19) vive como hermano del
+ * <button>, fuera de él (ver consulta_multiple.js) — si solo se ocultaba
+ * el <button>, ese checkbox quedaba flotando solo, sin su tarjeta, para
+ * cualquier producto que el filtro escondiera (bug reportado por Jose,
+ * corregido 2026-09-14).
  */
 document.addEventListener("DOMContentLoaded", () => {
     const grupo = document.querySelector("[data-categoria-filtro-grupo]");
@@ -14,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const pills = grupo.querySelectorAll("[data-categoria-pill]");
-    const tarjetas = document.querySelectorAll(".tienda-card");
+    const envoltorios = document.querySelectorAll(".tienda-card-wrap");
 
     pills.forEach((pill) => {
         pill.addEventListener("click", () => {
@@ -23,8 +31,10 @@ document.addEventListener("DOMContentLoaded", () => {
             pills.forEach((p) => p.classList.remove("tienda-categorias__pill--activa"));
             pill.classList.add("tienda-categorias__pill--activa");
 
-            tarjetas.forEach((tarjeta) => {
-                tarjeta.hidden = Boolean(categoriaElegida) && tarjeta.dataset.categoria !== categoriaElegida;
+            envoltorios.forEach((envoltorio) => {
+                const tarjeta = envoltorio.querySelector(".tienda-card");
+                const categoria = tarjeta ? tarjeta.dataset.categoria : "";
+                envoltorio.hidden = Boolean(categoriaElegida) && categoria !== categoriaElegida;
             });
         });
     });

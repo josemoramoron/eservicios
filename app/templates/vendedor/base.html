@@ -18,6 +18,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@700&display=swap" rel="stylesheet">
+    {# Vacío por defecto — solo perfil.html y producto_form.html lo usan
+       hoy, para cargar la hoja de estilos de Cropper.js (recorte de
+       logo/portada/fotos de producto, 2026-09-14) sin forzarla en el
+       resto del panel, que no la necesita. #}
+    {% block head_extra %}{% endblock %}
 </head>
 <body class="vendedor-panel"{% if acento %} style="--color-accent: {{ acento.color }}; --color-accent-contrast: {{ acento.contraste }};"{% endif %}>
     {# Bloque nuevo (2026-09-11): por defecto es el navbar de siempre del

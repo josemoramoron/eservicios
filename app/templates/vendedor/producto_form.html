@@ -2,6 +2,10 @@
 
 {% block title %}{{ 'Editar' if producto else 'Nuevo' }} producto — Mi Tienda{% endblock %}
 
+{% block head_extra %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
+{% endblock %}
+
 {% block breadcrumb %}
 <nav class="breadcrumb">
     <span class="breadcrumb__brand">e-Link</span>
@@ -21,8 +25,21 @@
     <input class="admin-form__input" type="text" id="titulo" name="titulo" value="{{ valores.titulo }}" maxlength="150" data-contador required>
 
     <label class="admin-form__label" for="descripcion">Descripción</label>
+    {% if asistente_ia_activo %}
+    {# Asistente de IA (2026-09-14, ver app/services/asistente_ia_service.py):
+       redacta o mejora un primer borrador con el título y la categoría
+       ya cargados — nunca guarda nada solo, el vendedor decide si
+       ajusta el texto y guarda el formulario. Oculto por completo si
+       no hay una API key configurada (ver el context processor del
+       blueprint), en vez de un botón que fallara al primer clic. #}
+    <button type="button" id="asistente-ia-producto" class="admin-btn admin-btn--pequeno" data-url="{{ url_for('vendedor.asistente_ia_producto') }}">✨ Escribir con IA</button>
+    <p class="admin-form__error" id="asistente-ia-producto-aviso" role="alert"></p>
+    {% endif %}
     <textarea class="admin-form__textarea" id="descripcion" name="descripcion" rows="4" required>{{ valores.descripcion }}</textarea>
-    <p class="admin-form__hint">Recomendado: menos de 500 caracteres, para que se lea cómodo en la ficha del producto.</p>
+    <p class="admin-form__hint">
+        Recomendado: menos de 500 caracteres, para que se lea cómodo en la ficha del producto.
+        {% if asistente_ia_activo %}Escribe al menos el título y, si quieres, elige una categoría antes de pedirle un borrador al asistente.{% endif %}
+    </p>
 
     {% set moneda_actual = moneda_de(vendor.moneda) %}
     <label class="admin-form__label" for="precio">Precio ({{ moneda_actual.nombre }} — {{ moneda_actual.simbolo }})</label>
@@ -175,4 +192,20 @@
 
 <script src="{{ estatico_v('js/producto_fotos.js') }}"></script>
 <script src="{{ estatico_v('js/validacion_formulario.js') }}"></script>
+{% if asistente_ia_activo %}
+<script src="{{ estatico_v('js/asistente_ia.js') }}"></script>
+{% endif %}
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
+<script src="{{ estatico_v('js/recorte_imagen.js') }}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll('input[type="file"][name^="foto_nueva_"]').forEach((input) => {
+        activarRecorteImagen(input, {
+            aspectRatio: NaN,
+            titulo: "Ajusta el encuadre de la foto (opcional)",
+            obligatorio: false,
+        });
+    });
+});
+</script>
 {% endblock %}

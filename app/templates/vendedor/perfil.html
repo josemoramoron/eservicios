@@ -2,6 +2,10 @@
 
 {% block title %}Mi perfil — {{ vendor.nombre_negocio }}{% endblock %}
 
+{% block head_extra %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
+{% endblock %}
+
 {% block breadcrumb %}
 <nav class="breadcrumb">
     <span class="breadcrumb__brand">e-Link</span>
@@ -30,6 +34,15 @@
     <input class="admin-form__input" type="text" id="whatsapp_numero" name="whatsapp_numero" value="{{ vendor.whatsapp_numero }}" inputmode="numeric" maxlength="30" data-formato="whatsapp" required>
 
     <label class="admin-form__label" for="bio">Descripción corta de tu tienda</label>
+    {% if asistente_ia_activo %}
+    {# Asistente de IA (2026-09-14, ver app/services/asistente_ia_service.py):
+       redacta o mejora un primer borrador con el nombre de la tienda ya
+       cargado — nunca guarda nada solo, decides si ajustas el texto y
+       guardas el formulario. Oculto por completo si no hay una API key
+       configurada (ver el context processor del blueprint). #}
+    <button type="button" id="asistente-ia-perfil" class="admin-btn admin-btn--pequeno" data-url="{{ url_for('vendedor.asistente_ia_perfil') }}">✨ Escribir con IA</button>
+    <p class="admin-form__error" id="asistente-ia-perfil-aviso" role="alert"></p>
+    {% endif %}
     <textarea class="admin-form__textarea" id="bio" name="bio" rows="3" maxlength="300" data-contador>{{ vendor.bio or '' }}</textarea>
 
     <hr class="admin-form__separador">
@@ -237,4 +250,23 @@
 {% block scripts %}
 <script src="{{ estatico_v('js/validacion_formulario.js') }}"></script>
 <script src="{{ estatico_v('js/paleta_acento.js') }}"></script>
+{% if asistente_ia_activo %}
+<script src="{{ estatico_v('js/asistente_ia.js') }}"></script>
+{% endif %}
+<script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
+<script src="{{ estatico_v('js/recorte_imagen.js') }}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    activarRecorteImagen(document.getElementById("logo"), {
+        aspectRatio: 1,
+        titulo: "Ajusta el encuadre de tu logo (cuadrado)",
+        obligatorio: true,
+    });
+    activarRecorteImagen(document.getElementById("banner"), {
+        aspectRatio: 3,
+        titulo: "Ajusta el encuadre de tu portada (proporción 3:1)",
+        obligatorio: true,
+    });
+});
+</script>
 {% endblock %}

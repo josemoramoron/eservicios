@@ -27,7 +27,7 @@ from werkzeug.datastructures import ImmutableMultiDict
 
 from app.extensions import db
 from app.models import Vendor, VendorProduct
-from app.services import r2_service
+from app.services import asistente_ia_service, r2_service
 from app.services.auth_service import generar_csrf_token, validar_csrf_token
 from app.services.email_service import EnvioCorreoError
 from app.services.vendor_auth_service import (
@@ -117,14 +117,23 @@ def inyectar_vendor_actual() -> dict:
     `resolver_acento_vendor`): toda tienda tiene un acento efectivo,
     aunque nunca haya elegido uno (el azul de eServicios por defecto).
 
+    `asistente_ia_activo` decide si perfil.html y producto_form.html
+    muestran el botón "Escribir con IA" (roadmap, "Ideas para más
+    adelante", construido 2026-09-14) — ver
+    `app/services/asistente_ia_service.py`: mientras no haya una API key
+    de IA configurada en este entorno, el botón simplemente no se
+    imprime, en vez de aparecer y fallar al primer clic.
+
     Returns:
-        Diccionario con las claves `vendor`, `acento` y `csrf_token` para Jinja.
+        Diccionario con las claves `vendor`, `acento`, `csrf_token` y
+        `asistente_ia_activo` para Jinja.
     """
     vendor = vendor_actual()
     return {
         "vendor": vendor,
         "acento": resolver_acento_vendor(vendor) if vendor else None,
         "csrf_token": generar_csrf_token,
+        "asistente_ia_activo": asistente_ia_service.asistente_ia_disponible(),
     }
 
 
@@ -1069,6 +1078,93 @@ def _leer_datos_producto(form: ImmutableMultiDict) -> tuple[dict, str | None]:
         "activo": form.get("activo") == "on",
     }
     return datos, None
+
+
+def _validar_csrf_json(datos: dict) -> bool:
+    """Valida el token CSRF recibido en el body JSON de una petición AJAX.
+
+    Las rutas del asistente de IA no son un `<form>` tradicional (se
+    llaman por `fetch()`, ver `app/static/js/asistente_ia.js`), así que
+    no pueden reusar `_verificar_csrf()` (que lee `request.form`) — es
+    el mismo token de sesión, generado igual por `generar_csrf_token`,
+    solo que viaja dentro del JSON en vez de un campo oculto del form.
+
+    Args:
+        datos: Body ya parseado con `request.get_json()`.
+
+    Returns:
+        True si el token es válido para la sesión actual.
+    """
+    return validar_csrf_token(datos.get("csrf_token"))
+
+
+@vendedor_bp.route("/asistente-ia/producto", methods=["POST"])
+@requiere_vendor
+def asistente_ia_producto():
+    """Genera (o mejora) un borrador de descripción de producto con IA.
+
+    Ruta AJAX (JSON de entrada y salida) llamada desde
+    producto_form.html — nunca guarda nada por sí sola, solo devuelve
+    el texto para que el vendedor lo revise en el textarea y decida
+    guardar el formulario como siempre.
+
+    Returns:
+        JSON `{"texto": ...}` si se generó bien, o `{"error": ...}` con
+        el código HTTP correspondiente si no.
+    """
+    datos = request.get_json(silent=True) or {}
+    if not _validar_csrf_json(datos):
+        return {"error": "Token de seguridad inválido o expirado. Recarga la página e intenta de nuevo."}, 400
+
+    titulo = (datos.get("titulo") or "").strip()
+    if not titulo:
+        return {"error": "Escribe primero el título del producto."}, 400
+
+    try:
+        texto = asistente_ia_service.generar_descripcion_producto(
+            titulo=titulo,
+            categoria=(datos.get("categoria") or "").strip() or None,
+            borrador=(datos.get("borrador") or "").strip() or None,
+        )
+    except asistente_ia_service.AsistenteIANoDisponibleError:
+        return {"error": "El asistente de IA todavía no está disponible en esta tienda."}, 503
+    except asistente_ia_service.AsistenteIAError as exc:
+        return {"error": str(exc)}, 502
+
+    return {"texto": texto}
+
+
+@vendedor_bp.route("/asistente-ia/perfil", methods=["POST"])
+@requiere_vendor
+def asistente_ia_perfil():
+    """Genera (o mejora) un borrador de la bio de la tienda con IA.
+
+    Misma lógica que `asistente_ia_producto()`, para el campo "Bio" de
+    `/vendedor/perfil`.
+
+    Returns:
+        JSON `{"texto": ...}` si se generó bien, o `{"error": ...}` con
+        el código HTTP correspondiente si no.
+    """
+    datos = request.get_json(silent=True) or {}
+    if not _validar_csrf_json(datos):
+        return {"error": "Token de seguridad inválido o expirado. Recarga la página e intenta de nuevo."}, 400
+
+    nombre_negocio = (datos.get("nombre_negocio") or "").strip()
+    if not nombre_negocio:
+        return {"error": "Escribe primero el nombre de tu tienda."}, 400
+
+    try:
+        texto = asistente_ia_service.generar_bio_tienda(
+            nombre_negocio=nombre_negocio,
+            borrador=(datos.get("borrador") or "").strip() or None,
+        )
+    except asistente_ia_service.AsistenteIANoDisponibleError:
+        return {"error": "El asistente de IA todavía no está disponible en esta tienda."}, 503
+    except asistente_ia_service.AsistenteIAError as exc:
+        return {"error": str(exc)}, 502
+
+    return {"texto": texto}
 
 
 @vendedor_bp.route("/productos/nuevo", methods=["GET", "POST"])

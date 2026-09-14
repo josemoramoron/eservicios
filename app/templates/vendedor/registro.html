@@ -33,10 +33,33 @@
 {% endblock %}
 
 {% block content %}
+{# Logo "e-Link" grande y centrado, arriba de todo (2026-09-14, segunda
+   ronda: Jose no quedó conforme con la versión chica en línea con el
+   título — ver el mismo cambio en login.html y .admin-auth__marca en
+   style.css). El registro no usa .admin-auth (ese texto centrado es solo
+   de login.html — acá el formulario es ancho e izquierda), así que el
+   centrado del logo y del título se fuerza acá con un estilo puntual,
+   igual que ya se hace con otros ajustes de esta pantalla. #}
+<div style="text-align: center;">
+    <div class="admin-auth__marca">
+        <svg class="admin-auth__marca-logo" viewBox="0 0 120 100" fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" aria-hidden="true">
+            <path d="M 74.3 72.1 A 30 30 0 1 1 74.3 31.9"></path>
+            <path d="M 24 52 L 85 52"></path>
+            <circle cx="94" cy="52" r="9"></circle>
+        </svg>
+        <span class="admin-auth__marca-texto">e-Link</span>
+    </div>
+    {# Misma clase que el título del login (.admin-auth__title, no
+       .admin-page-title) para que ambos títulos queden del mismo tamaño
+       (2026-09-14, pedido de Jose) — .admin-page-title es 1.5rem y además
+       usa Plus Jakarta Sans en el panel de vendedor, mientras que el login
+       nunca usó esa clase acá. #}
+    <h1 class="admin-auth__title" style="text-align: center;">Crea tu tienda gratis</h1>
+</div>
+
 <p class="admin-auth__title" style="font-size: 14px; margin: 0 0 0.75rem; text-align: left;">
     ¿Ya tienes tienda? <a class="admin-link" href="{{ url_for('vendedor.login') }}">Inicia sesión</a>.
 </p>
-<h1 class="admin-page-title">Crea tu tienda gratis</h1>
 
 <form method="post" class="admin-form" id="form-registro-vendedor">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -67,19 +90,30 @@
     <label class="admin-form__label" for="whatsapp_numero">Número de WhatsApp (con código de país, solo dígitos)</label>
     <input class="admin-form__input" type="text" id="whatsapp_numero" name="whatsapp_numero" value="{{ valores.whatsapp_numero }}" placeholder="584121234567" inputmode="numeric" maxlength="30" data-formato="whatsapp" required>
 
+    {# Orden invertido (2026-09-14, pedido de Jose comparando con
+       Linktree): la opción manual de correo va primero, "Continuar con
+       Google" queda debajo — antes era al revés. El botón de envío del
+       formulario sigue siendo el mismo _boton_google.html de siempre
+       (con su propio formaction/formmethod, ver el comentario ahí),
+       solo cambió su posición visual en el DOM. #}
     <label class="admin-form__label" for="email">Correo (para entrar a tu panel)</label>
-    {% set en_formulario = true %}
-    {% include "vendedor/_boton_google.html" %}
-    <div class="admin-auth__divisor">o escribe tu correo</div>
     <input class="admin-form__input" type="email" id="email" name="email" value="{{ valores.email }}" placeholder="tu@correo.com">
 
-    <div class="admin-form__grupo-oculto" id="grupo-password" hidden>
+    {# El revelado ya no usa el atributo `hidden` (no se puede animar):
+       `registro_vendedor.js` alterna la clase `--visible` con una
+       transición suave de max-height/opacity al empezar a escribir el
+       correo — ver esa clase en style.css. #}
+    <div class="admin-form__grupo-oculto" id="grupo-password">
         <label class="admin-form__label" for="password">Contraseña (mínimo 8 caracteres)</label>
         <input class="admin-form__input" type="password" id="password" name="password" minlength="8">
 
         <label class="admin-form__label" for="password_confirmacion">Confirma tu contraseña</label>
         <input class="admin-form__input" type="password" id="password_confirmacion" name="password_confirmacion" minlength="8" data-coincide-con="password">
     </div>
+
+    <div class="admin-auth__divisor">o</div>
+    {% set en_formulario = true %}
+    {% include "vendedor/_boton_google.html" %}
 
     <div class="admin-form__checkbox-row">
         <label class="admin-form__checkbox">
@@ -88,8 +122,13 @@
         </label>
     </div>
 
+    {# Deshabilitado por defecto (2026-09-14, pedido de Jose): mientras no
+       se escriba el correo manual ni se acepten los términos, este botón
+       queda gris — `registro_vendedor.js` lo destraba cuando se cumplen
+       ambas condiciones. La vía de Google no pasa por este botón (tiene
+       el suyo propio, ver arriba), así que no depende de él. #}
     <div class="admin-form__actions">
-        <button class="admin-btn admin-btn--primary" type="submit">Crear mi tienda</button>
+        <button class="admin-btn admin-btn--primary" type="submit" id="boton-crear-tienda" disabled>Crear mi tienda</button>
     </div>
 </form>
 {% endblock %}
