@@ -1,6 +1,16 @@
 {% extends "vendedor/base.html" %}
 
-{% block title %}Crear mi tienda gratis — eServicios{% endblock %}
+{% block title %}Crea tu tienda gratis y fácil — eServicios{% endblock %}
+
+{# e-Link es más que una tienda: es un centralizador de redes sociales,
+   WhatsApp y tienda en un solo enlace (aclaración puntual de Jose,
+   2026-09-15, después de que a alguien le costó entenderlo a partir del
+   enlace compartido). El <title> de arriba se queda enfocado en la
+   acción de esta pantalla ("crea tu tienda"), pero el og:title/
+   og:description —lo que de verdad ve quien recibe el enlace por
+   WhatsApp, antes de entrar— lidera con esa idea. #}
+{% block meta_og_titulo %}e-Link — tienda y centralizador de redes sociales, gratis y fácil{% endblock %}
+{% block meta_og_descripcion %}Reúne tu tienda, tus redes sociales y tu WhatsApp en un solo enlace para compartir. Créalo gratis en minutos.{% endblock %}
 
 {% block header %}
 {# Navbar del sitio principal (mismo markup que templates/base.html),
@@ -54,7 +64,13 @@
        (2026-09-14, pedido de Jose) — .admin-page-title es 1.5rem y además
        usa Plus Jakarta Sans en el panel de vendedor, mientras que el login
        nunca usó esa clase acá. #}
-    <h1 class="admin-auth__title" style="text-align: center;">Crea tu tienda gratis</h1>
+    <h1 class="admin-auth__title" style="text-align: center; margin-bottom: 0.5rem;">Crea tu tienda gratis y fácil</h1>
+    {# Subtítulo nuevo (2026-09-15, pedido de Jose): sin esto la pantalla
+       sólo hablaba de "tienda", y e-Link es más que eso — un centralizador
+       de redes sociales y WhatsApp además de la tienda. #}
+    <p style="color: var(--color-text-muted); max-width: 420px; margin: 0 auto 1.5rem;">
+        Tu tienda, tus redes sociales y tu WhatsApp, todo centralizado en un solo enlace para compartir.
+    </p>
 </div>
 
 <p class="admin-auth__title" style="font-size: 14px; margin: 0 0 0.75rem; text-align: left;">
@@ -64,8 +80,14 @@
 <form method="post" class="admin-form" id="form-registro-vendedor">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-    <label class="admin-form__label" for="slug">Subdominio de tu tienda</label>
-    <div class="admin-form__checkbox-row" style="align-items: center; gap: 0;">
+    {# Fila del subdominio centrada como una sola unidad —etiqueta, input y
+       ".eservicios.org"— en vez de la etiqueta a la izquierda de siempre
+       (2026-09-15, pedido de Jose): es el único campo que "reclama" algo
+       (tu dirección pública), así que se destaca igual que el logo/título
+       de arriba en vez de mezclarse con el resto del formulario, que sigue
+       alineado a la izquierda. #}
+    <label class="admin-form__label" for="slug" style="text-align: center;">Subdominio de tu tienda</label>
+    <div class="admin-form__checkbox-row" style="flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.4rem;">
         <input
             class="admin-form__input"
             type="text"
@@ -79,7 +101,7 @@
         >
         <span style="color: var(--color-text-muted); font-size: 14px;">.eservicios.org</span>
     </div>
-    <p id="slug-estado" style="font-size: 13px; margin: 4px 0 0; color: var(--color-text-muted);"></p>
+    <p id="slug-estado" style="font-size: 13px; margin: 4px 0 0; color: var(--color-text-muted); text-align: center;"></p>
 
     <label class="admin-form__label" for="nombre_negocio">Nombre de la tienda</label>
     <input class="admin-form__input" type="text" id="nombre_negocio" name="nombre_negocio" value="{{ valores.nombre_negocio }}" maxlength="150" data-contador required>
@@ -88,7 +110,15 @@
     <textarea class="admin-form__textarea" id="bio" name="bio" rows="3" maxlength="300" data-contador>{{ valores.bio }}</textarea>
 
     <label class="admin-form__label" for="whatsapp_numero">Número de WhatsApp (con código de país, solo dígitos)</label>
-    <input class="admin-form__input" type="text" id="whatsapp_numero" name="whatsapp_numero" value="{{ valores.whatsapp_numero }}" placeholder="584121234567" inputmode="numeric" maxlength="30" data-formato="whatsapp" required>
+    {# El "+" es puramente visual, dentro del input (2026-09-15, pedido de
+       Jose) — el valor que se guarda y se manda al backend sigue siendo
+       solo dígitos ("584121234567"), como indica la etiqueta; no es un
+       carácter real del campo, así que no afecta la validación de
+       `data-formato="whatsapp"` en validacion_formulario.js. #}
+    <div class="admin-form__input-prefijo">
+        <span class="admin-form__input-prefijo-simbolo" aria-hidden="true">+</span>
+        <input class="admin-form__input admin-form__input--con-prefijo" type="text" id="whatsapp_numero" name="whatsapp_numero" value="{{ valores.whatsapp_numero }}" placeholder="584121234567" inputmode="numeric" maxlength="30" data-formato="whatsapp" required>
+    </div>
 
     {# Orden invertido (2026-09-14, pedido de Jose comparando con
        Linktree): la opción manual de correo va primero, "Continuar con
