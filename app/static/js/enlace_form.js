@@ -23,7 +23,8 @@
     var grupoClasico = document.getElementById("grupo-clasico");
     var etiquetaUsuario = document.getElementById("etiqueta-usuario-red");
     var campoTitulo = document.getElementById("titulo");
-    if (!grid || !grupoUsuario || !grupoClasico || !campoTitulo) {
+    var campoUrl = document.getElementById("url");
+    if (!grid || !grupoUsuario || !grupoClasico || !campoTitulo || !campoUrl) {
         return;
     }
 
@@ -38,6 +39,19 @@
 
         grupoUsuario.hidden = esOtro;
         grupoClasico.hidden = !esOtro;
+
+        // El "required" de #titulo/#url hay que alternarlo a mano junto con
+        // `hidden` (2026-09-16, bug reportado por Jose: "elijo TikTok, lleno
+        // el usuario, y Guardar no hace nada"). Ocultar el CONTENEDOR con
+        // `hidden` no exime a estos campos de la validación nativa del
+        // navegador — comprobado en Chrome: con la red seleccionada, #url
+        // seguía vacío y `required`, así que el botón "Guardar" quedaba
+        // bloqueado por un campo que ni siquiera se ve, sin ningún aviso en
+        // pantalla (por eso "no pasaba nada"). Al ponerlos `required` solo
+        // cuando su grupo realmente está visible, el navegador únicamente
+        // exige lo que la persona tiene delante.
+        campoTitulo.required = esOtro;
+        campoUrl.required = esOtro;
 
         var nombreRed = !esOtro && marcado ? marcado.getAttribute("data-nombre-red") || "" : "";
         if (etiquetaUsuario) {
