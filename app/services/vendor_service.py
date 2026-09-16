@@ -1693,6 +1693,66 @@ def construir_vcard(vendor: Vendor) -> str:
 
 # --- Enlaces personalizados (estilo Linktree) ---
 
+# Selector rápido de red social para "Nuevo enlace" (2026-09-15, pedido de
+# Jose): a mucha gente le cuesta encontrar y pegar la URL completa de su
+# perfil — esto le permite elegir el ícono de su red y escribir solo su
+# usuario (ver `construir_url_red_social`, que también acepta que pegue el
+# enlace completo si ya lo tiene a mano). Las claves coinciden a propósito
+# con `iconos_service._DOMINIOS_REDES_SOCIALES`, así el ícono elegido acá
+# es el mismo que `detectar_red_social` reconoce después en la tienda
+# pública. No están TODAS las redes de ese diccionario: WhatsApp ya tiene
+# su propio campo de teléfono en el perfil (no es un "usuario" de texto),
+# y Mercado Libre/WeChat/Vimeo/Clapper no tienen una URL de perfil armable
+# solo con un usuario (subdominio por país, etc.) — esas siguen
+# disponibles como "Otro enlace", pegando la URL de siempre. Amazon, eBay,
+# Discord, Twitch y Spotify se agregaron el 2026-09-16 (pedido de Jose).
+REDES_RAPIDAS_LINK: list[tuple[str, str]] = [
+    ("instagram", "Instagram"),
+    ("tiktok", "TikTok"),
+    ("facebook", "Facebook"),
+    ("x", "X (Twitter)"),
+    ("youtube", "YouTube"),
+    ("linkedin", "LinkedIn"),
+    ("threads", "Threads"),
+    ("telegram", "Telegram"),
+    ("snapchat", "Snapchat"),
+    ("reddit", "Reddit"),
+    ("onlyfans", "OnlyFans"),
+    ("fansly", "Fansly"),
+    ("discord", "Discord"),
+    ("twitch", "Twitch"),
+    ("spotify", "Spotify"),
+    ("amazon", "Amazon"),
+    ("ebay", "eBay"),
+]
+
+# Plantilla de URL de cada red rápida — "{usuario}" se reemplaza por lo
+# que escriba el vendedor, ya limpio de "@" y espacios (ver
+# `construir_url_red_social`). Discord es un caso especial: no tiene un
+# perfil público por nombre de usuario, así que acá "usuario" es en
+# realidad el código de invitación de su servidor/comunidad (lo que la
+# gente comparte como "mi Discord es tal").
+_PLANTILLA_URL_RED: dict[str, str] = {
+    "instagram": "https://instagram.com/{usuario}",
+    "tiktok": "https://www.tiktok.com/@{usuario}",
+    "facebook": "https://facebook.com/{usuario}",
+    "x": "https://x.com/{usuario}",
+    "youtube": "https://youtube.com/@{usuario}",
+    "linkedin": "https://linkedin.com/in/{usuario}",
+    "threads": "https://www.threads.net/@{usuario}",
+    "telegram": "https://t.me/{usuario}",
+    "snapchat": "https://www.snapchat.com/add/{usuario}",
+    "reddit": "https://www.reddit.com/user/{usuario}",
+    "onlyfans": "https://onlyfans.com/{usuario}",
+    "fansly": "https://fansly.com/{usuario}",
+    "discord": "https://discord.gg/{usuario}",
+    "twitch": "https://twitch.tv/{usuario}",
+    "spotify": "https://open.spotify.com/user/{usuario}",
+    "amazon": "https://www.amazon.com/shop/{usuario}",
+    "ebay": "https://www.ebay.com/str/{usuario}",
+}
+_NOMBRE_RED_RAPIDA: dict[str, str] = dict(REDES_RAPIDAS_LINK)
+
 
 def _validar_url_link(url: str) -> str:
     """Valida y normaliza la URL de un enlace personalizado.
@@ -1715,6 +1775,57 @@ def _validar_url_link(url: str) -> str:
     if not url.lower().startswith(("http://", "https://")):
         raise LinkInvalidoError("El enlace debe empezar con http:// o https://.")
     return url
+
+
+def construir_url_red_social(clave: str, valor: str) -> str:
+    """Arma la URL final de un enlace del selector rápido de redes sociales.
+
+    Acepta 2 formas de escribir `valor` (mismo criterio que Linktree/
+    Beacons, pedido de Jose): el usuario solo, con o sin "@" adelante
+    (ej. "@josemoramoron" o "josemoramoron"), o el enlace completo ya
+    copiado desde la red (ej. "https://instagram.com/josemoramoron") — si
+    ya empieza con http(s)://, se usa tal cual (mismas reglas que
+    cualquier otro enlace, ver `_validar_url_link`) en vez de tratarlo
+    como nombre de usuario.
+
+    Args:
+        clave: Una de las claves de `REDES_RAPIDAS_LINK`.
+        valor: Lo que escribió/pegó el vendedor en el campo de usuario.
+
+    Returns:
+        La URL completa, lista para guardar en el `VendorLink`.
+
+    Raises:
+        LinkInvalidoError: Si `clave` no es una red reconocida, o si
+            `valor` queda vacío después de limpiarlo.
+    """
+    valor = valor.strip()
+    if not valor:
+        raise LinkInvalidoError("Escribe tu usuario, o pega el enlace completo.")
+    if valor.lower().startswith(("http://", "https://")):
+        return _validar_url_link(valor)
+    plantilla = _PLANTILLA_URL_RED.get(clave)
+    if plantilla is None:
+        raise LinkInvalidoError("Red social no reconocida.")
+    usuario = valor.lstrip("@").strip().strip("/")
+    if not usuario:
+        raise LinkInvalidoError("Escribe tu usuario, o pega el enlace completo.")
+    return plantilla.format(usuario=usuario)
+
+
+def nombre_red_rapida(clave: str) -> str | None:
+    """Nombre visible de una red del selector rápido, por su clave.
+
+    Se usa para autocompletar el título del botón (ej. "Instagram") si
+    el vendedor no escribió uno propio al usar el selector rápido.
+
+    Args:
+        clave: Una de las claves de `REDES_RAPIDAS_LINK`.
+
+    Returns:
+        El nombre visible, o None si `clave` no es una red reconocida.
+    """
+    return _NOMBRE_RED_RAPIDA.get(clave)
 
 
 def listar_links_de_vendor(vendor: Vendor) -> list[VendorLink]:

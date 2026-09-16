@@ -2091,6 +2091,75 @@ summary {
     outline-offset: 2px;
 }
 
+/* --- Selector rápido de red social ("Nuevo enlace", 2026-09-15) ---
+   Mismo patrón que .admin-plantillas__opcion de arriba (radio nativo
+   oculto + "caja" hermana que se pinta con :checked), pero centrado en
+   el ícono en vez de en texto, y en una grilla más apretada porque son
+   ~13 opciones (vs. 2-3 tarjetas de plantilla/plan). */
+.admin-redes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 8px;
+    margin: 10px 0 4px;
+}
+
+.admin-red-opcion {
+    cursor: pointer;
+}
+
+.admin-red-opcion input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.admin-red-caja {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 6px;
+    border: 1.5px solid var(--color-border);
+    border-radius: 0.75rem;
+    background-color: var(--color-surface);
+    text-align: center;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.admin-red-icono {
+    color: var(--color-text-muted);
+    transition: color 0.15s ease;
+}
+
+.admin-red-icono svg {
+    width: 22px;
+    height: 22px;
+}
+
+.admin-red-nombre {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text);
+    line-height: 1.2;
+}
+
+.admin-red-opcion input:checked + .admin-red-caja {
+    border-color: var(--color-accent);
+    background-color: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface));
+}
+
+.admin-red-opcion input:checked + .admin-red-caja .admin-red-icono,
+.admin-red-opcion input:checked + .admin-red-caja .admin-red-nombre {
+    color: var(--color-accent);
+}
+
+.admin-red-opcion input:focus-visible + .admin-red-caja {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
 /* --- Selector de duración de e-link Plus (vendedor/perfil_plan.html,
    2026-09-14) --- Mismo patrón que .admin-plantillas__opcion de arriba
    (radio nativo oculto + sibling checked): antes el plan de 12 meses se

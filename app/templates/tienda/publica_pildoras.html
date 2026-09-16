@@ -81,7 +81,15 @@
     <div class="pildoras-lista">
         {% for link, icono in enlaces %}
         <a class="pildoras-pill" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">
-            {% if icono %}{{ icono_red(icono) | safe }}{% endif %}
+            {% if icono %}
+            {{ icono_red(icono) | safe }}
+            {% else %}
+            {# Favicon del sitio (2026-09-16), pedido por el lado del
+               navegador — ver el mismo comentario en publica.html. Si falla
+               la carga, `onerror` la quita y la píldora se queda solo con
+               el texto (el comportamiento de siempre). #}
+            <img class="pildoras-pill__favicon" src="https://www.google.com/s2/favicons?sz=64&domain_url={{ link.url | urlencode }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">
+            {% endif %}
             <span>{{ link.titulo }}</span>
         </a>
         {% endfor %}

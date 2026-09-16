@@ -56,6 +56,7 @@ from app.services.vendor_service import (
     MAX_CAMBIOS_SLUG,
     MAX_FOTOS_PRODUCTO,
     MESES_PLAN_SOLICITABLES,
+    REDES_RAPIDAS_LINK,
     CambioSlugMuyRecienteError,
     CategoriaInvalidaError,
     EmailDuplicadoError,
@@ -78,6 +79,7 @@ from app.services.vendor_service import (
     activar_prueba_plus,
     cambiar_password,
     cambiar_slug,
+    construir_url_red_social,
     construir_vcard,
     crear_categoria,
     crear_link,
@@ -92,6 +94,7 @@ from app.services.vendor_service import (
     listar_links_de_vendor,
     listar_productos_de_vendor,
     mover_link,
+    nombre_red_rapida,
     obtener_categoria_de_vendor,
     obtener_link_de_vendor,
     obtener_producto_de_vendor,
@@ -1625,21 +1628,52 @@ def enlaces():
 @vendedor_bp.route("/enlaces/nuevo", methods=["GET", "POST"])
 @requiere_vendor
 def enlace_nuevo():
-    """Formulario para agregar un enlace nuevo a la tienda."""
+    """Formulario para agregar un enlace nuevo a la tienda.
+
+    Ofrece 2 caminos hasta la URL final (2026-09-15, pedido de Jose,
+    comparando con Linktree/Beacons): elegir el ícono de una red social
+    reconocida y escribir solo el usuario (`red` distinto de "otro", ver
+    `construir_url_red_social` — también acepta pegar ahí el enlace
+    completo si ya lo tienen copiado), o escribir la URL a mano como
+    siempre ("Otro enlace", `red` == "otro"). Es a propósito que esto
+    solo aplica acá: `enlace_editar` sigue mostrando el formulario
+    clásico de título+URL sin cambios, porque ahí el enlace ya está
+    armado y correcto — el selector rápido resuelve el problema real
+    (armar la URL la primera vez), no el de editar una ya armada.
+    """
     if request.method == "POST":
         _verificar_csrf()
-        titulo = request.form.get("titulo", "")
-        url = request.form.get("url", "")
+        red = request.form.get("red", "otro")
+        titulo = request.form.get("titulo", "").strip()
+        usuario_o_url = request.form.get("usuario", "") if red != "otro" else request.form.get("url", "")
         try:
-            crear_link(vendor_actual(), titulo=titulo, url=url)
+            if red == "otro":
+                url = usuario_o_url
+            else:
+                url = construir_url_red_social(red, usuario_o_url)
+                if not titulo:
+                    titulo = nombre_red_rapida(red) or titulo
+            enlace = crear_link(vendor_actual(), titulo=titulo, url=url)
         except LinkInvalidoError as exc:
             flash(str(exc), "error")
             return render_template(
-                "vendedor/enlace_form.html", link=None, valores={"titulo": titulo, "url": url, "activo": True}
+                "vendedor/enlace_form.html",
+                link=None,
+                valores={"titulo": titulo, "url": usuario_o_url if red == "otro" else "", "activo": True},
+                redes_rapidas=REDES_RAPIDAS_LINK,
+                red_seleccionada=red,
+                usuario_valor=usuario_o_url if red != "otro" else "",
             )
-        flash(f'Enlace "{titulo}" agregado.', "success")
+        flash(f'Enlace "{enlace.titulo}" agregado.', "success")
         return redirect(url_for("vendedor.enlaces"))
-    return render_template("vendedor/enlace_form.html", link=None, valores=_link_a_valores(None))
+    return render_template(
+        "vendedor/enlace_form.html",
+        link=None,
+        valores=_link_a_valores(None),
+        redes_rapidas=REDES_RAPIDAS_LINK,
+        red_seleccionada="otro",
+        usuario_valor="",
+    )
 
 
 @vendedor_bp.route("/enlaces/<int:link_id>/editar", methods=["GET", "POST"])

@@ -46,6 +46,10 @@ _DOMINIOS_REDES_SOCIALES: dict[str, str] = {
     "wechat.com": "wechat",
     "vimeo.com": "vimeo",
     "snapchat.com": "snapchat",
+    "amazon.com": "amazon",
+    "ebay.com": "ebay",
+    "twitch.tv": "twitch",
+    "spotify.com": "spotify",
 }
 
 # Mercado Libre/Mercado Livre usa un dominio de nivel superior distinto por

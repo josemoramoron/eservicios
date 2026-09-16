@@ -10,14 +10,63 @@
 {% block content %}
 <h1 class="admin-page-title">{{ 'Editar enlace' if link else 'Nuevo enlace' }}</h1>
 
-<form method="post" class="admin-form">
+<form method="post" class="admin-form" id="form-enlace">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-    <label class="admin-form__label" for="titulo">Título del botón</label>
-    <input class="admin-form__input" type="text" id="titulo" name="titulo" value="{{ valores.titulo }}" placeholder="Ej. Mi Instagram" maxlength="80" data-contador required>
+    {% if not link %}
+    {# Selector rápido de red social (2026-09-15, pedido de Jose): elegir
+       el ícono arma la URL solo con el usuario, en vez de tener que
+       encontrar y pegar el enlace completo a mano — mismo patrón que
+       Linktree/Beacons. Solo en "Nuevo enlace" (`link` es None); ver el
+       comentario en `enlace_nuevo()` sobre por qué editar uno existente
+       no lo usa. #}
+    <label class="admin-form__label">¿A qué red quieres enlazar?</label>
+    <div class="admin-redes-grid" id="redes-grid">
+        {% for clave, nombre in redes_rapidas %}
+        <label class="admin-red-opcion">
+            <input type="radio" name="red" value="{{ clave }}" {% if red_seleccionada == clave %}checked{% endif %} data-nombre-red="{{ nombre }}">
+            <span class="admin-red-caja">
+                <span class="admin-red-icono" aria-hidden="true">{{ icono_red(clave) | safe }}</span>
+                <span class="admin-red-nombre">{{ nombre }}</span>
+            </span>
+        </label>
+        {% endfor %}
+        <label class="admin-red-opcion">
+            <input type="radio" name="red" value="otro" {% if red_seleccionada == "otro" %}checked{% endif %}>
+            <span class="admin-red-caja">
+                <span class="admin-red-icono" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                </span>
+                <span class="admin-red-nombre">Otro enlace</span>
+            </span>
+        </label>
+    </div>
 
-    <label class="admin-form__label" for="url">URL</label>
-    <input class="admin-form__input" type="text" id="url" name="url" value="{{ valores.url }}" placeholder="https://..." maxlength="500" data-formato="url" required>
+    {# 2026-09-16 (corrección, reporte de Jose): el símbolo "@" quedaba
+       descuadrado en móvil porque este div también envolvía el <label> y
+       el <p> de ayuda — `.admin-form__input-prefijo` centra el símbolo con
+       `top: 50%` relativo a TODO el contenido del wrapper, así que con más
+       elementos adentro el 50% ya no coincide con el input. El patrón
+       correcto (igual que el "+" de WhatsApp en registro.html) es que ese
+       wrapper contenga solo el símbolo y el input — label y ayuda van
+       afuera. #}
+    <div id="grupo-usuario-red" style="margin-top: 0.75rem;" hidden>
+        <label class="admin-form__label" for="usuario" id="etiqueta-usuario-red">Tu usuario</label>
+        <div class="admin-form__input-prefijo">
+            <span class="admin-form__input-prefijo-simbolo" aria-hidden="true">@</span>
+            <input class="admin-form__input admin-form__input--con-prefijo" type="text" id="usuario" name="usuario" value="{{ usuario_valor }}" placeholder="tunombre" maxlength="200" autocomplete="off">
+        </div>
+        <p class="admin-form__hint">Solo tu usuario, con o sin "@" — o pega el enlace completo si ya lo tienes copiado.</p>
+    </div>
+    {% endif %}
+
+    <div id="grupo-clasico"{% if not link and red_seleccionada != "otro" %} hidden{% endif %}>
+        <label class="admin-form__label" for="titulo">Título del botón</label>
+        <input class="admin-form__input" type="text" id="titulo" name="titulo" value="{{ valores.titulo }}" placeholder="Ej. Mi Instagram" maxlength="80" data-contador required>
+
+        <label class="admin-form__label" for="url">URL</label>
+        <input class="admin-form__input" type="text" id="url" name="url" value="{{ valores.url }}" placeholder="https://..." maxlength="500" data-formato="url" required>
+    </div>
 
     {% if link %}
     <div class="admin-form__checkbox-row">
@@ -35,4 +84,7 @@
 </form>
 
 <script src="{{ estatico_v('js/validacion_formulario.js') }}"></script>
+{% if not link %}
+<script src="{{ estatico_v('js/enlace_form.js') }}"></script>
+{% endif %}
 {% endblock %}

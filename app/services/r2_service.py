@@ -99,6 +99,26 @@ def _comprimir_imagen(archivo: FileStorage, extension: str) -> tuple[io.BytesIO,
     """
     try:
         imagen = Image.open(archivo.stream)
+        # `draft()` (2026-09-15, causa real de los ERR_HTTP2_PROTOCOL_ERROR
+        # reportados al subir logo/portada): sin esto, `imagen.load()` de
+        # abajo decodifica el JPEG a su resolución ORIGINAL completa —una
+        # foto de celular sin editar de 20-40+ megapíxeles, aunque pese
+        # menos de los 10 MB permitidos— y recién después `thumbnail()` la
+        # achica. En una Raspberry Pi eso puede tardar más de los 30s de
+        # timeout de gunicorn (worker `sync`, no puede avisar "sigo vivo"
+        # mientras está ocupado con CPU) y el worker termina muerto a
+        # mitad de la respuesta, cortando la conexión del navegador.
+        # `draft()` le pide al decodificador de libjpeg que decodifique
+        # directamente a una escala reducida (la potencia de 2 más cercana
+        # por arriba de `_DIMENSION_MAXIMA_PX`) en vez de a tamaño
+        # completo — mucho más rápido y con una fracción de la memoria.
+        # Es un método de PIL.Image que solo hace algo en JPEG; en
+        # PNG/WEBP es un no-op seguro, así que no hace falta ramificar por
+        # `extension` acá. El resultado es aproximado (no da exactamente
+        # `_DIMENSION_MAXIMA_PX`), así que el `thumbnail()` de abajo sigue
+        # haciendo falta para el tamaño final exacto — pero ahora opera
+        # sobre una imagen ya chica, no sobre el original.
+        imagen.draft("RGB", (_DIMENSION_MAXIMA_PX, _DIMENSION_MAXIMA_PX))
         imagen.load()
     except UnidentifiedImageError as exc:
         raise ArchivoInvalidoError("El archivo no es una imagen válida.") from exc
