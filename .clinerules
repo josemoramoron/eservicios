@@ -6,7 +6,9 @@
 Nombre: eServicios — dossier de productos, servicios y educación (eServicios LLC)
 Stack: Flask 3.1 + PostgreSQL + SQLAlchemy 2.0 (Mapped/mapped_column) + Redis + Python 3.13
 Infraestructura: Raspberry Pi 5, Cloudflare Tunnel, cuenta de Cloudflare conectada (R2 pendiente de credenciales de objeto)
-Entorno local: Windows, localhost:5000, BD eservicios_dev
+Entorno local: Windows (localhost:5000, BD eservicios_dev) y, desde sep-2026,
+también laptop Ubuntu "asus" (~/proyectos/eservicios, ver sección "Entorno
+Ubuntu" abajo)
 Dominio: eservicios.org (el marketplace de trabajos temporales se movió a un proyecto aparte: polunga.com)
 
 ## Arquitectura
@@ -64,6 +66,36 @@ del catálogo (una de las ofertas del dossier), aplican las mismas reglas de con
   nunca tuvo — bug ya corregido a mano en la Pi), `sudo systemctl restart eservicios`
 - NUNCA modificar archivos directamente en el Raspberry Pi salvo excepciones ya acordadas
   explícitamente (como el fix puntual de `deploy.sh` documentado en el roadmap)
+
+## Entorno Ubuntu (dev, desde sep-2026)
+Mismo patrón multi-proyecto que Ceiba21 en la laptop "asus" (ver el
+`.clinerules` de Ceiba21, proyecto hermano, para el contexto completo de esa
+laptop). Gotchas propios de eservicios en ese entorno:
+
+- **Postgres nativo en `:5433`, no `:5432`**: igual que Ceiba21, el puerto
+  5432 en esta laptop es el contenedor Docker de FVA. `DATABASE_URL` local
+  debe apuntar a `localhost:5433`, nunca al default de `.env.example`
+  (5432, correcto solo en Windows). La base `eservicios_dev` se creó con
+  dueño `webmaster` — el mismo rol que usa `ceiba21_dev`, compartido entre
+  proyectos en esta laptop de dev.
+- **Para crear la BD (o cualquier tarea administrativa de Postgres) sin
+  saber la password del rol de aplicación**: usar el rol de sistema
+  `postgres` vía peer auth en vez de autenticación por password —
+  `sudo -u postgres psql -p 5433 -c "CREATE DATABASE eservicios_dev OWNER webmaster;"`
+  — en vez de `psql -U webmaster -h localhost -p 5433 ...`, que sí pide
+  password y puede fallar si no la tienes a mano.
+- **`SQLAlchemy==2.0.36` (el pin original de requirements.txt) rompe en
+  Python 3.14** con `TypeError: descriptor '__getitem__' requires a
+  'typing.Union' object but received a 'tuple'` al arrancar la app — truena
+  apenas se registra cualquier modelo con una columna `Mapped[X | None]`
+  (ej. `BlogPost.resumen`), porque `make_union_type()` en
+  `sqlalchemy/util/typing.py` usaba `cast(Any, Union).__getitem__(types)`,
+  una forma de acceder a `Union.__getitem__` que dejó de auto-vincularse en
+  Python 3.14. No es un bug de este código ni algo que arreglar en los
+  modelos — está corregido en SQLAlchemy desde la versión **2.0.44**
+  (cambiaron esa línea a `Union[types]`, forma directa). `requirements.txt`
+  ya quedó fijado a `2.0.44`; si en el futuro se sube de versión, verificar
+  que no se regrese a algo anterior a esa.
 
 ## Cuando hay un error
 1. Identifica en qué capa ocurrió (model/service/route/template)
