@@ -35,6 +35,7 @@ from app.services.estados_stock_service import ESTADOS_STOCK, obtener_estado_sto
 from app.services.monedas_service import MONEDAS, detectar_moneda_por_whatsapp
 from app.services.plantillas_tienda_service import PLANTILLAS_TIENDA, obtener_plantilla_tienda
 from app.services.site_info_service import obtener_info_sitio
+from app.services.vendor_categoria_service import listar_categorias_de_vendor
 
 # Duraciones que el vendedor puede pedir desde /vendedor/perfil/plan/solicitar
 # (ver solicitar_plan_plus) — mismas 4 opciones que ya ofrece el alta manual
@@ -116,10 +117,6 @@ class PasswordNuevaInvalidaError(Exception):
 
 class LinkInvalidoError(Exception):
     """El título o la URL del enlace no son válidos."""
-
-
-class CategoriaInvalidaError(Exception):
-    """El nombre de la categoría no es válido (vacío, o duplicado dentro de la misma tienda)."""
 
 
 class AvisoInvalidoError(Exception):
@@ -1962,117 +1959,6 @@ def mover_link(vendor: Vendor, link: VendorLink, *, direccion: str) -> None:
         return
 
     link.orden, vecino.orden = vecino.orden, link.orden
-    db.session.commit()
-
-
-def listar_categorias_de_vendor(vendor: Vendor) -> list[VendorCategoria]:
-    """Devuelve todas las categorías de una tienda, para el panel y el filtro público.
-
-    Args:
-        vendor: Tienda dueña de las categorías.
-
-    Returns:
-        Lista de `VendorCategoria` ordenada por el campo `orden`.
-    """
-    return VendorCategoria.query.filter_by(vendor_id=vendor.id).order_by(VendorCategoria.orden).all()
-
-
-def obtener_categoria_de_vendor(vendor: Vendor, categoria_id: int) -> VendorCategoria | None:
-    """Busca una categoría por id, verificando que pertenezca a la tienda dada.
-
-    Evita que un vendedor edite o borre categorías de otra tienda
-    adivinando ids en la URL — mismo criterio que `obtener_link_de_vendor`.
-
-    Args:
-        vendor: Tienda que debería ser dueña de la categoría.
-        categoria_id: Id de la categoría buscada.
-
-    Returns:
-        La `VendorCategoria` si existe y pertenece a `vendor`, o None.
-    """
-    return VendorCategoria.query.filter_by(id=categoria_id, vendor_id=vendor.id).first()
-
-
-def crear_categoria(vendor: Vendor, *, nombre: str) -> VendorCategoria:
-    """Crea una categoría nueva para una tienda.
-
-    Se agrega al final del orden actual, mismo criterio que `crear_link`.
-
-    Args:
-        vendor: Tienda dueña de la categoría nueva.
-        nombre: Nombre visible de la categoría (ej. "Electrodomésticos").
-
-    Returns:
-        La `VendorCategoria` recién creada.
-
-    Raises:
-        CategoriaInvalidaError: Si el nombre queda vacío, o ya existe
-            otra categoría con el mismo nombre (sin distinguir mayúsculas)
-            en esta misma tienda.
-    """
-    nombre = nombre.strip()
-    if not nombre:
-        raise CategoriaInvalidaError("El nombre de la categoría es obligatorio.")
-    ya_existe = VendorCategoria.query.filter(
-        VendorCategoria.vendor_id == vendor.id, func.lower(VendorCategoria.nombre) == nombre.lower()
-    ).first()
-    if ya_existe is not None:
-        raise CategoriaInvalidaError("Ya existe una categoría con ese nombre.")
-
-    orden_maximo = (
-        db.session.query(func.max(VendorCategoria.orden))
-        .filter(VendorCategoria.vendor_id == vendor.id)
-        .scalar()
-    )
-    siguiente_orden = (orden_maximo + 1) if orden_maximo is not None else 0
-
-    categoria = VendorCategoria(vendor_id=vendor.id, nombre=nombre, orden=siguiente_orden)
-    db.session.add(categoria)
-    db.session.commit()
-    return categoria
-
-
-def actualizar_categoria(categoria: VendorCategoria, *, nombre: str) -> None:
-    """Renombra una categoría existente.
-
-    Args:
-        categoria: Categoría a actualizar.
-        nombre: Nuevo nombre visible.
-
-    Raises:
-        CategoriaInvalidaError: Si el nombre queda vacío, o ya existe
-            otra categoría con el mismo nombre (sin distinguir mayúsculas)
-            en la misma tienda.
-    """
-    nombre = nombre.strip()
-    if not nombre:
-        raise CategoriaInvalidaError("El nombre de la categoría es obligatorio.")
-    ya_existe = VendorCategoria.query.filter(
-        VendorCategoria.vendor_id == categoria.vendor_id,
-        VendorCategoria.id != categoria.id,
-        func.lower(VendorCategoria.nombre) == nombre.lower(),
-    ).first()
-    if ya_existe is not None:
-        raise CategoriaInvalidaError("Ya existe una categoría con ese nombre.")
-    categoria.nombre = nombre
-    db.session.commit()
-
-
-def eliminar_categoria(categoria: VendorCategoria) -> None:
-    """Elimina una categoría de forma permanente.
-
-    Antes de borrar la fila, pone `categoria_id` en None a mano en cada
-    producto que la tuviera asignada — limpieza manual explícita en vez
-    de depender de un `ON DELETE` a nivel de base de datos, mismo
-    criterio que `vendor_admin_service.eliminar_vendor_permanente` usa
-    para `VendorEvento`/`VendorReporte`. Los productos en sí NO se
-    borran, solo quedan sin categoría.
-
-    Args:
-        categoria: Categoría a eliminar.
-    """
-    VendorProduct.query.filter_by(categoria_id=categoria.id).update({"categoria_id": None})
-    db.session.delete(categoria)
     db.session.commit()
 
 

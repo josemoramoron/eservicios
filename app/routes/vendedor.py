@@ -50,6 +50,14 @@ from app.services.estados_stock_service import listar_estados_stock
 from app.services.monedas_service import listar_monedas
 from app.services.plantillas_tienda_service import listar_plantillas_tienda
 from app.services.google_auth_service import oauth, obtener_perfil_google
+from app.services.vendor_categoria_service import (
+    CategoriaInvalidaError,
+    actualizar_categoria,
+    crear_categoria,
+    eliminar_categoria,
+    listar_categorias_de_vendor,
+    obtener_categoria_de_vendor,
+)
 from app.services.vendor_service import (
     DIAS_ENTRE_CAMBIOS_SLUG,
     DIAS_REDIRECCION_SLUG_ANTERIOR,
@@ -58,7 +66,6 @@ from app.services.vendor_service import (
     MESES_PLAN_SOLICITABLES,
     REDES_RAPIDAS_LINK,
     CambioSlugMuyRecienteError,
-    CategoriaInvalidaError,
     EmailDuplicadoError,
     EmailInvalidoError,
     LimiteCambiosSlugError,
@@ -72,7 +79,6 @@ from app.services.vendor_service import (
     SlugReservadoError,
     SolicitudPlanInvalidaError,
     SolicitudVerificacionInvalidaError,
-    actualizar_categoria,
     actualizar_link,
     actualizar_perfil,
     actualizar_producto,
@@ -81,21 +87,17 @@ from app.services.vendor_service import (
     cambiar_slug,
     construir_url_red_social,
     construir_vcard,
-    crear_categoria,
     crear_link,
     crear_producto,
-    eliminar_categoria,
     eliminar_link,
     eliminar_producto,
     estado_cambio_slug,
     href_whatsapp_soporte_pago,
     listar_avisos_de_vendor,
-    listar_categorias_de_vendor,
     listar_links_de_vendor,
     listar_productos_de_vendor,
     mover_link,
     nombre_red_rapida,
-    obtener_categoria_de_vendor,
     obtener_link_de_vendor,
     obtener_producto_de_vendor,
     listar_paleta_acento,
