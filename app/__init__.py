@@ -1,4 +1,5 @@
 """Application factory de eServicios."""
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -7,6 +8,40 @@ from werkzeug.exceptions import RequestEntityTooLarge
 
 from app.extensions import db, migrate
 from config import Config
+
+
+def _check_secret_key_or_fail(app: Flask, is_production: bool) -> None:
+    """Fail-fast: en producción, un SECRET_KEY ausente o en su valor de
+    desarrollo comprometería la firma de las cookies de sesión — el login
+    de /admin y /e-link depende enteramente de eso (ver
+    app/services/auth_service.py, que usa la cookie de sesión de Flask, no
+    una tabla de sesiones en la base de datos). Mejor que el proceso no
+    arranque a que arranque firmando sesiones con un secreto público o
+    predecible. Mismo patrón que Ceiba21
+    (app/__init__.py::_check_secret_key_or_fail, proyecto hermano) —
+    cubre tanto el default de Config ("dev-secret-change-me") como el
+    placeholder literal de .env.example ("change-me"), por si alguien
+    copia ese archivo a .env sin editarlo.
+
+    Args:
+        app: Instancia de Flask ya con la config cargada.
+        is_production: True si FLASK_ENV=production.
+
+    Raises:
+        RuntimeError: Si is_production es True y SECRET_KEY sigue vacío o
+            en un valor de desarrollo conocido.
+    """
+    if is_production and app.config["SECRET_KEY"] in (
+        None,
+        "",
+        "dev-secret-change-me",
+        "change-me",
+    ):
+        raise RuntimeError(
+            "SECRET_KEY no está configurado (o sigue en un valor de "
+            "desarrollo) con FLASK_ENV=production. Define un SECRET_KEY "
+            "real en el .env del servidor antes de arrancar."
+        )
 
 
 def create_app(config_class: type[Config] = Config) -> Flask:
@@ -20,6 +55,9 @@ def create_app(config_class: type[Config] = Config) -> Flask:
     """
     app = Flask(__name__)
     app.config.from_object(config_class)
+
+    _is_production = os.environ.get("FLASK_ENV", "").lower() == "production"
+    _check_secret_key_or_fail(app, _is_production)
 
     db.init_app(app)
     migrate.init_app(app, db)
