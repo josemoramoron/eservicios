@@ -51,6 +51,9 @@ del catálogo (una de las ofertas del dossier), aplican las mismas reglas de con
 7. Para ejecutar tests siempre usar: python -m pytest app\tests\ -v (nunca solo "pytest")
 
 ## Flujo de deploy
+(Esta sección es de la laptop Windows. Para la laptop Ubuntu "asus", ver
+"Entorno Ubuntu" más abajo — mismo destino, comandos a mano en vez de
+`deploy.ps1`.)
 - Desarrollo: localhost:5000 con `flask --app wsgi run`
 - Deploy: desde C:\proyectos\eservicios, correr `.\deploy.ps1` — hace `git push origin main`
   (respaldo/histórico en GitHub) y luego `git push production main`
@@ -96,8 +99,17 @@ laptop). Gotchas propios de eservicios en ese entorno:
   (cambiaron esa línea a `Union[types]`, forma directa). `requirements.txt`
   ya quedó fijado a `2.0.44`; si en el futuro se sube de versión, verificar
   que no se regrese a algo anterior a esa.
-
-## Cuando hay un error
+- **Deploy a producción desde esta laptop (configurado 2026-09-25)**: el
+  `deploy.ps1` de la sección "Flujo de deploy" es de la laptop Windows,
+  no existe acá — se corren los mismos 2 `git push` a mano. Configuración
+  de una sola vez, ya hecha: llave SSH dedicada en
+  `~/.ssh/id_ed25519_eservicios_pi` (sin passphrase, copiada al Pi con
+  `ssh-copy-id`), alias `eservicios-webmaster` en el `~/.ssh/config` de
+  esta laptop (mismo patrón que `ceiba21-local-webmaster`, pero con su
+  propia llave — el Pi de eservicios es una máquina distinta a la de
+  Ceiba21: IP `192.168.20.74`, no `.13`), y el remoto git `production`
+  agregado en este repo (`eservicios-webmaster:/home/webmaster/repos/eservicios.git`).
+  Para deployar:
 1. Identifica en qué capa ocurrió (model/service/route/template)
 2. Propón la solución mínima sin cambiar nada innecesario
 3. Si requiere refactorizar dímelo primero y espera confirmación
@@ -139,3 +151,16 @@ laptop). Gotchas propios de eservicios en ese entorno:
   contexto arrastra. En Ceiba21 este patrón causó tres fallos (Service Worker,
   pausa global del bot, envío de correos) — aplica la misma cautela aquí cuando
   se implemente el webhook de Stripe o el envío de correo transaccional (SES).
+
+## Deuda técnica
+
+- **`datetime.utcnow()` deprecado (detectado 2026-09-25)**: usado en 18
+  lugares de 5 archivos (`vendor_service.py`, `estadisticas_service.py`,
+  `subdominio_service.py`, `vendor_admin_service.py`,
+  `vendor_email_verificacion_service.py`). Deprecado desde Python 3.12
+  (devuelve un datetime naive) — Python lo va a eliminar en una versión
+  futura. Forma correcta: `datetime.now(datetime.UTC)` (timezone-aware).
+  No es urgente (hoy funciona, solo emite `DeprecationWarning`), pero es
+  un cambio transversal a los 5 archivos — mejor hacerlo aparte, no
+  mezclado con el split de vendor_service.py en curso. Revisar también
+  si Ceiba21 tiene el mismo patrón.
