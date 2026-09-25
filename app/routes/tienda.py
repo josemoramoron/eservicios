@@ -20,8 +20,8 @@ from app.services.vendor_whatsapp_service import (
     href_whatsapp_tienda,
     resolver_consulta_multiple_habilitada,
 )
-from app.services.vendor_service import (
-    listar_productos_activos,
+from app.services.vendor_service import listar_productos_activos
+from app.services.vendor_theming_service import (
     resolver_acento_vendor,
     resolver_badge_producto,
     resolver_categorias_producto,

@@ -72,6 +72,7 @@ from app.services.vendor_link_service import (
     obtener_link_de_vendor,
 )
 from app.services.vendor_whatsapp_service import construir_vcard, href_whatsapp_soporte_pago
+from app.services.vendor_theming_service import listar_paleta_acento, resolver_acento_vendor
 from app.services.vendor_service import (
     DIAS_ENTRE_CAMBIOS_SLUG,
     DIAS_REDIRECCION_SLUG_ANTERIOR,
@@ -101,7 +102,6 @@ from app.services.vendor_service import (
     estado_cambio_slug,
     listar_productos_de_vendor,
     obtener_producto_de_vendor,
-    listar_paleta_acento,
     obtener_vendor_por_email,
     obtener_vendor_por_google_id,
     plan_plus_o_prueba_vigente,
@@ -112,7 +112,6 @@ from app.services.vendor_service import (
     prueba_plus_vigente,
     registrar_vendor,
     registrar_vendor_google,
-    resolver_acento_vendor,
     slug_disponible,
     solicitar_plan_plus,
     solicitar_verificacion_vendedor,
