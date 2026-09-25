@@ -50,6 +50,7 @@ from app.services.estados_stock_service import listar_estados_stock
 from app.services.monedas_service import listar_monedas
 from app.services.plantillas_tienda_service import listar_plantillas_tienda
 from app.services.google_auth_service import oauth, obtener_perfil_google
+from app.services.vendor_aviso_service import listar_avisos_de_vendor
 from app.services.vendor_categoria_service import (
     CategoriaInvalidaError,
     actualizar_categoria,
@@ -99,7 +100,6 @@ from app.services.vendor_service import (
     eliminar_producto,
     estado_cambio_slug,
     href_whatsapp_soporte_pago,
-    listar_avisos_de_vendor,
     listar_productos_de_vendor,
     obtener_producto_de_vendor,
     listar_paleta_acento,
