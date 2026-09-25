@@ -14,10 +14,10 @@ from app.models import TipoEventoVendor, Vendor
 from app.services.auth_service import generar_csrf_token
 from app.services.estadisticas_service import registrar_evento
 from app.services.iconos_service import detectar_red_social
+from app.services.vendor_link_service import listar_links_activos
 from app.services.vendor_service import (
     href_whatsapp_producto,
     href_whatsapp_tienda,
-    listar_links_activos,
     listar_productos_activos,
     resolver_acento_vendor,
     resolver_badge_producto,
