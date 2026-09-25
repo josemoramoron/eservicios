@@ -13,12 +13,14 @@ from flask import Blueprint, abort, current_app, redirect, request
 
 from app.models import TipoEventoVendor
 from app.services.estadisticas_service import registrar_evento
-from app.services.vendor_service import (
+from app.services.vendor_whatsapp_service import (
     construir_mensaje_consulta_multiple,
     construir_whatsapp_href,
+    resolver_consulta_multiple_habilitada,
+)
+from app.services.vendor_service import (
     listar_productos_activos,
     obtener_vendor_por_slug_activo,
-    resolver_consulta_multiple_habilitada,
 )
 from app.services.subdominio_service import extraer_slug_de_host
 

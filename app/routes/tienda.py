@@ -15,14 +15,16 @@ from app.services.auth_service import generar_csrf_token
 from app.services.estadisticas_service import registrar_evento
 from app.services.iconos_service import detectar_red_social
 from app.services.vendor_link_service import listar_links_activos
-from app.services.vendor_service import (
+from app.services.vendor_whatsapp_service import (
     href_whatsapp_producto,
     href_whatsapp_tienda,
+    resolver_consulta_multiple_habilitada,
+)
+from app.services.vendor_service import (
     listar_productos_activos,
     resolver_acento_vendor,
     resolver_badge_producto,
     resolver_categorias_producto,
-    resolver_consulta_multiple_habilitada,
     resolver_cupon_vendor,
     resolver_disponibilidad_vendor,
     resolver_estado_stock_producto,

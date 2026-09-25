@@ -71,6 +71,7 @@ from app.services.vendor_link_service import (
     nombre_red_rapida,
     obtener_link_de_vendor,
 )
+from app.services.vendor_whatsapp_service import construir_vcard, href_whatsapp_soporte_pago
 from app.services.vendor_service import (
     DIAS_ENTRE_CAMBIOS_SLUG,
     DIAS_REDIRECCION_SLUG_ANTERIOR,
@@ -95,11 +96,9 @@ from app.services.vendor_service import (
     activar_prueba_plus,
     cambiar_password,
     cambiar_slug,
-    construir_vcard,
     crear_producto,
     eliminar_producto,
     estado_cambio_slug,
-    href_whatsapp_soporte_pago,
     listar_productos_de_vendor,
     obtener_producto_de_vendor,
     listar_paleta_acento,
