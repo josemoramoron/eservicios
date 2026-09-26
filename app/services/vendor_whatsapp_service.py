@@ -12,7 +12,7 @@ from urllib.parse import quote
 
 from app.models import Vendor, VendorProduct
 from app.services.site_info_service import obtener_info_sitio
-from app.services.vendor_service import plan_plus_o_prueba_vigente
+from app.services.vendor_perfil_service import plan_plus_o_prueba_vigente
 
 
 def construir_whatsapp_href(numero: str, mensaje: str) -> str:

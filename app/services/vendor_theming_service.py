@@ -17,7 +17,7 @@ from app.services.badges_producto_service import obtener_badge_producto
 from app.services.estados_stock_service import obtener_estado_stock
 from app.services.plantillas_tienda_service import obtener_plantilla_tienda
 from app.services.vendor_categoria_service import listar_categorias_de_vendor
-from app.services.vendor_service import plan_plus_o_prueba_vigente
+from app.services.vendor_perfil_service import plan_plus_o_prueba_vigente
 
 # Duplicado a propósito del mismo patrón en vendor_service.py (usado ahí
 # por actualizar_perfil para validar el color que el vendedor guarda) —

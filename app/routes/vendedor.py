@@ -75,6 +75,13 @@ from app.services.vendor_whatsapp_service import construir_vcard, href_whatsapp_
 from app.services.vendor_theming_service import listar_paleta_acento, resolver_acento_vendor
 from app.services.vendor_service import (
     MAX_FOTOS_PRODUCTO,
+    actualizar_producto,
+    crear_producto,
+    eliminar_producto,
+    listar_productos_de_vendor,
+    obtener_producto_de_vendor,
+)
+from app.services.vendor_perfil_service import (
     MESES_PLAN_SOLICITABLES,
     PasswordActualIncorrectaError,
     PasswordNuevaInvalidaError,
@@ -83,13 +90,8 @@ from app.services.vendor_service import (
     SolicitudPlanInvalidaError,
     SolicitudVerificacionInvalidaError,
     actualizar_perfil,
-    actualizar_producto,
     activar_prueba_plus,
     cambiar_password,
-    crear_producto,
-    eliminar_producto,
-    listar_productos_de_vendor,
-    obtener_producto_de_vendor,
     plan_plus_o_prueba_vigente,
     plan_plus_vigente,
     planes_plus_con_precio,
