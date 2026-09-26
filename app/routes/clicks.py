@@ -18,10 +18,8 @@ from app.services.vendor_whatsapp_service import (
     construir_whatsapp_href,
     resolver_consulta_multiple_habilitada,
 )
-from app.services.vendor_service import (
-    listar_productos_activos,
-    obtener_vendor_por_slug_activo,
-)
+from app.services.vendor_service import listar_productos_activos
+from app.services.vendor_registro_service import obtener_vendor_por_slug_activo
 from app.services.subdominio_service import extraer_slug_de_host
 
 clicks_bp = Blueprint("clicks", __name__, url_prefix="/e-link-click")

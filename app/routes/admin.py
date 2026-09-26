@@ -60,7 +60,7 @@ from app.services.vendor_admin_service import (
     suspender_vendor,
 )
 from app.services.vendor_reporte_service import listar_reportes_de_vendor
-from app.services.vendor_service import estado_cambio_slug
+from app.services.vendor_registro_service import estado_cambio_slug
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 

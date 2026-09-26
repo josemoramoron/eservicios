@@ -13,7 +13,7 @@ from flask import Blueprint, abort, current_app, flash, redirect, request
 from app.services.auth_service import validar_csrf_token
 from app.services.subdominio_service import extraer_slug_de_host
 from app.services.vendor_reporte_service import crear_reporte
-from app.services.vendor_service import obtener_vendor_por_slug_activo
+from app.services.vendor_registro_service import obtener_vendor_por_slug_activo
 
 reportes_bp = Blueprint("reportes", __name__, url_prefix="/e-link-reporte")
 

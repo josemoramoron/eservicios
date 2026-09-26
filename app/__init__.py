@@ -85,7 +85,7 @@ def create_app(config_class: type[Config] = Config) -> Flask:
         resolver_vendor_inactivo_por_host,
         resolver_vendor_por_host,
     )
-    from app.services.vendor_service import obtener_vendor_por_slug_activo
+    from app.services.vendor_registro_service import obtener_vendor_por_slug_activo
 
     app.register_blueprint(health_bp)
     app.register_blueprint(servicios_bp)

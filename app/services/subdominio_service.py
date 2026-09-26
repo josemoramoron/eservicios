@@ -10,7 +10,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from app.models import VendorSlugHistorial
-from app.services.vendor_service import obtener_vendor_por_slug, obtener_vendor_por_slug_activo
+from app.services.vendor_registro_service import obtener_vendor_por_slug, obtener_vendor_por_slug_activo
 
 
 def extraer_slug_de_host(host: str, dominio_base: str) -> str | None:
