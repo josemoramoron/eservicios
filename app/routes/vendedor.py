@@ -73,7 +73,7 @@ from app.services.vendor_link_service import (
 )
 from app.services.vendor_whatsapp_service import construir_vcard, href_whatsapp_soporte_pago
 from app.services.vendor_theming_service import listar_paleta_acento, resolver_acento_vendor
-from app.services.vendor_service import (
+from app.services.vendor_producto_service import (
     MAX_FOTOS_PRODUCTO,
     actualizar_producto,
     crear_producto,

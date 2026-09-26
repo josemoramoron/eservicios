@@ -1,11 +1,14 @@
-"""Lógica de negocio de las tiendas de vendedor (registro, slug, productos, perfil).
+"""CRUD de productos de la tienda de vendedor (alta, edición, borrado, listados).
 
-Incluye la validación y disponibilidad del subdominio elegido por el
-vendedor, el CRUD que usa el panel `/vendedor`, la actualización del
-perfil (personalización + seguridad) y los helpers para armar los
-links `wa.me` (WhatsApp) que se muestran en la tienda pública. La
-subida de imágenes a Cloudflare R2 vive en `r2_service.py` — este
-módulo solo recibe URLs ya resueltas y las guarda en el modelo. Ver
+Última pieza del god-file original `vendor_service.py` — el registro,
+el manejo de slug y el perfil/plan Plus ya se extrajeron a
+`vendor_registro_service.py` y `vendor_perfil_service.py` (split de
+god-files, 2026-09). Lo que queda aquí es solo el bloque de Productos:
+alta y edición sin moderación (`crear_producto`/`actualizar_producto`),
+borrado permanente, y los listados que usa tanto el panel `/vendedor`
+(activos e inactivos) como la tienda pública (solo activos). La subida
+de imágenes a Cloudflare R2 vive en `r2_service.py` — este módulo solo
+recibe URLs ya resueltas y las guarda en el modelo. Ver
 `claude/spec-tiendas-vendedor.md` en el proyecto para el diseño completo.
 """
 from __future__ import annotations

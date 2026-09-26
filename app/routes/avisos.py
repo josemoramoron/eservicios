@@ -14,7 +14,7 @@ from flask import Blueprint, abort, current_app, flash, redirect, request
 from app.services.auth_service import validar_csrf_token
 from app.services.subdominio_service import extraer_slug_de_host
 from app.services.vendor_aviso_service import AvisoInvalidoError, crear_aviso_producto
-from app.services.vendor_service import obtener_producto_de_vendor
+from app.services.vendor_producto_service import obtener_producto_de_vendor
 from app.services.vendor_registro_service import obtener_vendor_por_slug_activo
 
 avisos_bp = Blueprint("avisos", __name__, url_prefix="/e-link-aviso")
