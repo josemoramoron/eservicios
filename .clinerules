@@ -5,7 +5,7 @@
 ## Proyecto
 Nombre: eServicios — dossier de productos, servicios y educación (eServicios LLC)
 Stack: Flask 3.1 + PostgreSQL + SQLAlchemy 2.0 (Mapped/mapped_column) + Redis + Python 3.13
-Infraestructura: Raspberry Pi 5, Cloudflare Tunnel, cuenta de Cloudflare conectada (R2 pendiente de credenciales de objeto)
+Infraestructura: Raspberry Pi 5, Cloudflare Tunnel, cuenta de Cloudflare conectada, R2 configurado en dev y producción
 Entorno local: Windows (localhost:5000, BD eservicios_dev) y, desde sep-2026,
 también laptop Ubuntu "asus" (~/proyectos/eservicios, ver sección "Entorno
 Ubuntu" abajo)
@@ -153,35 +153,3 @@ laptop). Gotchas propios de eservicios en ese entorno:
   contexto arrastra. En Ceiba21 este patrón causó tres fallos (Service Worker,
   pausa global del bot, envío de correos) — aplica la misma cautela aquí cuando
   se implemente el webhook de Stripe o el envío de correo transaccional (SES).
-
-## Deuda técnica
-
-- ~~`deploy.sh` sin versionar~~ — **resuelto 2026-09-29**. Copiado tal cual a
-  `scripts/deploy.sh`, hook `post-receive` actualizado a mano por SSH para
-  llamar a la copia versionada (`sed` de una sola línea, con backup del hook
-  antes de tocarlo), probado con un commit vacío + push (deploy corrió limpio,
-  health check OK) y borrada la copia suelta vieja. Nota: no hizo falta
-  esperar el túnel SSH (pendiente siguiente) — el acceso LAN/`eservicios-webmaster`
-  de siempre alcanzó.
-- **Túnel SSH vía Cloudflare para eservicios (pendiente, anotado 2026-09-29)**:
-  Ceiba21 tiene un túnel SSH remoto documentado (`ssh.ceiba21.com` como ingress
-  del `cloudflared`, alias `ceiba21-tunnel` en el `~/.ssh/config` del dev) para
-  acceder a su Pi sin estar en la red local. eservicios NO tiene el equivalente
-  documentado — solo existe `eservicios-webmaster` (IP local `192.168.20.74`,
-  sin acceso remoto). Falta decidir/armar esto para poder operar la Pi de
-  eservicios estando fuera de casa (bloquea el punto anterior y la carga de
-  credenciales R2 a producción). Se resuelve más adelante.
-- ~~`datetime.utcnow()` deprecado~~ — **resuelto 2026-09-26**. Se creó
-  `app/services/tiempo_service.py` con un helper `ahora_utc()` que
-  devuelve `datetime.now(datetime.UTC).replace(tzinfo=None)`: mismo
-  datetime naive que devolvía `datetime.utcnow()` (compatible con las
-  columnas `DateTime` de los modelos, que no usan `timezone=True`, sin
-  necesitar una migración de BD), pero sin el `DeprecationWarning`.
-  Reemplazados los 28 usos reales en 6 archivos de servicio
-  (`vendor_registro_service.py`, `vendor_perfil_service.py` — ambos
-  herederos del extinto `vendor_service.py` —, `estadisticas_service.py`,
-  `subdominio_service.py`, `vendor_admin_service.py`,
-  `vendor_email_verificacion_service.py`) y 3 archivos de test
-  (`test_vendor_registro.py`, `test_vendor_perfil.py`,
-  `test_vendor_whatsapp.py`). Pendiente: revisar si Ceiba21 tiene el
-  mismo patrón (proyecto aparte, no tocado acá).
