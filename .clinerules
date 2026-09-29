@@ -52,11 +52,13 @@ del catálogo (una de las ofertas del dossier), aplican las mismas reglas de con
 
 ## Flujo de deploy
 (Esta sección es de la laptop Windows. Para la laptop Ubuntu "asus", ver
-"Entorno Ubuntu" más abajo — mismo destino, comandos a mano en vez de
-`deploy.ps1`.)
+"Entorno Ubuntu" más abajo — mismo destino, `deploy-eservicios.sh` en vez de
+`deploy-eservicios.ps1`.)
 - Desarrollo: localhost:5000 con `flask --app wsgi run`
-- Deploy: desde C:\proyectos\eservicios, correr `.\deploy.ps1` — hace `git push origin main`
-  (respaldo/histórico en GitHub) y luego `git push production main`
+- Deploy: desde C:\proyectos\eservicios, correr `.\deploy-eservicios.ps1` — hace `git push origin main`
+  (respaldo/histórico en GitHub) y luego `git push production main`. Renombrado desde
+  `deploy.ps1` el 2026-09-29 para distinguirlo si alguna vez se maneja más de un
+  proyecto desde la misma laptop Windows.
 - El remoto `production` apunta a `eservicios-webmaster:/home/webmaster/repos/eservicios.git`
   (repo bare en la Pi). El alias SSH `eservicios-webmaster` en `~/.ssh/config` de Windows
   debe usar la IP fija `192.168.20.74` — NUNCA `raspberrypi.local` (Windows no resuelve
@@ -111,7 +113,12 @@ laptop). Gotchas propios de eservicios en ese entorno:
   propia llave — el Pi de eservicios es una máquina distinta a la de
   Ceiba21: IP `192.168.20.74`, no `.13`), y el remoto git `production`
   agregado en este repo (`eservicios-webmaster:/home/webmaster/repos/eservicios.git`).
-  Para deployar:
+  Para deployar: correr `./deploy-eservicios.sh` desde la raíz del repo (mismo
+  patrón que `deploy-eservicios.ps1` en Windows: pushea a `origin`, y solo si
+  eso sale bien, pushea a `production`, que dispara el deploy real en la Pi).
+  Creado 2026-09-29, junto con el renombre de `deploy.ps1` a `deploy-eservicios.ps1`.
+
+## Cuando hay un error
 1. Identifica en qué capa ocurrió (model/service/route/template)
 2. Propón la solución mínima sin cambiar nada innecesario
 3. Si requiere refactorizar dímelo primero y espera confirmación
