@@ -127,18 +127,20 @@ class TestResolverConsultaMultipleHabilitada:
         assert resolver_consulta_multiple_habilitada(vendor_prueba) is True
 
     def test_true_con_prueba_plus_vigente(self, db, vendor_prueba):
-        from datetime import datetime
+        from app.services.tiempo_service import ahora_utc
 
-        vendor_prueba.prueba_plus_activada_en = datetime.utcnow()
+        vendor_prueba.prueba_plus_activada_en = ahora_utc()
         db.session.commit()
 
         assert resolver_consulta_multiple_habilitada(vendor_prueba) is True
 
     def test_false_con_plan_plus_vencido_y_sin_prueba(self, db, vendor_prueba):
-        from datetime import datetime, timedelta
+        from datetime import timedelta
+
+        from app.services.tiempo_service import ahora_utc
 
         vendor_prueba.plan = PlanVendor.PLUS
-        vendor_prueba.plan_expira_en = datetime.utcnow() - timedelta(days=1)
+        vendor_prueba.plan_expira_en = ahora_utc() - timedelta(days=1)
         db.session.commit()
 
         assert resolver_consulta_multiple_habilitada(vendor_prueba) is False

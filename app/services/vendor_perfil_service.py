@@ -21,6 +21,7 @@ from app.services.email_service import EnvioCorreoError, enviar_correo, renderiz
 from app.services.monedas_service import MONEDAS
 from app.services.plantillas_tienda_service import PLANTILLAS_TIENDA
 from app.services.site_info_service import obtener_info_sitio
+from app.services.tiempo_service import ahora_utc
 
 # Duraciones que el vendedor puede pedir desde /vendedor/perfil/plan/solicitar
 # (ver solicitar_plan_plus) — mismas 4 opciones que ya ofrece el alta manual
@@ -253,7 +254,7 @@ def solicitar_verificacion_vendedor(
     vendor.solicitud_verificacion_mensaje = mensaje
     if documento_url is not None:
         vendor.solicitud_verificacion_documento_url = documento_url
-    vendor.solicitud_verificacion_en = datetime.utcnow()
+    vendor.solicitud_verificacion_en = ahora_utc()
     db.session.commit()
 
     try:
@@ -344,7 +345,7 @@ def solicitar_plan_plus(vendor: Vendor, *, meses: int, mensaje: str, comprobante
     vendor.solicitud_plan_meses = meses
     vendor.solicitud_plan_mensaje = mensaje
     vendor.solicitud_plan_comprobante_url = comprobante_url
-    vendor.solicitud_plan_en = datetime.utcnow()
+    vendor.solicitud_plan_en = ahora_utc()
     db.session.commit()
 
     try:
@@ -401,7 +402,7 @@ def plan_plus_vigente(vendor: Vendor) -> bool:
         return False
     if vendor.plan_expira_en is None:
         return True
-    return vendor.plan_expira_en > datetime.utcnow()
+    return vendor.plan_expira_en > ahora_utc()
 
 
 def planes_plus_con_precio() -> list[dict[str, object]]:
@@ -472,7 +473,7 @@ def prueba_plus_vigente(vendor: Vendor) -> bool:
         todavía no pasaron `DIAS_PRUEBA_PLUS` días desde entonces.
     """
     expira = prueba_plus_expira_en(vendor)
-    return expira is not None and datetime.utcnow() < expira
+    return expira is not None and ahora_utc() < expira
 
 
 def prueba_plus_disponible(vendor: Vendor) -> bool:
@@ -545,7 +546,7 @@ def activar_prueba_plus(vendor: Vendor) -> None:
         )
     if plan_plus_vigente(vendor):
         raise PruebaPlusInvalidaError("Tu tienda ya tiene e-link Plus vigente, no hace falta la prueba.")
-    vendor.prueba_plus_activada_en = datetime.utcnow()
+    vendor.prueba_plus_activada_en = ahora_utc()
     db.session.commit()
 
 

@@ -23,12 +23,13 @@ pasada de caracterización, que se enfoca en la lógica de negocio pura.
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pytest
 
 from app.models import PlanVendor
 from app.services.email_service import EnvioCorreoError
+from app.services.tiempo_service import ahora_utc
 from app.services.vendor_perfil_service import (
     DIAS_PRUEBA_PLUS,
     MESES_PLAN_SOLICITABLES,
@@ -56,7 +57,7 @@ def _activar_plus(db, vendor, *, dias_restantes: int | None = None) -> None:
     """Pone `vendor` en plan Plus. `dias_restantes=None` = sin vencimiento."""
     vendor.plan = PlanVendor.PLUS
     vendor.plan_expira_en = (
-        None if dias_restantes is None else datetime.utcnow() + timedelta(days=dias_restantes)
+        None if dias_restantes is None else ahora_utc() + timedelta(days=dias_restantes)
     )
     db.session.commit()
 
@@ -384,7 +385,7 @@ class TestPruebaPlusExpiraEn:
         assert prueba_plus_expira_en(vendor_prueba) is None
 
     def test_activada_devuelve_fecha_mas_dias_de_prueba(self, db, vendor_prueba):
-        ahora = datetime.utcnow()
+        ahora = ahora_utc()
         vendor_prueba.prueba_plus_activada_en = ahora
         db.session.commit()
 
@@ -399,12 +400,12 @@ class TestPruebaPlusVigente:
         assert prueba_plus_vigente(vendor_prueba) is False
 
     def test_activada_recientemente_vigente(self, db, vendor_prueba):
-        vendor_prueba.prueba_plus_activada_en = datetime.utcnow()
+        vendor_prueba.prueba_plus_activada_en = ahora_utc()
         db.session.commit()
         assert prueba_plus_vigente(vendor_prueba) is True
 
     def test_activada_hace_mas_de_los_dias_de_prueba_no_vigente(self, db, vendor_prueba):
-        vendor_prueba.prueba_plus_activada_en = datetime.utcnow() - timedelta(days=DIAS_PRUEBA_PLUS + 1)
+        vendor_prueba.prueba_plus_activada_en = ahora_utc() - timedelta(days=DIAS_PRUEBA_PLUS + 1)
         db.session.commit()
         assert prueba_plus_vigente(vendor_prueba) is False
 
@@ -416,7 +417,7 @@ class TestPruebaPlusDisponible:
         assert prueba_plus_disponible(vendor_prueba) is True
 
     def test_ya_usada_no_disponible_aunque_ya_haya_vencido(self, db, vendor_prueba):
-        vendor_prueba.prueba_plus_activada_en = datetime.utcnow() - timedelta(days=DIAS_PRUEBA_PLUS + 1)
+        vendor_prueba.prueba_plus_activada_en = ahora_utc() - timedelta(days=DIAS_PRUEBA_PLUS + 1)
         db.session.commit()
         assert prueba_plus_disponible(vendor_prueba) is False
 
@@ -432,7 +433,7 @@ class TestPlanPlusOPruebaVigente:
         assert plan_plus_o_prueba_vigente(vendor_prueba) is True
 
     def test_con_prueba_vigente_true(self, db, vendor_prueba):
-        vendor_prueba.prueba_plus_activada_en = datetime.utcnow()
+        vendor_prueba.prueba_plus_activada_en = ahora_utc()
         db.session.commit()
         assert plan_plus_o_prueba_vigente(vendor_prueba) is True
 

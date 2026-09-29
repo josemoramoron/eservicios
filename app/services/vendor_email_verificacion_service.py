@@ -13,11 +13,12 @@ poder golpear el relay de Brevo a repetición.
 from __future__ import annotations
 
 import secrets
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from app.extensions import db
 from app.models import Vendor
 from app.services.email_service import enviar_correo, renderizar_plantilla_correo
+from app.services.tiempo_service import ahora_utc
 
 LONGITUD_CODIGO = 6
 MINUTOS_VALIDEZ_CODIGO = 15
@@ -40,7 +41,7 @@ def generar_y_enviar_codigo(vendor: Vendor) -> None:
     """
     codigo = f"{secrets.randbelow(10 ** LONGITUD_CODIGO):0{LONGITUD_CODIGO}d}"
     vendor.codigo_verificacion_email = codigo
-    vendor.codigo_verificacion_expira_en = datetime.utcnow() + timedelta(minutes=MINUTOS_VALIDEZ_CODIGO)
+    vendor.codigo_verificacion_expira_en = ahora_utc() + timedelta(minutes=MINUTOS_VALIDEZ_CODIGO)
     db.session.commit()
 
     cuerpo_html = renderizar_plantilla_correo(
@@ -74,7 +75,7 @@ def asegurar_codigo_vigente(vendor: Vendor) -> None:
     """
     sin_codigo_vigente = (
         vendor.codigo_verificacion_expira_en is None
-        or datetime.utcnow() > vendor.codigo_verificacion_expira_en
+        or ahora_utc() > vendor.codigo_verificacion_expira_en
     )
     if sin_codigo_vigente:
         generar_y_enviar_codigo(vendor)
@@ -92,7 +93,7 @@ def reenviar_codigo(vendor: Vendor) -> None:
     """
     if vendor.codigo_verificacion_expira_en is not None:
         enviado_en = vendor.codigo_verificacion_expira_en - timedelta(minutes=MINUTOS_VALIDEZ_CODIGO)
-        segundos_transcurridos = (datetime.utcnow() - enviado_en).total_seconds()
+        segundos_transcurridos = (ahora_utc() - enviado_en).total_seconds()
         if segundos_transcurridos < SEGUNDOS_ENTRE_REENVIOS:
             raise ReenvioMuyProntoError("Espera un momento antes de pedir otro código.")
     generar_y_enviar_codigo(vendor)
@@ -112,7 +113,7 @@ def verificar_codigo(vendor: Vendor, codigo: str) -> bool:
     """
     if not vendor.codigo_verificacion_email or not vendor.codigo_verificacion_expira_en:
         return False
-    if datetime.utcnow() > vendor.codigo_verificacion_expira_en:
+    if ahora_utc() > vendor.codigo_verificacion_expira_en:
         return False
     if not secrets.compare_digest(codigo.strip(), vendor.codigo_verificacion_email):
         return False

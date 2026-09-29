@@ -7,9 +7,8 @@ proyecto para el diseño completo.
 """
 from __future__ import annotations
 
-from datetime import datetime
-
 from app.models import VendorSlugHistorial
+from app.services.tiempo_service import ahora_utc
 from app.services.vendor_registro_service import obtener_vendor_por_slug, obtener_vendor_por_slug_activo
 
 
@@ -83,7 +82,7 @@ def resolver_redireccion_slug_antiguo(host: str, dominio_base: str) -> str | Non
         return None
     historial = (
         VendorSlugHistorial.query.filter_by(slug_anterior=slug)
-        .filter(VendorSlugHistorial.expira_en > datetime.utcnow())
+        .filter(VendorSlugHistorial.expira_en > ahora_utc())
         .first()
     )
     if historial is None or not historial.vendor.activo:

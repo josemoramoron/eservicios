@@ -11,7 +11,7 @@ proyecto para el diseño completo de esta sección del panel.
 from __future__ import annotations
 
 import secrets
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from sqlalchemy import or_
 
@@ -19,6 +19,7 @@ from app.extensions import db
 from app.models import PlanVendor, TipoEventoVendor, Vendor, VendorEvento, VendorReporte
 from app.services.estadisticas_service import DIAS_VENTANA_ESTADISTICAS
 from app.services.r2_service import eliminar_imagen
+from app.services.tiempo_service import ahora_utc
 
 # Duración aproximada de un "mes" de plan Plus, en días. Se usa una
 # constante fija (en vez de dateutil.relativedelta) para no agregar una
@@ -97,7 +98,7 @@ def estadisticas_globales() -> dict:
         `dias` días — misma ventana que `estadisticas_service.
         resumen_estadisticas`, para que los números sean comparables).
     """
-    desde = datetime.utcnow() - timedelta(days=DIAS_VENTANA_ESTADISTICAS)
+    desde = ahora_utc() - timedelta(days=DIAS_VENTANA_ESTADISTICAS)
     total = Vendor.query.count()
     activos = Vendor.query.filter_by(activo=True).count()
     base = VendorEvento.query.filter(VendorEvento.creado_en >= desde)
@@ -228,7 +229,7 @@ def cambiar_plan_vendor(vendor: Vendor, *, plan: PlanVendor, meses: int | None =
     if plan == PlanVendor.PLUS:
         if not meses or meses <= 0:
             raise ValueError("meses debe ser un entero positivo para otorgar el plan Plus.")
-        ahora = datetime.utcnow()
+        ahora = ahora_utc()
         vigente = vendor.plan_expira_en if (vendor.plan_expira_en and vendor.plan_expira_en > ahora) else ahora
         vendor.plan_expira_en = vigente + timedelta(days=DIAS_POR_MES_PLUS * meses)
         vendor.plan = PlanVendor.PLUS

@@ -7,10 +7,11 @@ completo. Ver `claude/spec-tiendas-vendedor.md` en el proyecto.
 """
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from app.extensions import db
 from app.models import TipoEventoVendor, Vendor, VendorEvento
+from app.services.tiempo_service import ahora_utc
 
 # Ventana de tiempo que resume `resumen_estadisticas` — no hay
 # selector de rango a propósito, ver docstring del módulo.
@@ -49,7 +50,7 @@ def resumen_estadisticas(vendor: Vendor) -> dict:
         para pintarse directo en las tarjetas `.admin-stat-card` del
         dashboard del vendedor.
     """
-    desde = datetime.utcnow() - timedelta(days=DIAS_VENTANA_ESTADISTICAS)
+    desde = ahora_utc() - timedelta(days=DIAS_VENTANA_ESTADISTICAS)
     base = VendorEvento.query.filter(
         VendorEvento.vendor_id == vendor.id, VendorEvento.creado_en >= desde
     )

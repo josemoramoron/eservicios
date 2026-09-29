@@ -10,11 +10,12 @@ rutas para resolver subdominios.
 from __future__ import annotations
 
 import re
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from app.extensions import db
 from app.models import ReservedSlug, Vendor, VendorSlugHistorial
 from app.services.monedas_service import detectar_moneda_por_whatsapp
+from app.services.tiempo_service import ahora_utc
 
 # Formato del subdominio elegido por el vendedor (ver validar_formato_slug).
 _SLUG_RE = re.compile(r"^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$")
@@ -105,7 +106,7 @@ def slug_disponible(slug: str) -> bool:
         return False
     redireccion_vigente = (
         VendorSlugHistorial.query.filter_by(slug_anterior=slug)
-        .filter(VendorSlugHistorial.expira_en > datetime.utcnow())
+        .filter(VendorSlugHistorial.expira_en > ahora_utc())
         .first()
     )
     return redireccion_vigente is None
@@ -335,7 +336,7 @@ def estado_cambio_slug(vendor: Vendor) -> dict:
     if puede_cambiar_ahora and vendor.slugs_anteriores:
         ultimo_cambio = vendor.slugs_anteriores[0].creado_en
         fecha_habilitado = ultimo_cambio + timedelta(days=DIAS_ENTRE_CAMBIOS_SLUG)
-        if datetime.utcnow() < fecha_habilitado:
+        if ahora_utc() < fecha_habilitado:
             puede_cambiar_ahora = False
             proxima_fecha_disponible = fecha_habilitado
 
@@ -386,7 +387,7 @@ def cambiar_slug(vendor: Vendor, *, nuevo_slug: str) -> str:
             f"Ya usaste los {MAX_CAMBIOS_SLUG} cambios de subdominio disponibles para tu tienda."
         )
     if not estado["puede_cambiar_ahora"]:
-        dias_faltantes = max(1, (estado["proxima_fecha_disponible"] - datetime.utcnow()).days + 1)
+        dias_faltantes = max(1, (estado["proxima_fecha_disponible"] - ahora_utc()).days + 1)
         raise CambioSlugMuyRecienteError(
             f"Todavía tienes que esperar {dias_faltantes} día(s) para volver a cambiar el subdominio "
             f"(máximo un cambio cada {DIAS_ENTRE_CAMBIOS_SLUG} días)."
@@ -401,7 +402,7 @@ def cambiar_slug(vendor: Vendor, *, nuevo_slug: str) -> str:
         raise SlugDuplicadoError("Ese subdominio ya está en uso por otra tienda.")
     redireccion_vigente = (
         VendorSlugHistorial.query.filter_by(slug_anterior=slug_normalizado)
-        .filter(VendorSlugHistorial.expira_en > datetime.utcnow())
+        .filter(VendorSlugHistorial.expira_en > ahora_utc())
         .first()
     )
     if redireccion_vigente is not None:
@@ -413,7 +414,7 @@ def cambiar_slug(vendor: Vendor, *, nuevo_slug: str) -> str:
         VendorSlugHistorial(
             vendor_id=vendor.id,
             slug_anterior=slug_anterior,
-            expira_en=datetime.utcnow() + timedelta(days=DIAS_REDIRECCION_SLUG_ANTERIOR),
+            expira_en=ahora_utc() + timedelta(days=DIAS_REDIRECCION_SLUG_ANTERIOR),
         )
     )
     db.session.commit()

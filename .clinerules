@@ -63,10 +63,13 @@ del catálogo (una de las ofertas del dossier), aplican las mismas reglas de con
   mDNS de forma confiable; esto ya causó una falla real de deploy)
 - El hook `post-receive` de ese repo bare hace checkout a `/var/www/eservicios` y corre
   `/var/www/eservicios/deploy.sh`
-- `deploy.sh` (vive solo en la Pi, NO versionado en git — pendiente de meterlo al repo):
-  crea/activa venv, `pip install -r requirements.txt`, `flask db upgrade` si existe la
-  carpeta `migrations` (ojo: antes comprobaba `-f manage.py`, un archivo que este proyecto
-  nunca tuvo — bug ya corregido a mano en la Pi), `sudo systemctl restart eservicios`
+- `deploy.sh` — **versionado en el repo desde 2026-09-29** (`scripts/deploy.sh`, ver
+  "Deuda técnica" más abajo): crea/activa venv, `pip install -r requirements.txt`,
+  `flask db upgrade` si existe la carpeta `migrations` (ojo: antes comprobaba `-f
+  manage.py`, un archivo que este proyecto nunca tuvo, copiado del deploy.sh de
+  Ceiba21 — bug ya corregido), `sudo systemctl restart eservicios`. El hook
+  `post-receive` de la Pi TODAVÍA apunta a la copia suelta vieja
+  (`/var/www/eservicios/deploy.sh`) hasta que se actualice a mano — ver pendiente.
 - NUNCA modificar archivos directamente en el Raspberry Pi salvo excepciones ya acordadas
   explícitamente (como el fix puntual de `deploy.sh` documentado en el roadmap)
 
@@ -154,13 +157,34 @@ laptop). Gotchas propios de eservicios en ese entorno:
 
 ## Deuda técnica
 
-- **`datetime.utcnow()` deprecado (detectado 2026-09-25)**: usado en 18
-  lugares de 5 archivos (`vendor_service.py`, `estadisticas_service.py`,
+- **`deploy.sh` sin versionar (en curso, 2026-09-29)**: se copió el contenido actual
+  de la Pi (`ssh eservicios-webmaster "cat /var/www/eservicios/deploy.sh"`) tal
+  cual a `scripts/deploy.sh` del repo, sin cambios. Falta: (1) actualizar el hook
+  `post-receive` del repo bare en la Pi para que llame a la copia versionada
+  (`/var/www/eservicios/scripts/deploy.sh`) en vez de la suelta
+  (`/var/www/eservicios/deploy.sh`) — el hook vive en `.git/hooks/`, nunca viaja
+  por git, hay que tocarlo a mano por SSH; (2) probar con un push de prueba;
+  (3) borrar la copia suelta vieja una vez confirmado. Bloqueado por acceso a la
+  Pi (ver pendiente de túnel SSH abajo).
+- **Túnel SSH vía Cloudflare para eservicios (pendiente, anotado 2026-09-29)**:
+  Ceiba21 tiene un túnel SSH remoto documentado (`ssh.ceiba21.com` como ingress
+  del `cloudflared`, alias `ceiba21-tunnel` en el `~/.ssh/config` del dev) para
+  acceder a su Pi sin estar en la red local. eservicios NO tiene el equivalente
+  documentado — solo existe `eservicios-webmaster` (IP local `192.168.20.74`,
+  sin acceso remoto). Falta decidir/armar esto para poder operar la Pi de
+  eservicios estando fuera de casa (bloquea el punto anterior y la carga de
+  credenciales R2 a producción). Se resuelve más adelante.
+- ~~`datetime.utcnow()` deprecado~~ — **resuelto 2026-09-26**. Se creó
+  `app/services/tiempo_service.py` con un helper `ahora_utc()` que
+  devuelve `datetime.now(datetime.UTC).replace(tzinfo=None)`: mismo
+  datetime naive que devolvía `datetime.utcnow()` (compatible con las
+  columnas `DateTime` de los modelos, que no usan `timezone=True`, sin
+  necesitar una migración de BD), pero sin el `DeprecationWarning`.
+  Reemplazados los 28 usos reales en 6 archivos de servicio
+  (`vendor_registro_service.py`, `vendor_perfil_service.py` — ambos
+  herederos del extinto `vendor_service.py` —, `estadisticas_service.py`,
   `subdominio_service.py`, `vendor_admin_service.py`,
-  `vendor_email_verificacion_service.py`). Deprecado desde Python 3.12
-  (devuelve un datetime naive) — Python lo va a eliminar en una versión
-  futura. Forma correcta: `datetime.now(datetime.UTC)` (timezone-aware).
-  No es urgente (hoy funciona, solo emite `DeprecationWarning`), pero es
-  un cambio transversal a los 5 archivos — mejor hacerlo aparte, no
-  mezclado con el split de vendor_service.py en curso. Revisar también
-  si Ceiba21 tiene el mismo patrón.
+  `vendor_email_verificacion_service.py`) y 3 archivos de test
+  (`test_vendor_registro.py`, `test_vendor_perfil.py`,
+  `test_vendor_whatsapp.py`). Pendiente: revisar si Ceiba21 tiene el
+  mismo patrón (proyecto aparte, no tocado acá).

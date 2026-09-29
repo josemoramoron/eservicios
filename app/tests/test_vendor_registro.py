@@ -17,11 +17,12 @@ caracterización, que se enfoca en la lógica de negocio pura.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import pytest
 
 from app.models import ReservedSlug, VendorSlugHistorial
+from app.services.tiempo_service import ahora_utc
 from app.services.vendor_registro_service import (
     DIAS_ENTRE_CAMBIOS_SLUG,
     MAX_CAMBIOS_SLUG,
@@ -75,12 +76,12 @@ def _agregar_historial(db, vendor, *, dias_hasta_expirar: int, dias_de_antigueda
     historial = VendorSlugHistorial(
         vendor_id=vendor.id,
         slug_anterior=f"viejo-{uuid.uuid4().hex[:8]}",
-        expira_en=datetime.utcnow() + timedelta(days=dias_hasta_expirar),
+        expira_en=ahora_utc() + timedelta(days=dias_hasta_expirar),
     )
     db.session.add(historial)
     db.session.commit()
     if dias_de_antiguedad:
-        historial.creado_en = datetime.utcnow() - timedelta(days=dias_de_antiguedad)
+        historial.creado_en = ahora_utc() - timedelta(days=dias_de_antiguedad)
         db.session.commit()
     return historial
 
