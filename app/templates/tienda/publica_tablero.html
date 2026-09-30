@@ -33,6 +33,9 @@
             {{ "Disponible ahora" if disponibilidad else "Fuera de horario" }}
         </p>
         {% endif %}
+        {% if disponibilidad is not none and cupon %}
+        <hr class="tienda-separador-acento">
+        {% endif %}
         {% if cupon %}
         <div class="tienda-cupon">
             <span class="tienda-cupon__etiqueta">CUPÓN</span>
