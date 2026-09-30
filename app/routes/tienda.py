@@ -48,6 +48,7 @@ _TEMPLATE_POR_PLANTILLA = {
     "portada": "tienda/publica_portada.html",
     "tablero": "tienda/publica_tablero.html",
     "feed": "tienda/publica_feed.html",
+    "pildoras_portada": "tienda/publica_pildoras_portada.html",
 }
 
 # La tienda pública se sirve con este `Cache-Control` (navegador y

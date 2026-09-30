@@ -56,6 +56,14 @@ PLANTILLAS_TIENDA: dict[str, dict[str, str]] = {
         "descripcion": "Categorías y enlaces juntos en una fila de \"historias\" desplazable, y tus productos "
         "en una cuadrícula tipo feed de fotos — tipografía Unbounded + Inter con degradé violeta a cian.",
     },
+    # Octava plantilla (2026-09-30), aprobada por Jose a partir del
+    # mockup en Artifact -- variante de "Pildoras" con portada grande
+    # desvanecida y pastillas de color solido de acento.
+    "pildoras_portada": {
+        "nombre": "Píldoras Portada",
+        "descripcion": "Como Píldoras, pero con tu foto de portada grande desvaneciéndose hacia el fondo y "
+        "las pastillas de enlaces con el color de acento sólido de fondo — tipografía Plus Jakarta Sans + Inter.",
+    },
 }
 
 
