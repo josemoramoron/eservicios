@@ -73,6 +73,18 @@
         >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.6" y1="10.5" x2="15.4" y2="6.5"></line><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"></line></svg>
         </button>
+        {% if trailer %}
+        <button
+            type="button"
+            class="pildoras-accion pildoras-accion--video"
+            data-abrir-trailer
+            data-embed="{{ trailer.embed_url }}"
+            aria-label="Ver video"
+            title="Ver video"
+        >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"></polygon></svg>
+        </button>
+        {% endif %}
     </div>
 </header>
 
@@ -102,7 +114,7 @@
     <p class="tienda-seccion-titulo">Productos</p>
     {% include "tienda/_filtro_categorias.html" %}
     <div class="tienda-grid">
-        {% for producto, wa_href, badge, estado_stock in productos %}
+        {% for producto, wa_href, badge, estado_stock, video in productos %}
         {% set fotos_producto = (producto.fotos | map(attribute='url') | list) if producto.fotos else ([producto.foto_url] if producto.foto_url else []) %}
         <div class="tienda-card-wrap">
             {% if consulta_multiple_habilitada %}
@@ -120,6 +132,7 @@
                 data-producto-id="{{ producto.id }}"
                 data-estado-stock="{{ estado_stock.clave if estado_stock else '' }}"
                 data-estado-stock-nombre="{{ estado_stock.nombre if estado_stock else '' }}"
+                data-youtube-embed="{{ video.embed_url if video else '' }}"
                 {% if categorias %}data-categoria="{{ producto.categoria.nombre if producto.categoria else '' }}"{% endif %}
             >
                 <span class="tienda-card__foto" {% if producto.foto_url %}style="background-image: url('{{ producto.foto_url }}');"{% endif %}>

@@ -182,6 +182,21 @@
     </p>
     {% endif %}
 
+    <hr class="admin-form__separador">
+    <label class="admin-form__label" for="youtube_url">Video de YouTube</label>
+    {% if plan_plus_activo %}
+    <input class="admin-form__input" type="url" id="youtube_url" name="youtube_url" value="{{ valores.youtube_url }}" placeholder="https://www.youtube.com/watch?v=...">
+    <p class="admin-form__hint">
+        Función de e-link Plus. Pega el link del video tal cual lo copias de YouTube (funciona con youtu.be,
+        shorts y el link normal de "Compartir"). Se muestra en una pestaña "Video" dentro de la ficha del
+        producto, junto a las fotos. Déjalo vacío para no mostrar ningún video.
+    </p>
+    {% else %}
+    <p class="admin-form__hint">
+        Mostrar un video de YouTube en la ficha de un producto es una función de <strong>e-link Plus</strong> — contáctanos para activarlo en tu cuenta.
+    </p>
+    {% endif %}
+
     <div class="admin-form__actions">
         <button class="admin-btn admin-btn--primary" type="submit">Guardar</button>
         <a class="admin-btn" href="{{ url_for('vendedor.dashboard') }}">Cancelar</a>

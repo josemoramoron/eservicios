@@ -21,6 +21,7 @@ from app.services.email_service import EnvioCorreoError, enviar_correo, renderiz
 from app.services.monedas_service import MONEDAS
 from app.services.plantillas_tienda_service import PLANTILLAS_TIENDA
 from app.services.site_info_service import obtener_info_sitio
+from app.services.youtube_service import extraer_id_video
 from app.services.tiempo_service import ahora_utc
 
 # Duraciones que el vendedor puede pedir desde /vendedor/perfil/plan/solicitar
@@ -92,6 +93,7 @@ def actualizar_perfil(
     disponible_ahora: bool = True,
     moneda: str | None = None,
     cupon: str = "",
+    youtube_trailer_url: str = "",
 ) -> None:
     """Actualiza los datos de personalización de la tienda del vendedor.
 
@@ -154,6 +156,13 @@ def actualizar_perfil(
             el plan no esté vigente en este momento, mismo trato que
             `color_acento`/`plantilla` — la aplicación real se resuelve
             en tiempo de render (ver `resolver_cupon_vendor`).
+        youtube_trailer_url: Link completo de YouTube del "tráiler" de la
+            tienda (roadmap, sección de video/YouTube), o vacío para quitarlo. A
+            diferencia de `cupon`/`plantilla`, GRATIS para cualquier plan
+            (mismo criterio que `moneda`): no se gatea en ningún
+            resolver. Un link que no matchee ningún formato reconocido
+            por `youtube_service.extraer_id_video` se ignora en silencio
+            (queda en None) — mismo trato que `color_acento`/`plantilla`.
 
     Raises:
         PerfilInvalidoError: Si el nombre o el WhatsApp quedan vacíos.
@@ -179,6 +188,7 @@ def actualizar_perfil(
     if moneda and moneda in MONEDAS:
         vendor.moneda = moneda
     vendor.cupon = cupon.strip() or None
+    vendor.youtube_trailer_video_id = extraer_id_video(youtube_trailer_url)
     db.session.commit()
 
 

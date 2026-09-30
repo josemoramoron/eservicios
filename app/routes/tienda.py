@@ -29,6 +29,8 @@ from app.services.vendor_theming_service import (
     resolver_disponibilidad_vendor,
     resolver_estado_stock_producto,
     resolver_plantilla_vendor,
+    resolver_trailer_vendor,
+    resolver_video_producto,
 )
 
 # Plantilla ("clasica", gratis) -> archivo de template — punto 13 del
@@ -111,6 +113,7 @@ def renderizar_tienda(vendor: Vendor):
             _href_click(href_whatsapp_producto(vendor, producto)),
             resolver_badge_producto(vendor, producto),
             resolver_estado_stock_producto(vendor, producto),
+            resolver_video_producto(vendor, producto),
         )
         for producto in productos
     ]
@@ -148,6 +151,12 @@ def renderizar_tienda(vendor: Vendor):
     # muestra cuando no es None.
     cupon = resolver_cupon_vendor(vendor)
 
+    # Video-tráiler del perfil (roadmap, sección de video/YouTube) — gratis para
+    # cualquier plan (ver resolver_trailer_vendor); None cuando el
+    # vendedor no cargó ninguno, y el template simplemente no muestra el
+    # botón "Ver video" de la cabecera.
+    trailer = resolver_trailer_vendor(vendor)
+
     respuesta = make_response(
         render_template(
             _TEMPLATE_POR_PLANTILLA[plantilla],
@@ -163,6 +172,7 @@ def renderizar_tienda(vendor: Vendor):
             consulta_multiple_habilitada=consulta_multiple_habilitada,
             consulta_multiple_base_href=url_for("clicks.click_whatsapp_multiple"),
             cupon=cupon,
+            trailer=trailer,
         )
     )
     respuesta.headers["Cache-Control"] = _CACHE_CONTROL_TIENDA

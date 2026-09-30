@@ -55,6 +55,16 @@
     </p>
 
     <hr class="admin-form__separador">
+    <label class="admin-form__label" for="youtube_trailer_url">Video de presentación (tráiler)</label>
+    <input class="admin-form__input" type="url" id="youtube_trailer_url" name="youtube_trailer_url" value="{{ url_watch_trailer }}" placeholder="https://www.youtube.com/watch?v=...">
+    <p class="admin-form__hint">
+        Gratis, para cualquier plan. Pega el link de un video de YouTube (funciona con youtu.be, shorts y el
+        link normal de "Compartir") para mostrar un botón "Ver video" en la cabecera de tu tienda pública, con
+        una presentación general de tu negocio — no ligado a ningún producto en particular. Déjalo vacío para
+        no mostrar ningún botón.
+    </p>
+
+    <hr class="admin-form__separador">
     <label class="admin-form__label" for="logo">Logo</label>
     {% if vendor.logo_url %}
     <img src="{{ vendor.logo_url }}" alt="Logo actual" style="width: 72px; height: 72px; object-fit: cover; border-radius: 50%; margin-bottom: 8px; display: block;">

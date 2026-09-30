@@ -47,6 +47,9 @@
         <div class="minimalista-actions">
             <a class="minimalista-accion minimalista-accion--whatsapp" href="{{ whatsapp_href_tienda }}" target="_blank" rel="noopener">WhatsApp</a>
             <button type="button" class="minimalista-accion" data-compartir-btn data-url="{{ request.url }}" data-titulo="{{ vendor.nombre_negocio }}">Compartir</button>
+            {% if trailer %}
+            <button type="button" class="minimalista-accion" data-abrir-trailer data-embed="{{ trailer.embed_url }}">Ver video</button>
+            {% endif %}
         </div>
 
         {% if enlaces %}
@@ -64,7 +67,7 @@
         {% if productos %}
         {% include "tienda/_filtro_categorias.html" %}
         <div class="minimalista-lista">
-            {% for producto, wa_href, badge, estado_stock in productos %}
+            {% for producto, wa_href, badge, estado_stock, video in productos %}
             {% set fotos_producto = (producto.fotos | map(attribute='url') | list) if producto.fotos else ([producto.foto_url] if producto.foto_url else []) %}
             <div class="tienda-card-wrap tienda-card-wrap--fila">
                 {% if consulta_multiple_habilitada %}
@@ -82,6 +85,7 @@
                     data-producto-id="{{ producto.id }}"
                     data-estado-stock="{{ estado_stock.clave if estado_stock else '' }}"
                     data-estado-stock-nombre="{{ estado_stock.nombre if estado_stock else '' }}"
+                    data-youtube-embed="{{ video.embed_url if video else '' }}"
                     {% if categorias %}data-categoria="{{ producto.categoria.nombre if producto.categoria else '' }}"{% endif %}
                 >
                     <span class="minimalista-item__titulo">

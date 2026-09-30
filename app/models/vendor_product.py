@@ -62,6 +62,19 @@ class VendorProduct(db.Model):
     categoria_id: Mapped[int | None] = mapped_column(
         ForeignKey("vendor_categorias.id"), nullable=True, index=True
     )
+    # ID de video de YouTube (11 caracteres, no la URL completa — ver
+    # app/services/youtube_service.py para la extracción/reconstrucción),
+    # función de e-link Plus (roadmap, sección "Video, estados y productos
+    # digitales bloqueados", embed de YouTube): un video por
+    # producto, embebido en una pestaña "Video" del modal de detalle
+    # junto a "Fotos" (ver _modal_producto.html). Mismo criterio que
+    # badge/estado_stock/categoria_id: se guarda aunque el plan no esté
+    # vigente en este momento, y la aplicación real (mostrar la pestaña
+    # o no) siempre se resuelve en tiempo de render (ver
+    # vendor_theming_service.resolver_video_producto). Distinto del
+    # video-tráiler de perfil (Vendor.youtube_trailer_video_id), que es
+    # gratis para cualquier plan.
+    youtube_video_id: Mapped[str | None] = mapped_column(String(20), nullable=True)
     activo: Mapped[bool] = mapped_column(default=True, nullable=False)
     creado_en: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
     actualizado_en: Mapped[datetime] = mapped_column(

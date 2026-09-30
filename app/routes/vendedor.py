@@ -73,6 +73,7 @@ from app.services.vendor_link_service import (
 )
 from app.services.vendor_whatsapp_service import construir_vcard, href_whatsapp_soporte_pago
 from app.services.vendor_theming_service import listar_paleta_acento, resolver_acento_vendor
+from app.services.youtube_service import armar_url_watch
 from app.services.vendor_producto_service import (
     MAX_FOTOS_PRODUCTO,
     actualizar_producto,
@@ -794,6 +795,13 @@ def perfil():
         # disponible_ahora abajo) — siempre viene del <select> cerrado del
         # formulario, sin gateo por plan_plus_activo (ver monedas_service).
         moneda = request.form.get("moneda", "")
+        # Tráiler de video del perfil (roadmap, sección de video/YouTube) —
+        # GRATIS para cualquier plan, igual que moneda: siempre viene del
+        # formulario, sin gateo por plan_plus_activo. Un link que no
+        # matchee ningún formato de YouTube conocido se ignora en
+        # silencio dentro de actualizar_perfil (ver
+        # youtube_service.extraer_id_video).
+        youtube_trailer_url = request.form.get("youtube_trailer_url", "")
         # Igual: un radio cerrado, no texto libre — el gateo real por
         # plan Plus ocurre en tiempo de render (resolver_plantilla_vendor),
         # no acá. Se guarda tal cual llegue aunque el vendedor no tenga
@@ -839,6 +847,7 @@ def perfil():
                 paleta_acento=listar_paleta_acento(plan_plus_activo),
                 plan_plus_activo=plan_plus_activo,
                 monedas=listar_monedas(),
+                url_watch_trailer=armar_url_watch(vendor.youtube_trailer_video_id),
             )
         if logo_url is not None:
             r2_service.eliminar_imagen(vendor.logo_url)
@@ -858,6 +867,7 @@ def perfil():
                 paleta_acento=listar_paleta_acento(plan_plus_activo),
                 plan_plus_activo=plan_plus_activo,
                 monedas=listar_monedas(),
+                url_watch_trailer=armar_url_watch(vendor.youtube_trailer_video_id),
             )
         if banner_url is not None:
             r2_service.eliminar_imagen(vendor.banner_url)
@@ -880,6 +890,7 @@ def perfil():
                 disponible_ahora=disponible_ahora,
                 moneda=moneda,
                 cupon=cupon,
+                youtube_trailer_url=youtube_trailer_url,
             )
         except PerfilInvalidoError as exc:
             flash(str(exc), "error")
@@ -890,6 +901,7 @@ def perfil():
                 paleta_acento=listar_paleta_acento(plan_plus_activo),
                 plan_plus_activo=plan_plus_activo,
                 monedas=listar_monedas(),
+                url_watch_trailer=armar_url_watch(vendor.youtube_trailer_video_id),
             )
 
         flash("Perfil actualizado.", "success")
@@ -901,6 +913,7 @@ def perfil():
         paleta_acento=listar_paleta_acento(plan_plus_activo),
         plan_plus_activo=plan_plus_activo,
         monedas=listar_monedas(),
+        url_watch_trailer=armar_url_watch(vendor.youtube_trailer_video_id),
     )
 
 
@@ -1271,6 +1284,7 @@ def _producto_a_valores(producto: VendorProduct | None) -> dict:
             "badge": None,
             "estado_stock": None,
             "categoria_id": None,
+            "youtube_url": "",
         }
     return {
         "titulo": producto.titulo,
@@ -1281,6 +1295,7 @@ def _producto_a_valores(producto: VendorProduct | None) -> dict:
         "badge": producto.badge,
         "estado_stock": producto.estado_stock,
         "categoria_id": producto.categoria_id,
+        "youtube_url": armar_url_watch(producto.youtube_video_id),
     }
 
 
@@ -1430,6 +1445,12 @@ def producto_nuevo():
         estado_stock = request.form.get("estado_stock", "") if plan_plus_activo else ""
         categoria_id_raw = request.form.get("categoria_id", "") if plan_plus_activo else ""
         categoria_id = int(categoria_id_raw) if categoria_id_raw.isdigit() else None
+        # Video de YouTube (roadmap, sección de video/YouTube) — mismo trato que
+        # badge/estado_stock/categoria_id: solo se acepta con Plus
+        # vigente, y un link que no matchee ningún formato conocido se
+        # ignora en silencio (ver youtube_service.extraer_id_video,
+        # llamado recién dentro de crear_producto).
+        youtube_url = request.form.get("youtube_url", "") if plan_plus_activo else ""
         if error:
             flash(error, "error")
             return render_template(
@@ -1441,6 +1462,7 @@ def producto_nuevo():
                     "badge": badge or None,
                     "estado_stock": estado_stock or None,
                     "categoria_id": categoria_id,
+                    "youtube_url": youtube_url,
                 },
                 max_fotos=MAX_FOTOS_PRODUCTO,
                 plan_plus_activo=plan_plus_activo,
@@ -1461,6 +1483,7 @@ def producto_nuevo():
                     "badge": badge or None,
                     "estado_stock": estado_stock or None,
                     "categoria_id": categoria_id,
+                    "youtube_url": youtube_url,
                 },
                 max_fotos=MAX_FOTOS_PRODUCTO,
                 plan_plus_activo=plan_plus_activo,
@@ -1478,6 +1501,7 @@ def producto_nuevo():
             badge=badge,
             estado_stock=estado_stock,
             categoria_id=categoria_id,
+            youtube_url=youtube_url,
         )
         if advertencia_fotos:
             flash(advertencia_fotos, "error")
@@ -1521,10 +1545,16 @@ def producto_editar(producto_id: int):
             estado_stock = request.form.get("estado_stock", "")
             categoria_id_raw = request.form.get("categoria_id", "")
             categoria_id = int(categoria_id_raw) if categoria_id_raw.isdigit() else None
+            youtube_url = request.form.get("youtube_url", "")
         else:
             badge = producto.badge or ""
             estado_stock = producto.estado_stock or ""
             categoria_id = producto.categoria_id
+            # Igual que badge/estado_stock/categoria_id: sin Plus vigente
+            # se conserva el video que el producto ya tenía en vez de
+            # borrarlo (reconstruido como URL "watch" para precargar el
+            # campo si se vuelve a mostrar el formulario).
+            youtube_url = armar_url_watch(producto.youtube_video_id)
         if error:
             flash(error, "error")
             return render_template(
@@ -1536,6 +1566,7 @@ def producto_editar(producto_id: int):
                     "badge": badge or None,
                     "estado_stock": estado_stock or None,
                     "categoria_id": categoria_id,
+                    "youtube_url": youtube_url,
                 },
                 max_fotos=MAX_FOTOS_PRODUCTO,
                 plan_plus_activo=plan_plus_activo,
@@ -1556,6 +1587,7 @@ def producto_editar(producto_id: int):
                     "badge": badge or None,
                     "estado_stock": estado_stock or None,
                     "categoria_id": categoria_id,
+                    "youtube_url": youtube_url,
                 },
                 max_fotos=MAX_FOTOS_PRODUCTO,
                 plan_plus_activo=plan_plus_activo,
@@ -1574,6 +1606,7 @@ def producto_editar(producto_id: int):
             badge=badge,
             estado_stock=estado_stock,
             categoria_id=categoria_id,
+            youtube_url=youtube_url,
         )
         if advertencia_fotos:
             flash(advertencia_fotos, "error")

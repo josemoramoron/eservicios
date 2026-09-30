@@ -16,6 +16,7 @@ from app.models import Vendor, VendorCategoria, VendorProduct
 from app.services.badges_producto_service import obtener_badge_producto
 from app.services.estados_stock_service import obtener_estado_stock
 from app.services.plantillas_tienda_service import obtener_plantilla_tienda
+from app.services.youtube_service import armar_embed_url
 from app.services.vendor_categoria_service import listar_categorias_de_vendor
 from app.services.vendor_perfil_service import plan_plus_o_prueba_vigente
 
@@ -255,6 +256,60 @@ def resolver_badge_producto(vendor: Vendor, producto: VendorProduct) -> dict[str
     if not producto.badge or not plan_plus_o_prueba_vigente(vendor):
         return None
     return obtener_badge_producto(producto.badge)
+
+
+def resolver_video_producto(vendor: Vendor, producto: VendorProduct) -> dict[str, str] | None:
+    """Resuelve el video de YouTube efectivo de un producto, si aplica.
+
+    Punto único de entrada para la función Plus de embed de YouTube del roadmap
+    — `routes/tienda.py` la usa para decidir si la ficha del producto
+    ofrece la pestaña "Video" en el modal, en vez de leer
+    `producto.youtube_video_id` directamente. Mismo criterio que
+    `resolver_badge_producto`/`resolver_estado_stock_producto`.
+
+    Args:
+        vendor: Tienda dueña del producto (para chequear su plan).
+        producto: Producto a evaluar.
+
+    Returns:
+        None cuando el producto no tiene video guardado, o cuando la
+        tienda no tiene Plus (real o de prueba) vigente ahora mismo (ver
+        `plan_plus_o_prueba_vigente`) — en ese caso el valor sigue
+        guardado en `producto.youtube_video_id`, listo para reactivarse
+        solo con volver a Plus. Si aplica, un diccionario con
+        `video_id` y `embed_url` (ver `youtube_service.armar_embed_url`).
+    """
+    if not producto.youtube_video_id or not plan_plus_o_prueba_vigente(vendor):
+        return None
+    return {
+        "video_id": producto.youtube_video_id,
+        "embed_url": armar_embed_url(producto.youtube_video_id),
+    }
+
+
+def resolver_trailer_vendor(vendor: Vendor) -> dict[str, str] | None:
+    """Resuelve el video-tráiler del perfil de la tienda, si el vendedor cargó uno.
+
+    Punto único de entrada para el tráiler de perfil del roadmap
+    — a diferencia de `resolver_video_producto`, el tráiler de perfil es
+    GRATIS para cualquier plan (mismo criterio que `vendor.moneda`): no
+    depende de `plan_plus_o_prueba_vigente`, solo valida que siga
+    habiendo un ID guardado.
+
+    Args:
+        vendor: Tienda a evaluar.
+
+    Returns:
+        None cuando la tienda no tiene tráiler guardado. Si tiene, un
+        diccionario con `video_id` y `embed_url` (ver
+        `youtube_service.armar_embed_url`).
+    """
+    if not vendor.youtube_trailer_video_id:
+        return None
+    return {
+        "video_id": vendor.youtube_trailer_video_id,
+        "embed_url": armar_embed_url(vendor.youtube_trailer_video_id),
+    }
 
 
 def resolver_disponibilidad_vendor(vendor: Vendor) -> bool | None:
