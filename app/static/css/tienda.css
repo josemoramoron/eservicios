@@ -1315,11 +1315,29 @@
 
 /* Enlaces sociales — píldora chica y discreta (muted), a diferencia de
    .minimalista-accion, que es la acción principal de la tienda. */
+/* Antes "flex-wrap: wrap" (pasaba a una segunda línea) — ahora una
+   sola fila con scroll + marquesina, igual criterio que las plantillas
+   con enlaces circulares (pedido de Jose 2026-09-30: que no salte de
+   línea, aunque acá las pastillas son de texto, no círculos). */
 .minimalista-enlaces {
     display: flex;
-    flex-wrap: wrap;
     gap: 8px;
     margin-top: 14px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    cursor: grab;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    user-select: none;
+}
+
+.minimalista-enlaces::-webkit-scrollbar {
+    display: none;
+}
+
+.minimalista-enlaces.is-arrastrando {
+    cursor: grabbing;
 }
 
 .minimalista-enlace {
@@ -1330,6 +1348,8 @@
     border: 1px solid var(--color-border);
     border-radius: 999px;
     padding: 6px 13px;
+    white-space: nowrap;
+    flex-shrink: 0;
     transition: border-color 0.15s ease, color 0.15s ease;
 }
 
@@ -2110,8 +2130,17 @@
     border: 2px solid var(--color-border);
 }
 
-.feed-historia__circulo--link {
-    background-color: var(--color-surface);
+/* Círculo de un enlace (red social) dentro de "historias": tiene que
+   quedar neutro/con buen contraste, igual que en las otras 3 plantillas
+   con enlaces circulares (ver _enlaces_circulares.html) — NUNCA con el
+   degradé de acento, que es solo para las categorías. Se usa el
+   selector descendiente ".feed-historia--link .feed-historia__circulo"
+   (más específico que ".feed-historia__circulo" solo) para que gane
+   siempre sobre la regla base, sin depender del orden en el archivo
+   (bug reportado por Jose 2026-09-30: el ícono de la red social se
+   veía gris sobre el degradé de acento, ilegible). */
+.feed-historia--link .feed-historia__circulo {
+    background: var(--color-surface);
     color: var(--color-text-muted);
     border: 1px solid var(--color-border);
 }
