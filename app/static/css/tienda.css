@@ -1502,9 +1502,17 @@
     width: 100%;
     padding: 13px 18px;
     border-radius: 999px;
-    border: 1px solid var(--color-border);
-    background-color: var(--color-surface);
-    color: var(--color-text);
+    border: 1px solid transparent;
+    /* Pastillas con color de acento (2026-09-30, pedido de Jose: que
+       "Píldoras" tenga una versión con el color de acento, parecida a
+       Feed continuo). Mismo degradé que usan los círculos de categoría
+       de Feed continuo, para que ambas plantillas "con color" se vean
+       de la misma familia. El texto y el ícono (que usa `currentColor`)
+       toman --color-accent-contrast, el mismo tono ya pensado para leerse
+       bien encima de --color-accent — así se evita el problema de
+       contraste que tuvo Feed continuo con sus círculos de enlaces. */
+    background: linear-gradient(135deg, var(--color-accent), var(--color-portada-fin, var(--color-accent)));
+    color: var(--color-accent-contrast);
     font-weight: 600;
     /* Subido de 14px a 15px + un poco de espaciado entre letras
        (2026-09-13, pedido de Jose: el nombre de la red social se veía
@@ -1514,7 +1522,7 @@
     font-size: 15px;
     letter-spacing: 0.3px;
     text-decoration: none;
-    transition: border-color 0.15s ease, color 0.15s ease;
+    transition: filter 0.15s ease;
 }
 
 .pildoras-pill svg {
@@ -1526,17 +1534,23 @@
 /* Favicon externo (2026-09-16) — mismo tamaño que el ícono SVG de arriba,
    así la pastilla no cambia de alto según tenga ícono de red reconocida o
    favicon externo. Si falla la carga, `onerror` en el template la quita
-   (ver el comentario ahí) y la pastilla se queda solo con el texto. */
+   (ver el comentario ahí) y la pastilla se queda solo con el texto.
+   Fondo --color-surface a modo de "chip" (2026-09-30): un favicon trae
+   sus propios colores fijos (por ejemplo, el ícono de Google), así que
+   sin un fondo neutro detrás podía perderse contra el degradé de acento
+   de la pastilla. */
 .pildoras-pill__favicon {
     width: 18px;
     height: 18px;
     border-radius: 50%;
     flex: 0 0 auto;
+    background-color: var(--color-surface);
+    padding: 2px;
+    box-sizing: content-box;
 }
 
 .pildoras-pill:hover {
-    border-color: var(--color-accent);
-    color: var(--color-accent);
+    filter: brightness(1.08);
 }
 
 /* El ancla "Catálogo" hace scroll hasta #pildoras-productos en la misma
