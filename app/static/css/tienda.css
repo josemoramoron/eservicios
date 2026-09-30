@@ -1067,6 +1067,26 @@
     font-weight: 700;
 }
 
+/* Filtro de categorías (punto 18) dentro de Editorial — bug reportado
+   por Jose el 2026-09-30 ("las categorías están descuadradas"): a
+   diferencia de Clásica/Píldoras (donde .tienda-categorias vive dentro
+   de .tienda-main, que ya centra y da los 20-24px de margen) y de
+   Minimalista (donde vive dentro de .minimalista-wrap, mismo caso),
+   en Editorial el filtro se incluye directo en el <body>, entre
+   </header> y <section class="editorial-featured"> — sin ningún
+   contenedor propio que lo centre. .editorial-head y
+   .editorial-featured/.editorial-list sí se centran cada uno por su
+   cuenta (max-width: 640px + margin: 0 auto + padding: 0 24px), así
+   que el filtro, sin esa misma regla, quedaba pegado al borde de la
+   ventana en vez de alinear con el resto de la columna — mucho más
+   notorio en escritorio, donde la diferencia entre "ancho completo" y
+   "columna de 640px" es grande. Mismo tratamiento que sus vecinos. */
+.editorial-body .tienda-categorias {
+    max-width: 640px;
+    margin: 0 auto 16px;
+    padding: 0 24px;
+}
+
 .editorial-featured,
 .editorial-list {
     max-width: 640px;
