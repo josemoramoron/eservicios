@@ -566,11 +566,30 @@
     margin: 0 auto;
 }
 
+/* Fila de enlaces circulares compartida (2026-09-30, ver
+   _enlaces_circulares.html) — antes era "flex-wrap: wrap" (pasaba a una
+   segunda línea); ahora es una sola fila que se desplaza sola tipo
+   marquesina y también se puede arrastrar a mano cuando no cabe
+   (historias_scroll.js), igual que la fila de "historias" de Feed
+   continuo. Compartida por Clásica, Editorial, Portada y Tablero. */
 .tienda-links__redes {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
     gap: 10px;
+    overflow-x: auto;
+    padding: 2px 2px 6px;
+    cursor: grab;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    user-select: none;
+}
+
+.tienda-links__redes::-webkit-scrollbar {
+    display: none;
+}
+
+.tienda-links__redes.is-arrastrando {
+    cursor: grabbing;
 }
 
 .tienda-links__icono {
@@ -1019,53 +1038,11 @@
     color: var(--color-accent);
 }
 
-.editorial-social {
-    display: flex;
-    gap: 8px;
-}
-
-.editorial-social a {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    border: 1px solid var(--color-border);
-    color: var(--color-text-muted);
-}
-
-.editorial-social a:hover {
-    border-color: var(--color-accent);
-    color: var(--color-accent);
-}
 
 /* Favicon externo (2026-09-16) — mismo criterio que .tienda-links__favicon:
    tapa la inicial mientras carga bien, y se auto-elimina con `onerror` en
    el template si el navegador del visitante no logra cargarlo. */
-.editorial-social__favicon {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    padding: 7px;
-    box-sizing: border-box;
-    background-color: var(--color-surface);
-    border-radius: 50%;
-}
 
-.editorial-social a svg {
-    width: 15px;
-    height: 15px;
-}
-
-.editorial-social__inicial {
-    font-size: 13px;
-    font-weight: 700;
-}
 
 /* Filtro de categorías (punto 18) dentro de Editorial — bug reportado
    por Jose el 2026-09-30 ("las categorías están descuadradas"): a
@@ -1712,54 +1689,6 @@
     color: var(--color-text);
 }
 
-.portada-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-    margin-top: 16px;
-}
-
-.portada-links__icono {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 1px solid var(--color-border);
-    background-color: var(--color-surface);
-    color: var(--color-text-muted);
-}
-
-.portada-links__icono:hover {
-    border-color: var(--color-accent);
-    color: var(--color-accent);
-}
-
-.portada-links__icono svg {
-    width: 18px;
-    height: 18px;
-}
-
-.portada-links__inicial {
-    font-size: 15px;
-    font-weight: 700;
-}
-
-.portada-links__favicon {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    padding: 9px;
-    box-sizing: border-box;
-    background-color: var(--color-surface);
-    border-radius: 50%;
-}
 
 .portada-seccion-titulo {
     font-family: "Bricolage Grotesque", "Inter", sans-serif;
@@ -1878,49 +1807,16 @@
     height: 15px;
 }
 
-.tablero-social {
-    display: flex;
-    gap: 8px;
-}
 
-.tablero-social a {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    border: 1px solid var(--color-border);
-    color: var(--color-text-muted);
-}
-
-.tablero-social a:hover {
-    border-color: var(--color-accent);
-    color: var(--color-accent);
-}
-
-.tablero-social a svg {
-    width: 15px;
-    height: 15px;
-}
-
-.tablero-social__inicial {
-    font-size: 13px;
-    font-weight: 700;
-}
-
-.tablero-social__favicon {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    padding: 7px;
-    box-sizing: border-box;
-    background-color: var(--color-surface);
-    border-radius: 50%;
+/* Filtro de categorías dentro de Tablero — mismo bug que ya se había
+   corregido en Editorial (2026-09-30, recordado por Jose): _filtro_categorias.html
+   se incluye directo en el <body>, sin ningún contenedor que lo centre/
+   acote como sí hacen .tablero-head y .tablero-featured/.tablero-vitrina
+   por su cuenta. */
+.tablero-body .tienda-categorias {
+    max-width: 560px;
+    margin: 0 auto 16px;
+    padding: 0 20px;
 }
 
 .tablero-featured {
@@ -2174,7 +2070,7 @@
     display: none;
 }
 
-.feed-historias--arrastrando {
+.feed-historias.is-arrastrando {
     cursor: grabbing;
 }
 

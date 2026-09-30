@@ -1,6 +1,11 @@
 /*
- * historias_scroll.js — fila de "historias" (categorías + enlaces) de la
- * plantilla "Feed continuo" (Concepto C, e-link Plus, 2026-09-30).
+ * historias_scroll.js — cualquier fila horizontal marcada con
+ * [data-historias-scroll]: la fila combinada de "historias" (categorías +
+ * enlaces) de "Feed continuo", y la fila de enlaces circulares compartida
+ * por Clásica/Editorial/Portada/Tablero (ver _enlaces_circulares.html).
+ * Genérico a propósito (2026-09-30, pedido de Jose de unificar el
+ * comportamiento en todas las plantillas con enlaces circulares, menos
+ * Píldoras) — no asume ninguna clase CSS específica, solo el atributo.
  *
  * Pedido de Jose: cuando la fila no cabe en pantalla, debe combinar dos
  * comportamientos a la vez —
@@ -82,7 +87,7 @@
             arrastreInicioX = evento.clientX;
             arrastreInicioScroll = fila.scrollLeft;
             fila.setPointerCapture(evento.pointerId);
-            fila.classList.add("feed-historias--arrastrando");
+            fila.classList.add("is-arrastrando");
         });
 
         fila.addEventListener("pointermove", function (evento) {
@@ -95,7 +100,7 @@
         function soltar(evento) {
             if (!arrastrando) return;
             arrastrando = false;
-            fila.classList.remove("feed-historias--arrastrando");
+            fila.classList.remove("is-arrastrando");
             marcarInteraccion();
             // Si hubo arrastre real, evita que el click posterior dispare
             // el filtro de categoría o el enlace por accidente.

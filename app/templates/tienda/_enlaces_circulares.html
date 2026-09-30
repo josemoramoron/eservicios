@@ -1,0 +1,38 @@
+{# Fila de enlaces circulares (redes sociales / sitios propios) — parcial
+   compartido (2026-09-30, pedido de Jose: "unifica y estandariza hasta
+   donde se pueda") por las plantillas que muestran los enlaces como
+   íconos circulares: Clásica, Editorial, Portada dominante y Vitrina de
+   tablero. NO la usan Píldoras (pastillas con texto) ni Minimalista
+   (pastillas con texto) — ninguna de las dos muestra el enlace como
+   círculo. "Feed continuo" tampoco la usa: ahí los enlaces van
+   combinados con las categorías en su propia fila de "historias"
+   (ver publica_feed.html), pero con el mismo criterio de icono_red/
+   inicial/favicon de respaldo.
+
+   Se desplaza sola tipo marquesina cuando no cabe en pantalla, y
+   también se puede arrastrar/scrollear a mano — mismo mecanismo
+   (data-historias-scroll, historias_scroll.js) que "Feed continuo".
+   Cada plantilla que la incluye debe cargar también
+   app/static/js/historias_scroll.js. #}
+{% if enlaces %}
+<nav class="tienda-links">
+    <div class="tienda-links__redes" data-historias-scroll>
+        {% for link, icono in enlaces %}
+        <a class="tienda-links__icono" href="{{ link.url }}" target="_blank" rel="noopener noreferrer" aria-label="{{ link.titulo }}" title="{{ link.titulo }}">
+            {% if icono %}
+            {{ icono_red(icono) | safe }}
+            {% else %}
+            <span class="tienda-links__icono-inicial">{{ link.titulo[:1] | upper }}</span>
+            {# Favicon del sitio (2026-09-16, pedido de Jose) para enlaces
+               que no son de una red reconocida — se pide del lado del
+               navegador de cada visitante (nunca desde el servidor, para
+               no repetir el incidente de WORKER TIMEOUT de r2_service).
+               Si falla la carga, `onerror` la quita y queda la inicial de
+               abajo, que ya estaba puesta debajo por si acaso. #}
+            <img class="tienda-links__favicon" src="https://www.google.com/s2/favicons?sz=64&domain_url={{ link.url | urlencode }}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">
+            {% endif %}
+        </a>
+        {% endfor %}
+    </div>
+</nav>
+{% endif %}
