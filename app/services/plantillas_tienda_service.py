@@ -37,6 +37,25 @@ PLANTILLAS_TIENDA: dict[str, dict[str, str]] = {
         "circulares (catálogo, WhatsApp, compartir) y tus enlaces como píldoras con texto — ideal si "
         "agregas enlaces de referido o sitios propios, no solo redes sociales.",
     },
+    # Las 3 siguientes (2026-09-30) nacen de las propuestas visuales
+    # aprobadas por Jose para hacer la tienda pública más atractiva —
+    # se agregan como plantillas nuevas e independientes, sin tocar
+    # "editorial" ni ninguna de las anteriores.
+    "portada": {
+        "nombre": "Portada dominante",
+        "descripcion": "Tu foto de portada a pantalla completa con el avatar superpuesto y el nombre en "
+        "grande — tipografía Bricolage Grotesque + Inter, estilo oscuro y directo al catálogo.",
+    },
+    "tablero": {
+        "nombre": "Vitrina de tablero",
+        "descripcion": "Una pieza destacada arriba y el resto de tus productos en un tablero de casillas, "
+        "tipografía Fraunces itálica + Work Sans en verde bosque y dorado.",
+    },
+    "feed": {
+        "nombre": "Feed continuo",
+        "descripcion": "Categorías y enlaces juntos en una fila de \"historias\" desplazable, y tus productos "
+        "en una cuadrícula tipo feed de fotos — tipografía Unbounded + Inter con degradé violeta a cian.",
+    },
 }
 
 

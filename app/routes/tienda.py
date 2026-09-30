@@ -41,6 +41,11 @@ _TEMPLATE_POR_PLANTILLA = {
     "editorial": "tienda/publica_editorial.html",
     "minimalista": "tienda/publica_minimalista.html",
     "pildoras": "tienda/publica_pildoras.html",
+    # Nuevas (2026-09-30), propuestas visuales aprobadas por Jose —
+    # ver plantillas_tienda_service.PLANTILLAS_TIENDA.
+    "portada": "tienda/publica_portada.html",
+    "tablero": "tienda/publica_tablero.html",
+    "feed": "tienda/publica_feed.html",
 }
 
 # La tienda pública se sirve con este `Cache-Control` (navegador y
