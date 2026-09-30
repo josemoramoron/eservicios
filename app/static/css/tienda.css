@@ -1387,6 +1387,18 @@
    con enlaces circulares (pedido de Jose 2026-09-30: que no salte de
    línea, aunque acá las pastillas son de texto, no círculos). */
 .minimalista-enlaces {
+    /* align-self: stretch (2026-09-30, bug reportado por Jose) --
+       .minimalista-head es un flex column con align-items: flex-start
+       (necesario para que avatar/nombre/acciones queden pegados a la
+       izquierda, no centrados). Sin esto, este elemento -- como
+       cualquier hijo de un flex con flex-start -- toma ancho de
+       "ajustar al contenido" en vez de llenar la fila, así que las 6
+       pastillas en una sola línea (white-space: nowrap) lo hacían
+       crecer más ancho que la pantalla en vez de activar su propio
+       overflow-x: auto -- el resultado era toda la PÁGINA con scroll
+       horizontal, no una tira de pastillas con scroll/arrastre interno
+       como en las demás plantillas. */
+    align-self: stretch;
     display: flex;
     gap: 8px;
     margin-top: 14px;
