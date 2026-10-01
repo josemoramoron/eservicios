@@ -891,12 +891,15 @@
    tabs.hidden/panelFotos.hidden = true en abrirModalTrailer, pero esta
    regla por CSS puro es la última línea de defensa — el tráiler nunca
    tiene fotos propias que mostrar, así que si algún día un cambio en
-   el JS se olvida de ocultarlas, esto las esconde igual.
+   el JS se olvida de ocultarlas, esto las esconde igual. Sin
+   !important (.clinerules) — alcanza con que el selector sea más
+   específico que .tienda-modal__tabs/.tienda-modal__panel-fotos
+   solas (dos clases contra una).
    abrirModalTrailer marca data-modo="trailer" en el modal antes de
    mostrarlo; abrirModal (producto) lo limpia. */
 .tienda-modal[data-modo="trailer"] .tienda-modal__tabs,
 .tienda-modal[data-modo="trailer"] .tienda-modal__panel-fotos {
-    display: none !important;
+    display: none;
 }
 
 .tienda-modal__panel-video {
