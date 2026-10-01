@@ -165,6 +165,14 @@ class Vendor(db.Model):
     # pública como un botón "Ver video" en la cabecera que abre el mismo
     # modal que usan los productos, en modo tráiler.
     youtube_trailer_video_id: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Link completo de un video de TikTok para el tráiler del perfil (a
+    # diferencia del ID de arriba, acá SÍ se guarda la URL entera — ver
+    # app/services/tiktok_service.py para el porqué). Agregado 2026-10-01
+    # al sumar TikTok como segunda plataforma del campo único de video
+    # (ver app/services/video_service.py) — mutuamente excluyente con
+    # youtube_trailer_video_id. Gratis para cualquier plan, igual que
+    # youtube_trailer_video_id.
+    tiktok_trailer_video_url: Mapped[str | None] = mapped_column(String(300), nullable=True)
     plan: Mapped[PlanVendor] = mapped_column(
         SqlEnum(PlanVendor, name="plan_vendor"), default=PlanVendor.FREE, nullable=False
     )

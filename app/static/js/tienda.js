@@ -7,16 +7,21 @@
  * (`data-fotos`, un array JSON), pinta una fila de miniaturas debajo de
  * la foto principal para poder cambiarla sin cerrar el modal.
  *
- * Pestañas "Fotos"/"Video" (2026-09-30, roadmap — embed de YouTube): si la
- * tarjeta trae `data-youtube-embed` (ver resolver_video_producto), el
- * modal muestra la pestaña "Video" además de "Fotos"; si no, las
- * pestañas quedan ocultas y todo se comporta igual que antes.
+ * Pestañas "Fotos"/"Video" (2026-09-30, roadmap — embed de video; TikTok
+ * sumado 2026-10-01): si la tarjeta trae `data-video-embed` (ver
+ * resolver_video_producto, YouTube o TikTok) el modal muestra la
+ * pestaña "Video" además de "Fotos"; si no, las pestañas quedan ocultas
+ * y todo se comporta igual que antes. `data-video-vertical` ("1" en
+ * TikTok, vacío en YouTube) decide si la caja del video usa la
+ * proporción vertical (`.tienda-modal__video-wrap--vertical`) o la
+ * 16:9 de siempre.
  *
  * El mismo modal se reutiliza para el video-tráiler del perfil (punto
- * 22-bis, botones `[data-abrir-trailer]` en la cabecera de las 7
+ * 22-bis, botones `[data-abrir-trailer]` en la cabecera de las 8
  * plantillas): ahí se abre en "modo tráiler", que oculta todo lo
  * específico de un producto (precio, descripción, estado de stock,
- * WhatsApp, aviso) y muestra solo el video, sin pestañas.
+ * WhatsApp, aviso) y muestra solo el video, sin pestañas — también
+ * respeta `data-vertical` del botón que lo abrió.
  *
  * Sin dependencias.
  */
@@ -41,6 +46,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const panelFotos = document.getElementById("tienda-modal-panel-fotos");
     const panelVideo = document.getElementById("tienda-modal-panel-video");
     const videoIframe = document.getElementById("tienda-modal-video-iframe");
+    const videoWrap = document.getElementById("tienda-modal-video-wrap");
+
+    // Alterna la proporción de la caja del video entre 16:9 (YouTube) y
+    // vertical (TikTok, casi siempre 9:16) — ver
+    // .tienda-modal__video-wrap--vertical en tienda.css.
+    function marcarVideoVertical(esVertical) {
+        if (videoWrap) {
+            videoWrap.classList.toggle("tienda-modal__video-wrap--vertical", !!esVertical);
+        }
+    }
 
     function mostrarFotoPrincipal(url) {
         foto.style.backgroundImage = url ? `url('${url}')` : "";
@@ -139,7 +154,8 @@ document.addEventListener("DOMContentLoaded", () => {
         // en particular tiene un video guardado (y el plan Plus del
         // vendedor está vigente, ya resuelto del lado del servidor en
         // data-youtube-embed). Siempre se abre mostrando "Fotos" primero.
-        const embedUrl = tarjeta.dataset.youtubeEmbed || "";
+        const embedUrl = tarjeta.dataset.videoEmbed || "";
+        marcarVideoVertical(tarjeta.dataset.videoVertical);
         if (videoIframe) {
             videoIframe.src = embedUrl;
         }
@@ -153,7 +169,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Abre el modal en "modo tráiler" (tráiler de perfil gratis): un solo video de
     // presentación del perfil, sin nada de lo específico de un producto.
-    function abrirModalTrailer(embedUrl) {
+    function abrirModalTrailer(embedUrl, esVertical) {
         if (!embedUrl) {
             return;
         }
@@ -168,6 +184,7 @@ document.addEventListener("DOMContentLoaded", () => {
         titulo.textContent = "Video";
         if (panelFotos) panelFotos.hidden = true;
         if (panelVideo) panelVideo.hidden = false;
+        marcarVideoVertical(esVertical);
         if (videoIframe) {
             videoIframe.src = embedUrl;
         }
@@ -189,7 +206,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.querySelectorAll("[data-abrir-trailer]").forEach((boton) => {
-        boton.addEventListener("click", () => abrirModalTrailer(boton.dataset.embed || ""));
+        boton.addEventListener("click", () =>
+            abrirModalTrailer(boton.dataset.embed || "", boton.dataset.vertical)
+        );
     });
 
     modal.querySelectorAll("[data-cerrar]").forEach((el) => {

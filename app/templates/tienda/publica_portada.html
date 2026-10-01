@@ -51,7 +51,7 @@
             Compartir
         </button>
         {% if trailer %}
-        <button type="button" class="portada-cta portada-cta--secundario" data-abrir-trailer data-embed="{{ trailer.embed_url }}">
+        <button type="button" class="portada-cta portada-cta--secundario" data-abrir-trailer data-embed="{{ trailer.embed_url }}" data-vertical="{{ '1' if trailer.vertical else '' }}">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"></polygon></svg>
             Ver video
         </button>
@@ -85,7 +85,8 @@
                 data-producto-id="{{ producto.id }}"
                 data-estado-stock="{{ estado_stock.clave if estado_stock else '' }}"
                 data-estado-stock-nombre="{{ estado_stock.nombre if estado_stock else '' }}"
-                data-youtube-embed="{{ video.embed_url if video else '' }}"
+                data-video-embed="{{ video.embed_url if video else '' }}"
+                data-video-vertical="{{ '1' if video and video.vertical else '' }}"
                 {% if categorias %}data-categoria="{{ producto.categoria.nombre if producto.categoria else '' }}"{% endif %}
             >
                 <span class="tienda-card__foto" {% if producto.foto_url %}style="background-image: url('{{ producto.foto_url }}');"{% endif %}>

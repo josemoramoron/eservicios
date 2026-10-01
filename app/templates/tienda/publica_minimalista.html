@@ -51,7 +51,7 @@
             <a class="minimalista-accion minimalista-accion--whatsapp" href="{{ whatsapp_href_tienda }}" target="_blank" rel="noopener">WhatsApp</a>
             <button type="button" class="minimalista-accion" data-compartir-btn data-url="{{ request.url }}" data-titulo="{{ vendor.nombre_negocio }}">Compartir</button>
             {% if trailer %}
-            <button type="button" class="minimalista-accion" data-abrir-trailer data-embed="{{ trailer.embed_url }}">Ver video</button>
+            <button type="button" class="minimalista-accion" data-abrir-trailer data-embed="{{ trailer.embed_url }}" data-vertical="{{ '1' if trailer.vertical else '' }}">Ver video</button>
             {% endif %}
         </div>
 
@@ -88,7 +88,8 @@
                     data-producto-id="{{ producto.id }}"
                     data-estado-stock="{{ estado_stock.clave if estado_stock else '' }}"
                     data-estado-stock-nombre="{{ estado_stock.nombre if estado_stock else '' }}"
-                    data-youtube-embed="{{ video.embed_url if video else '' }}"
+                    data-video-embed="{{ video.embed_url if video else '' }}"
+                    data-video-vertical="{{ '1' if video and video.vertical else '' }}"
                     {% if categorias %}data-categoria="{{ producto.categoria.nombre if producto.categoria else '' }}"{% endif %}
                 >
                     <span class="minimalista-item__titulo">

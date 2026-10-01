@@ -25,7 +25,7 @@ from app.models import (
 )
 from app.services.badges_producto_service import BADGES_PRODUCTO
 from app.services.estados_stock_service import ESTADOS_STOCK
-from app.services.youtube_service import extraer_id_video
+from app.services.video_service import resolver_campos_video
 
 MAX_FOTOS_PRODUCTO = 5
 
@@ -128,7 +128,7 @@ def crear_producto(
     badge: str | None = None,
     estado_stock: str | None = None,
     categoria_id: int | None = None,
-    youtube_url: str | None = None,
+    video_url: str | None = None,
 ) -> VendorProduct:
     """Crea un producto nuevo para una tienda. Sin moderación: queda activo de inmediato.
 
@@ -156,13 +156,14 @@ def crear_producto(
             pertenezca a `vendor` se ignora en silencio (queda en None)
             — mismo trato que `badge`/`estado_stock`, para no depender
             de que el formulario haya sido manipulado con un id ajeno.
-        youtube_url: Link completo de YouTube pegado por el vendedor
-            (cualquier formato reconocido por
-            `youtube_service.extraer_id_video`), o vacío/None para no
-            mostrar ningún video. Un link que no matchee ningún formato
-            conocido se ignora en silencio (queda en None) — mismo trato
-            que `badge`/`estado_stock`. No valida el plan Plus aquí —esa
-            función se gatea en tiempo de render (ver
+        video_url: Link completo de YouTube o de TikTok pegado por el
+            vendedor en el campo único de video (cualquier formato
+            reconocido por `video_service.resolver_campos_video`), o
+            vacío/None para no mostrar ningún video. Un link que no
+            matchee ningún formato conocido de ninguna de las dos
+            plataformas se ignora en silencio (queda en None) — mismo
+            trato que `badge`/`estado_stock`. No valida el plan Plus
+            aquí —esa función se gatea en tiempo de render (ver
             `resolver_video_producto`).
 
     Returns:
@@ -176,8 +177,10 @@ def crear_producto(
         badge=badge if badge in BADGES_PRODUCTO else None,
         estado_stock=estado_stock if estado_stock in ESTADOS_STOCK else None,
         categoria_id=_categoria_id_valida(vendor, categoria_id),
-        youtube_video_id=extraer_id_video(youtube_url),
     )
+    campos_video = resolver_campos_video(video_url)
+    producto.youtube_video_id = campos_video.youtube_video_id
+    producto.tiktok_video_url = campos_video.tiktok_video_url
     _establecer_fotos_producto(producto, fotos_urls or [])
     db.session.add(producto)
     db.session.commit()
@@ -195,7 +198,7 @@ def actualizar_producto(
     badge: str | None = None,
     estado_stock: str | None = None,
     categoria_id: int | None = None,
-    youtube_url: str | None = None,
+    video_url: str | None = None,
 ) -> None:
     """Actualiza los datos de un producto existente.
 
@@ -215,9 +218,9 @@ def actualizar_producto(
         categoria_id: Id de una `VendorCategoria` de la misma tienda que
             el producto, o None para quitarle la categoría. Mismo trato
             que en `crear_producto`.
-        youtube_url: Link completo de YouTube pegado por el vendedor, o
-            vacío/None para quitar el video. Mismo trato que en
-            `crear_producto`.
+        video_url: Link completo de YouTube o de TikTok pegado por el
+            vendedor, o vacío/None para quitar el video. Mismo trato
+            que en `crear_producto`.
     """
     producto.titulo = titulo.strip()
     producto.descripcion = descripcion.strip()
@@ -227,7 +230,9 @@ def actualizar_producto(
     producto.badge = badge if badge in BADGES_PRODUCTO else None
     producto.estado_stock = estado_stock if estado_stock in ESTADOS_STOCK else None
     producto.categoria_id = _categoria_id_valida(producto.vendor, categoria_id)
-    producto.youtube_video_id = extraer_id_video(youtube_url)
+    campos_video = resolver_campos_video(video_url)
+    producto.youtube_video_id = campos_video.youtube_video_id
+    producto.tiktok_video_url = campos_video.tiktok_video_url
     db.session.commit()
 
 

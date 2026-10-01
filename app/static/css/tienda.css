@@ -909,6 +909,22 @@
     border: none;
 }
 
+/* Caja vertical (9:16) para videos de TikTok (2026-10-01) — a
+   diferencia de YouTube (siempre horizontal), un video de TikTok es
+   casi siempre vertical; mostrarlo en la caja de 16:9 de arriba lo
+   dejaría con franjas negras enormes a los costados. tienda.js agrega
+   esta clase modificadora sobre el mismo .tienda-modal__video-wrap
+   (según data-video-vertical/data-vertical en la tarjeta o el botón de
+   tráiler) en vez de crear un wrapper nuevo. El ancho se limita (en vez
+   de ocupar el 100% del modal como el de YouTube) para que el video no
+   termine dominando todo el panel. */
+.tienda-modal__video-wrap--vertical {
+    width: 70%;
+    max-width: 240px;
+    margin: 0 auto;
+    padding-top: 177.78%;
+}
+
 .tienda-modal__foto {
     aspect-ratio: 4 / 3;
     border-radius: 12px;

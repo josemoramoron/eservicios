@@ -4,19 +4,21 @@
    plantillas.
 
    Pestañas "Fotos"/"Video" (2026-09-30, roadmap — sección "Video, estados
-   y productos digitales bloqueados", embed de YouTube): antes el
-   modal solo mostraba fotos. Ahora, cuando el producto tiene un video de
-   YouTube (data-youtube-embed en la tarjeta, ver resolver_video_producto),
-   tienda.js muestra la pestaña "Video" además de "Fotos"; sin video, las
-   pestañas quedan ocultas y el modal se comporta exactamente igual que
-   antes.
+   y productos digitales bloqueados"; TikTok sumado 2026-10-01): antes el
+   modal solo mostraba fotos. Ahora, cuando el producto tiene un video
+   guardado (YouTube o TikTok — data-video-embed en la tarjeta, ver
+   resolver_video_producto), tienda.js muestra la pestaña "Video" además
+   de "Fotos"; sin video, las pestañas quedan ocultas y el modal se
+   comporta exactamente igual que antes. data-video-vertical marca si el
+   video es vertical (siempre en TikTok) para que tienda.js use la caja
+   .tienda-modal__video-wrap--vertical en vez de la 16:9 de YouTube.
 
    Este mismo modal también se reutiliza para el video-tráiler del perfil
    (tráiler de perfil gratis, botón "Ver video" en la cabecera, ver
-   data-abrir-trailer) — en ese modo tienda.js oculta todo lo que es
-   específico de un producto (precio, descripción, estado de stock, botón
-   de WhatsApp, formulario de aviso) y muestra solo el video, sin
-   pestañas. #}
+   data-abrir-trailer/data-embed/data-vertical) — en ese modo tienda.js
+   oculta todo lo que es específico de un producto (precio, descripción,
+   estado de stock, botón de WhatsApp, formulario de aviso) y muestra
+   solo el video, sin pestañas. #}
 <div class="tienda-modal" id="tienda-modal" hidden>
     <div class="tienda-modal__backdrop" data-cerrar></div>
     <div class="tienda-modal__panel">
@@ -33,7 +35,7 @@
         </div>
 
         <div class="tienda-modal__panel-video" id="tienda-modal-panel-video" hidden>
-            <div class="tienda-modal__video-wrap">
+            <div class="tienda-modal__video-wrap" id="tienda-modal-video-wrap">
                 {# `src` lo completa tienda.js al abrir, y lo vacía al cerrar — así el
                    video deja de reproducirse (y de sonar) en cuanto se cierra el modal. #}
                 <iframe

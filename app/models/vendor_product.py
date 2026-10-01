@@ -75,6 +75,13 @@ class VendorProduct(db.Model):
     # video-tráiler de perfil (Vendor.youtube_trailer_video_id), que es
     # gratis para cualquier plan.
     youtube_video_id: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Link completo de un video de TikTok (a diferencia del ID de arriba,
+    # acá SÍ se guarda la URL entera — ver app/services/tiktok_service.py
+    # para el porqué). Agregado 2026-10-01 al sumar TikTok como segunda
+    # plataforma del campo único de video (ver app/services/video_service.py)
+    # — mutuamente excluyente con youtube_video_id: un producto tiene como
+    # mucho un video, de una sola plataforma.
+    tiktok_video_url: Mapped[str | None] = mapped_column(String(300), nullable=True)
     activo: Mapped[bool] = mapped_column(default=True, nullable=False)
     creado_en: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
     actualizado_en: Mapped[datetime] = mapped_column(
