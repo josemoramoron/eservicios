@@ -29,9 +29,16 @@ import re
 #   https://youtu.be/VIDEOID
 #   https://www.youtube.com/shorts/VIDEOID
 #   https://www.youtube.com/embed/VIDEOID
+#   https://www.youtube.com/live/VIDEOID       (bug reportado por Jose
+#                                                2026-10-01: faltaba este
+#                                                formato, el que arma
+#                                                YouTube para un video ya
+#                                                terminado que fue stream
+#                                                en vivo — se guardaba
+#                                                como None en silencio)
 # con o sin "www.", "http" o "https" al principio.
 _PATRON_VIDEO_ID = re.compile(
-    r"(?:youtube(?:-nocookie)?\.com/(?:watch\?(?:.*&)?v=|shorts/|embed/)|youtu\.be/)([A-Za-z0-9_-]{11})"
+    r"(?:youtube(?:-nocookie)?\.com/(?:watch\?(?:.*&)?v=|shorts/|embed/|live/)|youtu\.be/)([A-Za-z0-9_-]{11})"
 )
 
 
