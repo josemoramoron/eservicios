@@ -848,7 +848,7 @@ def perfil():
                 plan_plus_activo=plan_plus_activo,
                 monedas=listar_monedas(),
                 video_url_trailer=video_service.armar_url_prellenado(
-                    vendor.youtube_trailer_video_id, vendor.tiktok_trailer_video_url
+                    vendor.video_trailer_plataforma, vendor.video_trailer_valor
                 ),
             )
         if logo_url is not None:
@@ -870,7 +870,7 @@ def perfil():
                 plan_plus_activo=plan_plus_activo,
                 monedas=listar_monedas(),
                 video_url_trailer=video_service.armar_url_prellenado(
-                    vendor.youtube_trailer_video_id, vendor.tiktok_trailer_video_url
+                    vendor.video_trailer_plataforma, vendor.video_trailer_valor
                 ),
             )
         if banner_url is not None:
@@ -906,7 +906,7 @@ def perfil():
                 plan_plus_activo=plan_plus_activo,
                 monedas=listar_monedas(),
                 video_url_trailer=video_service.armar_url_prellenado(
-                    vendor.youtube_trailer_video_id, vendor.tiktok_trailer_video_url
+                    vendor.video_trailer_plataforma, vendor.video_trailer_valor
                 ),
             )
 
@@ -920,7 +920,7 @@ def perfil():
         plan_plus_activo=plan_plus_activo,
         monedas=listar_monedas(),
         video_url_trailer=video_service.armar_url_prellenado(
-            vendor.youtube_trailer_video_id, vendor.tiktok_trailer_video_url
+            vendor.video_trailer_plataforma, vendor.video_trailer_valor
         ),
     )
 
@@ -1304,7 +1304,7 @@ def _producto_a_valores(producto: VendorProduct | None) -> dict:
         "estado_stock": producto.estado_stock,
         "categoria_id": producto.categoria_id,
         "video_url": video_service.armar_url_prellenado(
-            producto.youtube_video_id, producto.tiktok_video_url
+            producto.video_plataforma, producto.video_valor
         ),
     }
 
@@ -1565,7 +1565,7 @@ def producto_editar(producto_id: int):
             # borrarlo (reconstruido como URL "watch" para precargar el
             # campo si se vuelve a mostrar el formulario).
             video_url = video_service.armar_url_prellenado(
-                producto.youtube_video_id, producto.tiktok_video_url
+                producto.video_plataforma, producto.video_valor
             )
         if error:
             flash(error, "error")
