@@ -9,7 +9,12 @@ distintas formas que puede tener ese link (`watch?v=`, `youtu.be/`,
 lo único que en verdad se guarda (ver el comentario en ambos modelos).
 Reconstruir una URL para volver a mostrarla en un formulario es tan
 simple como `armar_url_watch` — no hace falta guardar el link original
-completo.
+completo. La URL de embed (`youtube-nocookie.com/embed/ID`) ya no se
+arma acá — desde que se sumaron Vimeo/Twitch/Facebook/Threads/
+Instagram/X (2026-10-01), ese armado se unificó del lado del cliente
+en `tienda.js` (tabla `PLATAFORMAS_VIDEO`), igual para las 4
+plataformas de tipo "iframe" (YouTube, TikTok, Vimeo, Twitch) — ver
+`app/services/video_service.py`.
 
 Mismo criterio de "silenciosamente inválido" que `badges_producto_service`
 / `estados_stock_service`: un link que no matchea ningún formato conocido
@@ -58,23 +63,6 @@ def extraer_id_video(url: str | None) -> str | None:
         return None
     coincidencia = _PATRON_VIDEO_ID.search(url.strip())
     return coincidencia.group(1) if coincidencia else None
-
-
-def armar_embed_url(video_id: str) -> str:
-    """Arma la URL de embed (youtube-nocookie.com) para un ID de video ya validado.
-
-    Se usa el dominio "youtube-nocookie.com" en vez de "youtube.com/embed"
-    a propósito (recomendación de Google para reducir cookies de
-    terceros antes de que el visitante interactúe con el reproductor) —
-    mismo video, mismo comportamiento, para el vendedor no cambia nada.
-
-    Args:
-        video_id: ID de 11 caracteres ya extraído con `extraer_id_video`.
-
-    Returns:
-        URL lista para el `src` de un `<iframe>`.
-    """
-    return f"https://www.youtube-nocookie.com/embed/{video_id}"
 
 
 def armar_url_watch(video_id: str | None) -> str:

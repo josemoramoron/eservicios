@@ -156,9 +156,10 @@ def actualizar_perfil(
             el plan no esté vigente en este momento, mismo trato que
             `color_acento`/`plantilla` — la aplicación real se resuelve
             en tiempo de render (ver `resolver_cupon_vendor`).
-        video_trailer_url: Link completo de YouTube o de TikTok del
-            "tráiler" de la tienda (roadmap, sección de video), pegado
-            por el vendedor en el campo único de video, o vacío para
+        video_trailer_url: Link completo (cualquiera de las 8
+            plataformas reconocidas) del "tráiler" de la tienda
+            (roadmap, sección de video), pegado por el vendedor en el
+            campo único de video, o vacío para
             quitarlo. A diferencia de `cupon`/`plantilla`, GRATIS para
             cualquier plan (mismo criterio que `moneda`): no se gatea en
             ningún resolver. Un link que no matchee ningún formato
@@ -191,8 +192,8 @@ def actualizar_perfil(
         vendor.moneda = moneda
     vendor.cupon = cupon.strip() or None
     campos_video = resolver_campos_video(video_trailer_url)
-    vendor.youtube_trailer_video_id = campos_video.youtube_video_id
-    vendor.tiktok_trailer_video_url = campos_video.tiktok_video_url
+    vendor.video_trailer_plataforma = campos_video.plataforma
+    vendor.video_trailer_valor = campos_video.valor
     db.session.commit()
 
 

@@ -854,36 +854,16 @@
     cursor: pointer;
 }
 
-/* Pestañas "Fotos"/"Video" del modal (2026-09-30, roadmap — embed de YouTube)
-   — ocultas por defecto (tienda.js las muestra solo cuando el producto
-   abierto tiene video, ver data-youtube-embed en la tarjeta). En modo
-   tráiler (data-abrir-trailer) tampoco se muestran nunca: ese modo es
-   solo video, sin nada que elegir. */
-.tienda-modal__tabs {
-    display: flex;
-    gap: 6px;
-    margin: 0 0 10px;
-    padding-right: 34px;
-}
-
-.tienda-modal__tab {
-    padding: 7px 14px;
-    border-radius: 999px;
-    border: 1px solid var(--color-border);
-    background-color: var(--color-surface);
-    color: var(--color-text-muted);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
-}
-
-.tienda-modal__tab--activa {
-    border-color: var(--color-accent);
-    color: var(--color-accent-contrast);
-    background-color: var(--color-accent);
-}
-
+/* Panel de video del modal (2026-09-30, roadmap — embed de video;
+   ampliado 2026-10-01 a 8 plataformas) — oculto por defecto, tienda.js
+   lo muestra (y oculta .tienda-modal__panel-fotos) solo cuando el
+   producto abierto tiene un video guardado, ver
+   data-video-plataforma/data-video-valor en la tarjeta. Ya no hay
+   pestañas: antes se podía elegir entre "Fotos" y "Video", pero la
+   foto principal del producto se repetía con la que ya se ve en su
+   tarjeta antes de abrir el modal, así que ahora un producto con video
+   muestra directamente el video (cualquier foto adicional del
+   producto deja de verse desde el modal mientras tenga video). */
 .tienda-modal__panel-video {
     margin: 0 0 10px;
 }
@@ -919,10 +899,29 @@
    de ocupar el 100% del modal como el de YouTube) para que el video no
    termine dominando todo el panel. */
 .tienda-modal__video-wrap--vertical {
-    width: 70%;
-    max-width: 240px;
+    /* 2026-10-01: antes max-width: 240px dejaba cortado el ícono de
+       pantalla completa del reproductor de TikTok, en la esquina
+       inferior derecha del video. Se ensancha sin desbordar el panel
+       del modal (max-width: 420px con padding de 20px a cada lado, es
+       decir ~380px de ancho útil). */
+    width: 85%;
+    max-width: 300px;
     margin: 0 auto;
     padding-top: 177.78%;
+}
+
+/* Contenedor para las plataformas sin iframe público (Facebook,
+   Threads, Instagram, X) — tienda.js inyecta ahí el <blockquote>/<div>
+   que pide cada SDK y deja que el SDK lo reemplace por su propio
+   reproductor, que se autoajusta en tamaño (a diferencia del iframe de
+   arriba, no hay una proporción fija que forzar con padding-top). Solo
+   uno de los dos contenedores (este o .tienda-modal__video-wrap) está
+   visible a la vez, según el tipo de la plataforma. */
+.tienda-modal__video-widget {
+    width: 100%;
+    min-height: 160px;
+    border-radius: 12px;
+    overflow: hidden;
 }
 
 .tienda-modal__foto {

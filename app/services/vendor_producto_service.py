@@ -156,10 +156,11 @@ def crear_producto(
             pertenezca a `vendor` se ignora en silencio (queda en None)
             — mismo trato que `badge`/`estado_stock`, para no depender
             de que el formulario haya sido manipulado con un id ajeno.
-        video_url: Link completo de YouTube o de TikTok pegado por el
-            vendedor en el campo único de video (cualquier formato
-            reconocido por `video_service.resolver_campos_video`), o
-            vacío/None para no mostrar ningún video. Un link que no
+        video_url: Link completo (YouTube, TikTok, Vimeo, Twitch,
+            Facebook, Threads, Instagram o X) pegado por el vendedor en
+            el campo único de video (cualquier formato reconocido por
+            `video_service.resolver_campos_video`), o vacío/None para
+            no mostrar ningún video. Un link que no
             matchee ningún formato conocido de ninguna de las dos
             plataformas se ignora en silencio (queda en None) — mismo
             trato que `badge`/`estado_stock`. No valida el plan Plus
@@ -179,8 +180,8 @@ def crear_producto(
         categoria_id=_categoria_id_valida(vendor, categoria_id),
     )
     campos_video = resolver_campos_video(video_url)
-    producto.youtube_video_id = campos_video.youtube_video_id
-    producto.tiktok_video_url = campos_video.tiktok_video_url
+    producto.video_plataforma = campos_video.plataforma
+    producto.video_valor = campos_video.valor
     _establecer_fotos_producto(producto, fotos_urls or [])
     db.session.add(producto)
     db.session.commit()
@@ -218,8 +219,9 @@ def actualizar_producto(
         categoria_id: Id de una `VendorCategoria` de la misma tienda que
             el producto, o None para quitarle la categoría. Mismo trato
             que en `crear_producto`.
-        video_url: Link completo de YouTube o de TikTok pegado por el
-            vendedor, o vacío/None para quitar el video. Mismo trato
+        video_url: Link completo (cualquiera de las 8 plataformas
+            reconocidas) pegado por el vendedor, o vacío/None para
+            quitar el video. Mismo trato
             que en `crear_producto`.
     """
     producto.titulo = titulo.strip()
@@ -231,8 +233,8 @@ def actualizar_producto(
     producto.estado_stock = estado_stock if estado_stock in ESTADOS_STOCK else None
     producto.categoria_id = _categoria_id_valida(producto.vendor, categoria_id)
     campos_video = resolver_campos_video(video_url)
-    producto.youtube_video_id = campos_video.youtube_video_id
-    producto.tiktok_video_url = campos_video.tiktok_video_url
+    producto.video_plataforma = campos_video.plataforma
+    producto.video_valor = campos_video.valor
     db.session.commit()
 
 

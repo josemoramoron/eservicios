@@ -62,26 +62,33 @@ class VendorProduct(db.Model):
     categoria_id: Mapped[int | None] = mapped_column(
         ForeignKey("vendor_categorias.id"), nullable=True, index=True
     )
-    # ID de video de YouTube (11 caracteres, no la URL completa — ver
-    # app/services/youtube_service.py para la extracción/reconstrucción),
-    # función de e-link Plus (roadmap, sección "Video, estados y productos
-    # digitales bloqueados", embed de YouTube): un video por
-    # producto, embebido en una pestaña "Video" del modal de detalle
-    # junto a "Fotos" (ver _modal_producto.html). Mismo criterio que
-    # badge/estado_stock/categoria_id: se guarda aunque el plan no esté
-    # vigente en este momento, y la aplicación real (mostrar la pestaña
-    # o no) siempre se resuelve en tiempo de render (ver
+    # Video embebido (función de e-link Plus, roadmap "Video, estados y
+    # productos digitales bloqueados"): un video por producto, mostrado
+    # en una pestaña "Video" del modal de detalle (ver
+    # _modal_producto.html). `video_plataforma` guarda una clave corta
+    # ("youtube", "tiktok", "vimeo", "twitch_video", "twitch_clip",
+    # "facebook", "threads", "instagram" o "x" — ver
+    # app/services/video_service.py) y `video_valor` lo necesario para
+    # reconstruir el embed de esa plataforma: un ID para las
+    # reconstruibles desde un ID solo (YouTube/Vimeo/Twitch), o el link
+    # completo para las que lo necesitan (TikTok/Facebook/Threads/
+    # Instagram/X) — ver el docstring de video_service.py para el
+    # porqué de cada caso. Mismo criterio que badge/estado_stock/
+    # categoria_id: se guarda aunque el plan no esté vigente en este
+    # momento, y la aplicación real (mostrar la pestaña o no) siempre
+    # se resuelve en tiempo de render (ver
     # vendor_theming_service.resolver_video_producto). Distinto del
-    # video-tráiler de perfil (Vendor.youtube_trailer_video_id), que es
-    # gratis para cualquier plan.
-    youtube_video_id: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    # Link completo de un video de TikTok (a diferencia del ID de arriba,
-    # acá SÍ se guarda la URL entera — ver app/services/tiktok_service.py
-    # para el porqué). Agregado 2026-10-01 al sumar TikTok como segunda
-    # plataforma del campo único de video (ver app/services/video_service.py)
-    # — mutuamente excluyente con youtube_video_id: un producto tiene como
-    # mucho un video, de una sola plataforma.
-    tiktok_video_url: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    # video-tráiler de perfil (Vendor.video_trailer_plataforma/
+    # video_trailer_valor), que es gratis para cualquier plan.
+    #
+    # Reemplaza, desde 2026-10-01 (migración `6d9a798e63df`), a las
+    # columnas `youtube_video_id`/`tiktok_video_url` que existieron
+    # brevemente antes de sumar las otras 6 plataformas — esa migración
+    # las volcó acá y las columnas viejas siguen existiendo en la base
+    # de datos como respaldo histórico, pero ya no están mapeadas en
+    # este modelo.
+    video_plataforma: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    video_valor: Mapped[str | None] = mapped_column(String(300), nullable=True)
     activo: Mapped[bool] = mapped_column(default=True, nullable=False)
     creado_en: Mapped[datetime] = mapped_column(server_default=func.now(), nullable=False)
     actualizado_en: Mapped[datetime] = mapped_column(

@@ -79,7 +79,7 @@
             type="button"
             class="pildoras-accion pildoras-accion--video"
             data-abrir-trailer
-            data-embed="{{ trailer.embed_url }}" data-vertical="{{ '1' if trailer.vertical else '' }}"
+            data-plataforma="{{ trailer.plataforma }}" data-valor="{{ trailer.valor }}" data-vertical="{{ '1' if trailer.vertical else '' }}"
             aria-label="Ver video"
             title="Ver video"
         >
@@ -129,7 +129,8 @@
                 data-producto-id="{{ producto.id }}"
                 data-estado-stock="{{ estado_stock.clave if estado_stock else '' }}"
                 data-estado-stock-nombre="{{ estado_stock.nombre if estado_stock else '' }}"
-                data-video-embed="{{ video.embed_url if video else '' }}"
+                data-video-plataforma="{{ video.plataforma if video else '' }}"
+                data-video-valor="{{ video.valor if video else '' }}"
                 data-video-vertical="{{ '1' if video and video.vertical else '' }}"
                 {% if categorias %}data-categoria="{{ producto.categoria.nombre if producto.categoria else '' }}"{% endif %}
             >

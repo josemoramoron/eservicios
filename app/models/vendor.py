@@ -152,27 +152,27 @@ class Vendor(db.Model):
     # número cargado en cada producto se muestra tal cual, solo cambia
     # el símbolo.
     moneda: Mapped[str] = mapped_column(String(3), default="usd", nullable=False)
-    # ID de video de YouTube (11 caracteres — ver
-    # app/services/youtube_service.py) para el "tráiler" del perfil de la
-    # tienda: un video de presentación general, no ligado a ningún
-    # producto (roadmap, sección "Video, estados y productos digitales
-    # bloqueados", embed de YouTube). A diferencia del video
-    # por producto (VendorProduct.youtube_video_id, exclusivo de e-link
-    # Plus), este es GRATIS para cualquier plan — mismo criterio que
-    # `moneda` arriba, no depende de plan_plus_vigente ni tiene resolver
-    # que lo gatee (ver vendor_theming_service.resolver_trailer_vendor,
-    # que solo valida que el ID siga guardado). Se muestra en la tienda
-    # pública como un botón "Ver video" en la cabecera que abre el mismo
-    # modal que usan los productos, en modo tráiler.
-    youtube_trailer_video_id: Mapped[str | None] = mapped_column(String(20), nullable=True)
-    # Link completo de un video de TikTok para el tráiler del perfil (a
-    # diferencia del ID de arriba, acá SÍ se guarda la URL entera — ver
-    # app/services/tiktok_service.py para el porqué). Agregado 2026-10-01
-    # al sumar TikTok como segunda plataforma del campo único de video
-    # (ver app/services/video_service.py) — mutuamente excluyente con
-    # youtube_trailer_video_id. Gratis para cualquier plan, igual que
-    # youtube_trailer_video_id.
-    tiktok_trailer_video_url: Mapped[str | None] = mapped_column(String(300), nullable=True)
+    # Video-tráiler del perfil de la tienda: un video de presentación
+    # general, no ligado a ningún producto (roadmap, sección "Video,
+    # estados y productos digitales bloqueados"). GRATIS para cualquier
+    # plan — mismo criterio que `moneda` arriba, no depende de
+    # plan_plus_vigente ni tiene resolver que lo gatee (ver
+    # vendor_theming_service.resolver_trailer_vendor, que solo valida
+    # que siga guardado). Se muestra en la tienda pública como un botón
+    # "Ver video" en la cabecera que abre el mismo modal que usan los
+    # productos, en modo tráiler. Mismo esquema `plataforma`/`valor` que
+    # VendorProduct.video_plataforma/video_valor — ver el comentario ahí
+    # y app/services/video_service.py para el detalle completo (8
+    # plataformas reconocidas, qué guarda cada una).
+    #
+    # Reemplaza, desde 2026-10-01 (migración `6d9a798e63df`), a las
+    # columnas `youtube_trailer_video_id`/`tiktok_trailer_video_url` que
+    # existieron brevemente antes de sumar las otras 6 plataformas —
+    # esa migración las volcó acá y las columnas viejas siguen
+    # existiendo en la base de datos como respaldo histórico, pero ya
+    # no están mapeadas en este modelo.
+    video_trailer_plataforma: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    video_trailer_valor: Mapped[str | None] = mapped_column(String(300), nullable=True)
     plan: Mapped[PlanVendor] = mapped_column(
         SqlEnum(PlanVendor, name="plan_vendor"), default=PlanVendor.FREE, nullable=False
     )

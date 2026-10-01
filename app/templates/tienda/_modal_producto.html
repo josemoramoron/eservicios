@@ -3,31 +3,45 @@
    qué plantilla los pintó), así que el JS no necesita saber nada sobre
    plantillas.
 
-   Pestañas "Fotos"/"Video" (2026-09-30, roadmap — sección "Video, estados
-   y productos digitales bloqueados"; TikTok sumado 2026-10-01): antes el
-   modal solo mostraba fotos. Ahora, cuando el producto tiene un video
-   guardado (YouTube o TikTok — data-video-embed en la tarjeta, ver
-   resolver_video_producto), tienda.js muestra la pestaña "Video" además
-   de "Fotos"; sin video, las pestañas quedan ocultas y el modal se
-   comporta exactamente igual que antes. data-video-vertical marca si el
-   video es vertical (siempre en TikTok) para que tienda.js use la caja
-   .tienda-modal__video-wrap--vertical en vez de la 16:9 de YouTube.
+   Panel de video (2026-09-30, roadmap — sección "Video, estados y
+   productos digitales bloqueados"; ampliado 2026-10-01 a 8 plataformas:
+   YouTube, TikTok, Vimeo, Twitch, Facebook, Threads, Instagram y X —
+   ver app/services/video_service.py y la tabla PLATAFORMAS_VIDEO en
+   tienda.js). Antes el modal mostraba pestañas "Fotos"/"Video" cuando el
+   producto tenía ambos; ahora, cuando hay un video guardado
+   (data-video-plataforma/data-video-valor en la tarjeta, ver
+   resolver_video_producto), tienda.js oculta directamente el panel de
+   fotos y muestra solo el de video — sin pestañas, porque la foto
+   principal del producto ya se ve en su tarjeta antes de abrir el
+   modal, y repetirla ahí era redundante (cualquier foto adicional deja
+   de verse desde el modal mientras el producto tenga video). Sin video,
+   el modal se comporta igual que siempre y solo se ve el panel de
+   fotos.
+
+   Dentro del panel de video hay DOS contenedores, porque las 8
+   plataformas se embeben de dos formas distintas:
+   - .tienda-modal__video-wrap (iframe): YouTube, TikTok, Vimeo y Twitch
+     (video o clip) — tienda.js arma el `src` del iframe y lo asigna
+     directamente.
+   - .tienda-modal__video-widget: Facebook, Threads, Instagram y X no
+     tienen un iframe público — tienda.js inyecta el `<blockquote>`/`<div>`
+     que pide cada SDK y lo deja que ese SDK lo reemplace por su propio
+     reproductor (ver PLATAFORMAS_VIDEO en tienda.js).
+   tienda.js muestra uno de los dos y oculta el otro según el "tipo" de
+   la plataforma. data-video-vertical marca si el video es vertical
+   (TikTok e Instagram) para usar la caja
+   .tienda-modal__video-wrap--vertical en vez de la 16:9 por defecto.
 
    Este mismo modal también se reutiliza para el video-tráiler del perfil
    (tráiler de perfil gratis, botón "Ver video" en la cabecera, ver
-   data-abrir-trailer/data-embed/data-vertical) — en ese modo tienda.js
-   oculta todo lo que es específico de un producto (precio, descripción,
-   estado de stock, botón de WhatsApp, formulario de aviso) y muestra
-   solo el video, sin pestañas. #}
+   data-abrir-trailer/data-plataforma/data-valor/data-vertical) — en ese
+   modo tienda.js oculta todo lo que es específico de un producto
+   (precio, descripción, estado de stock, botón de WhatsApp, formulario
+   de aviso) y muestra solo el video. #}
 <div class="tienda-modal" id="tienda-modal" hidden>
     <div class="tienda-modal__backdrop" data-cerrar></div>
     <div class="tienda-modal__panel">
         <button type="button" class="tienda-modal__cerrar" data-cerrar aria-label="Cerrar">&times;</button>
-
-        <div class="tienda-modal__tabs" id="tienda-modal-tabs" hidden>
-            <button type="button" class="tienda-modal__tab tienda-modal__tab--activa" data-modal-tab="fotos">Fotos</button>
-            <button type="button" class="tienda-modal__tab" data-modal-tab="video">Video</button>
-        </div>
 
         <div class="tienda-modal__panel-fotos" id="tienda-modal-panel-fotos">
             <div class="tienda-modal__foto" id="tienda-modal-foto"></div>
@@ -47,6 +61,9 @@
                     allowfullscreen
                 ></iframe>
             </div>
+            {# tienda.js vacía este div al cerrar el modal, igual que el iframe de
+               arriba, para no dejar el script del SDK corriendo de fondo. #}
+            <div class="tienda-modal__video-widget" id="tienda-modal-video-widget"></div>
         </div>
 
         <p class="tienda-modal__titulo" id="tienda-modal-titulo"></p>

@@ -16,8 +16,7 @@ from app.models import Vendor, VendorCategoria, VendorProduct
 from app.services.badges_producto_service import obtener_badge_producto
 from app.services.estados_stock_service import obtener_estado_stock
 from app.services.plantillas_tienda_service import obtener_plantilla_tienda
-from app.services import tiktok_service
-from app.services.youtube_service import armar_embed_url
+from app.services.video_service import PLATAFORMAS_VERTICALES
 from app.services.vendor_categoria_service import listar_categorias_de_vendor
 from app.services.vendor_perfil_service import plan_plus_o_prueba_vigente
 
@@ -260,16 +259,20 @@ def resolver_badge_producto(vendor: Vendor, producto: VendorProduct) -> dict[str
 
 
 def resolver_video_producto(vendor: Vendor, producto: VendorProduct) -> dict[str, str | bool] | None:
-    """Resuelve el video efectivo de un producto (YouTube o TikTok), si aplica.
+    """Resuelve el video efectivo de un producto (cualquiera de las 8 plataformas), si aplica.
 
     Punto único de entrada para la función Plus de embed de video del
     roadmap — `routes/tienda.py` la usa para decidir si la ficha del
     producto ofrece la pestaña "Video" en el modal, en vez de leer
-    `producto.youtube_video_id`/`producto.tiktok_video_url` directamente.
+    `producto.video_plataforma`/`producto.video_valor` directamente.
     Mismo criterio que `resolver_badge_producto`/`resolver_estado_stock_producto`.
-    Las dos columnas son mutuamente excluyentes (ver
-    `app/services/video_service.py`), así que alcanza con mirar cuál de
-    las dos tiene algo guardado.
+
+    A diferencia de antes (una columna por plataforma), este resolver ya
+    no arma ninguna URL de embed ni sabe nada de los detalles de cada
+    red — eso vive enteramente del lado del cliente, en la tabla
+    `PLATAFORMAS_VIDEO` de `tienda.js` (ver `app/services/video_service.py`
+    para el porqué del cambio de esquema). Acá solo se decide SI hay
+    video y si conviene la caja vertical.
 
     Args:
         vendor: Tienda dueña del producto (para chequear su plan).
@@ -280,65 +283,46 @@ def resolver_video_producto(vendor: Vendor, producto: VendorProduct) -> dict[str
         tienda no tiene Plus (real o de prueba) vigente ahora mismo (ver
         `plan_plus_o_prueba_vigente`) — en ese caso el valor sigue
         guardado, listo para reactivarse solo con volver a Plus. Si
-        aplica, un diccionario con `video_id`, `embed_url` y `vertical`
-        (True para TikTok — casi siempre un video vertical — False para
-        YouTube; el modal usa esto para elegir la proporción de la caja
-        del video, ver `tienda.js`/`.tienda-modal__video-wrap--vertical`).
+        aplica, un diccionario con `plataforma`, `valor` y `vertical`
+        (True para TikTok/Instagram — casi siempre un video vertical —
+        False para el resto; solo importa para las plataformas de tipo
+        "iframe", ver `tienda.js`/`.tienda-modal__video-wrap--vertical`).
     """
     if not plan_plus_o_prueba_vigente(vendor):
         return None
-    if producto.youtube_video_id:
-        return {
-            "video_id": producto.youtube_video_id,
-            "embed_url": armar_embed_url(producto.youtube_video_id),
-            "vertical": False,
-        }
-    if producto.tiktok_video_url:
-        tiktok_id = tiktok_service.extraer_id_video(producto.tiktok_video_url)
-        if not tiktok_id:
-            return None
-        return {
-            "video_id": tiktok_id,
-            "embed_url": tiktok_service.armar_embed_url(tiktok_id),
-            "vertical": True,
-        }
-    return None
+    if not producto.video_plataforma or not producto.video_valor:
+        return None
+    return {
+        "plataforma": producto.video_plataforma,
+        "valor": producto.video_valor,
+        "vertical": producto.video_plataforma in PLATAFORMAS_VERTICALES,
+    }
 
 
 def resolver_trailer_vendor(vendor: Vendor) -> dict[str, str | bool] | None:
-    """Resuelve el video-tráiler del perfil de la tienda (YouTube o TikTok), si el vendedor cargó uno.
+    """Resuelve el video-tráiler del perfil de la tienda (cualquiera de las 8 plataformas), si el vendedor cargó uno.
 
     Punto único de entrada para el tráiler de perfil del roadmap
     — a diferencia de `resolver_video_producto`, el tráiler de perfil es
     GRATIS para cualquier plan (mismo criterio que `vendor.moneda`): no
     depende de `plan_plus_o_prueba_vigente`, solo valida que siga
-    habiendo algo guardado. Las dos columnas son mutuamente excluyentes
-    (ver `app/services/video_service.py`).
+    habiendo algo guardado.
 
     Args:
         vendor: Tienda a evaluar.
 
     Returns:
         None cuando la tienda no tiene tráiler guardado. Si tiene, un
-        diccionario con `video_id`, `embed_url` y `vertical` (ver
+        diccionario con `plataforma`, `valor` y `vertical` (ver
         `resolver_video_producto`, mismo criterio).
     """
-    if vendor.youtube_trailer_video_id:
-        return {
-            "video_id": vendor.youtube_trailer_video_id,
-            "embed_url": armar_embed_url(vendor.youtube_trailer_video_id),
-            "vertical": False,
-        }
-    if vendor.tiktok_trailer_video_url:
-        tiktok_id = tiktok_service.extraer_id_video(vendor.tiktok_trailer_video_url)
-        if not tiktok_id:
-            return None
-        return {
-            "video_id": tiktok_id,
-            "embed_url": tiktok_service.armar_embed_url(tiktok_id),
-            "vertical": True,
-        }
-    return None
+    if not vendor.video_trailer_plataforma or not vendor.video_trailer_valor:
+        return None
+    return {
+        "plataforma": vendor.video_trailer_plataforma,
+        "valor": vendor.video_trailer_valor,
+        "vertical": vendor.video_trailer_plataforma in PLATAFORMAS_VERTICALES,
+    }
 
 
 def resolver_disponibilidad_vendor(vendor: Vendor) -> bool | None:

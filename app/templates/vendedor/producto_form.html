@@ -183,19 +183,22 @@
     {% endif %}
 
     <hr class="admin-form__separador">
-    <label class="admin-form__label" for="video_url">Video (YouTube o TikTok)</label>
+    <label class="admin-form__label" for="video_url">Video (YouTube, TikTok, Vimeo, Twitch, Facebook, Threads, Instagram o X)</label>
     {% if plan_plus_activo %}
-    <input class="admin-form__input" type="url" id="video_url" name="video_url" value="{{ valores.video_url }}" placeholder="https://www.youtube.com/watch?v=... o https://www.tiktok.com/@usuario/video/...">
+    <input class="admin-form__input" type="url" id="video_url" name="video_url" value="{{ valores.video_url }}" placeholder="Pegá el link que copiaste de "Compartir" en cualquiera de estas redes">
     <p class="admin-form__hint">
-        Función de e-link Plus. Pega el link del video tal cual lo copias de YouTube (funciona con youtu.be,
-        shorts y el link normal de "Compartir") o de TikTok (el link "largo" que se ve en la barra de
-        direcciones del navegador, con tu @usuario y "/video/" en la ruta — el link corto del botón de
-        compartir del celular todavía no se reconoce). Se muestra en una pestaña "Video" dentro de la ficha
-        del producto, junto a las fotos. Déjalo vacío para no mostrar ningún video.
+        Función de e-link Plus. Pega el link del video tal cual lo copias de "Compartir" en YouTube, TikTok,
+        Vimeo, Twitch, Facebook, Threads, Instagram o X — detectamos sola la red, no hace falta indicar cuál
+        es. Para TikTok, usá el link "largo" que se ve en la barra de direcciones del navegador (con tu
+        @usuario y "/video/" en la ruta); el link corto del botón de compartir del celular todavía no se
+        reconoce. Se muestra directamente en la ficha del producto, en el lugar de las fotos. Déjalo vacío
+        para no mostrar ningún video.
     </p>
     {% else %}
     <p class="admin-form__hint">
-        Mostrar un video de YouTube o de TikTok en la ficha de un producto es una función de <strong>e-link Plus</strong> — contáctanos para activarlo en tu cuenta.
+        Mostrar un video en la ficha de un producto (YouTube, TikTok, Vimeo, Twitch, Facebook, Threads,
+        Instagram o X) es una función de <strong>e-link Plus</strong> — contáctanos para activarlo en tu
+        cuenta.
     </p>
     {% endif %}
 

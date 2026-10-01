@@ -62,7 +62,7 @@
                 Compartir
             </button>
             {% if trailer %}
-            <button type="button" class="editorial-link editorial-link--share" data-abrir-trailer data-embed="{{ trailer.embed_url }}" data-vertical="{{ '1' if trailer.vertical else '' }}">
+            <button type="button" class="editorial-link editorial-link--share" data-abrir-trailer data-plataforma="{{ trailer.plataforma }}" data-valor="{{ trailer.valor }}" data-vertical="{{ '1' if trailer.vertical else '' }}">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><polygon points="10 8 16 12 10 16 10 8" fill="currentColor" stroke="none"></polygon></svg>
                 Ver video
             </button>
@@ -95,7 +95,8 @@
             data-producto-id="{{ producto_destacado.id }}"
             data-estado-stock="{{ estado_destacado.clave if estado_destacado else '' }}"
             data-estado-stock-nombre="{{ estado_destacado.nombre if estado_destacado else '' }}"
-            data-video-embed="{{ video_destacado.embed_url if video_destacado else '' }}"
+            data-video-plataforma="{{ video_destacado.plataforma if video_destacado else '' }}"
+            data-video-valor="{{ video_destacado.valor if video_destacado else '' }}"
             data-video-vertical="{{ '1' if video_destacado and video_destacado.vertical else '' }}"
             {% if categorias %}data-categoria="{{ producto_destacado.categoria.nombre if producto_destacado.categoria else '' }}"{% endif %}
         >
@@ -140,7 +141,8 @@
             data-producto-id="{{ producto.id }}"
             data-estado-stock="{{ estado_stock.clave if estado_stock else '' }}"
             data-estado-stock-nombre="{{ estado_stock.nombre if estado_stock else '' }}"
-            data-video-embed="{{ video.embed_url if video else '' }}"
+            data-video-plataforma="{{ video.plataforma if video else '' }}"
+            data-video-valor="{{ video.valor if video else '' }}"
             data-video-vertical="{{ '1' if video and video.vertical else '' }}"
             {% if categorias %}data-categoria="{{ producto.categoria.nombre if producto.categoria else '' }}"{% endif %}
         >

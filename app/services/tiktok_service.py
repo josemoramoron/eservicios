@@ -16,8 +16,12 @@ falta — ver `vendor_theming_service.resolver_video_producto`/
 
 El "Embed Player" oficial de TikTok (`tiktok.com/player/v1/VIDEOID`) sí
 resuelve solo por el ID numérico, sin necesitar el usuario — por eso es
-estable para `armar_embed_url` aunque el link público del vendedor deje
-de funcionar más adelante (ej. si cambia su @usuario en TikTok).
+estable aunque el link público del vendedor deje de funcionar más
+adelante (ej. si cambia su @usuario en TikTok). Esa URL de embed ya no
+se arma acá — desde 2026-10-01 el armado se unificó del lado del
+cliente en `tienda.js` (tabla `PLATAFORMAS_VIDEO`) para las 4
+plataformas de tipo "iframe" (YouTube, TikTok, Vimeo, Twitch) — ver
+`app/services/video_service.py`.
 
 Mismo criterio de "silenciosamente inválido" que `youtube_service`: un
 link que no matchea el formato reconocido simplemente no se guarda
@@ -84,15 +88,3 @@ def normalizar_url(url: str | None) -> str | None:
     if not url or not extraer_id_video(url):
         return None
     return url.strip()
-
-
-def armar_embed_url(video_id: str) -> str:
-    """Arma la URL del Embed Player de TikTok para un ID ya validado.
-
-    Args:
-        video_id: ID numérico ya extraído con `extraer_id_video`.
-
-    Returns:
-        URL lista para el `src` de un `<iframe>`.
-    """
-    return f"https://www.tiktok.com/player/v1/{video_id}"
