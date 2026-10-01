@@ -12,11 +12,12 @@
  * plataformas: YouTube, TikTok, Vimeo, Twitch (video o clip), Facebook,
  * Threads, Instagram y X — ver app/services/video_service.py). Si la
  * tarjeta trae `data-video-plataforma`/`data-video-valor` (ver
- * resolver_video_producto) el modal oculta el panel de fotos y muestra
- * solo el de video — no hay pestañas: la foto principal del producto
- * ya se ve en su tarjeta antes de abrir el modal, así que repetirla
- * ahí era redundante. `data-video-vertical` ("1" en TikTok e Instagram)
- * decide si la caja del video usa la proporción vertical
+ * resolver_video_producto) el modal muestra la pestaña "Video" además
+ * de "Fotos" — un producto puede tener más fotos que la que ya se ve
+ * en su tarjeta, así que el usuario tiene que poder volver a verlas
+ * sin cerrar el modal (corrección de Jose, 2026-10-01). Siempre se abre
+ * mostrando "Fotos" primero. `data-video-vertical` ("1" en TikTok e
+ * Instagram) decide si la caja del video usa la proporción vertical
  * (`.tienda-modal__video-wrap--vertical`) o la 16:9 de siempre.
  *
  * Dos mecanismos de embed, según la plataforma (tabla PLATAFORMAS_VIDEO
@@ -34,8 +35,10 @@
  * 22-bis, botones `[data-abrir-trailer]` en la cabecera de las 8
  * plantillas, con `data-plataforma`/`data-valor`/`data-vertical`): ahí
  * se abre en "modo tráiler", que oculta todo lo específico de un
- * producto (precio, descripción, estado de stock, WhatsApp, aviso) y
- * muestra solo el video.
+ * producto (precio, descripción, estado de stock, WhatsApp, aviso) Y
+ * TAMBIÉN las pestañas — a diferencia del producto, el tráiler nunca
+ * tiene fotos propias que mostrar, así que ahí el modal es solo el
+ * video, sin nada que elegir.
  *
  * Sin dependencias propias — los 4 SDK de los widgets se cargan como
  * `<script>` sueltos, solo cuando hacen falta (nunca de entrada).
@@ -55,6 +58,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const estadoStock = document.getElementById("tienda-modal-estado-stock");
     const formAviso = document.getElementById("tienda-aviso-form");
     const avisoProductoId = document.getElementById("tienda-aviso-producto-id");
+    const tabs = document.getElementById("tienda-modal-tabs");
+    const tabFotosBtn = tabs ? tabs.querySelector('[data-modal-tab="fotos"]') : null;
+    const tabVideoBtn = tabs ? tabs.querySelector('[data-modal-tab="video"]') : null;
     const panelFotos = document.getElementById("tienda-modal-panel-fotos");
     const panelVideo = document.getElementById("tienda-modal-panel-video");
     const videoIframe = document.getElementById("tienda-modal-video-iframe");
@@ -286,7 +292,29 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Muestra/oculta todo lo que es específico de un producto (precio,
+    // Cambia entre la pestaña "Fotos" y "Video" del modal de producto
+    // (solo relevante cuando `tabs` está visible, es decir, cuando el
+    // producto abierto tiene video guardado — corrección de Jose,
+    // 2026-10-01: a diferencia del tráiler de perfil, que nunca
+    // muestra `tabs` porque no tiene fotos que mostrar, un producto
+    // puede tener más fotos que la que ya se ve en su tarjeta, y el
+    // usuario tiene que poder volver a verlas sin cerrar el modal).
+    function mostrarPestana(pestana) {
+        const esFotos = pestana === "fotos";
+        if (panelFotos) panelFotos.hidden = !esFotos;
+        if (panelVideo) panelVideo.hidden = esFotos;
+        if (tabFotosBtn) tabFotosBtn.classList.toggle("tienda-modal__tab--activa", esFotos);
+        if (tabVideoBtn) tabVideoBtn.classList.toggle("tienda-modal__tab--activa", !esFotos);
+    }
+
+    if (tabFotosBtn) {
+        tabFotosBtn.addEventListener("click", () => mostrarPestana("fotos"));
+    }
+    if (tabVideoBtn) {
+        tabVideoBtn.addEventListener("click", () => mostrarPestana("video"));
+    }
+
+        // Muestra/oculta todo lo que es específico de un producto (precio,
     // descripción, botón de WhatsApp) — en modo tráiler (`mostrar =
     // false`) el modal es solo el video, sin nada de esto. El estado de
     // stock y el formulario de aviso se ocultan aparte en cada función
@@ -335,16 +363,16 @@ document.addEventListener("DOMContentLoaded", () => {
         mostrarFotoPrincipal(fotos[0] || "");
         pintarMiniaturas(fotos);
 
-        // Video — solo si este producto en particular tiene uno
-        // guardado (y el plan Plus del vendedor está vigente, ya
-        // resuelto del lado del servidor en
-        // data-video-plataforma/data-video-valor). Cuando hay video se
-        // oculta el panel de fotos: no repetimos la foto principal del
-        // producto, que ya se ve en su tarjeta.
+        // Pestaña "Video" — solo se ofrece si este producto en
+        // particular tiene un video guardado (y el plan Plus del
+        // vendedor está vigente, ya resuelto del lado del servidor en
+        // data-video-plataforma/data-video-valor). Siempre se abre
+        // mostrando "Fotos" primero — el usuario puede cambiar a
+        // "Video" y volver, sin perder acceso a ninguna de las dos.
         marcarVideoVertical(tarjeta.dataset.videoVertical);
         const hayVideo = mostrarVideo(tarjeta.dataset.videoPlataforma || "", tarjeta.dataset.videoValor || "");
-        if (panelFotos) panelFotos.hidden = hayVideo;
-        if (panelVideo) panelVideo.hidden = !hayVideo;
+        if (tabs) tabs.hidden = !hayVideo;
+        mostrarPestana("fotos");
 
         modal.hidden = false;
     }
@@ -361,6 +389,7 @@ document.addEventListener("DOMContentLoaded", () => {
             formAviso.hidden = true;
         }
         titulo.textContent = "Video";
+        if (tabs) tabs.hidden = true;
         if (panelFotos) panelFotos.hidden = true;
         marcarVideoVertical(esVertical);
         const hayVideo = mostrarVideo(plataforma, valor);

@@ -854,16 +854,39 @@
     cursor: pointer;
 }
 
-/* Panel de video del modal (2026-09-30, roadmap — embed de video;
-   ampliado 2026-10-01 a 8 plataformas) — oculto por defecto, tienda.js
-   lo muestra (y oculta .tienda-modal__panel-fotos) solo cuando el
-   producto abierto tiene un video guardado, ver
-   data-video-plataforma/data-video-valor en la tarjeta. Ya no hay
-   pestañas: antes se podía elegir entre "Fotos" y "Video", pero la
-   foto principal del producto se repetía con la que ya se ve en su
-   tarjeta antes de abrir el modal, así que ahora un producto con video
-   muestra directamente el video (cualquier foto adicional del
-   producto deja de verse desde el modal mientras tenga video). */
+/* Pestañas "Fotos"/"Video" del modal (2026-09-30, roadmap — embed de
+   video; ampliado 2026-10-01 a 8 plataformas) — ocultas por defecto,
+   tienda.js las muestra solo cuando el producto abierto tiene video,
+   ver data-video-plataforma/data-video-valor en la tarjeta. Se
+   mantienen para el producto (a diferencia del tráiler de perfil, que
+   nunca las muestra — ver _modal_producto.html) porque un producto
+   puede tener más fotos que la única que ya se ve en su tarjeta, y el
+   usuario tiene que poder volver a verlas sin cerrar el modal. */
+.tienda-modal__tabs {
+    display: flex;
+    gap: 6px;
+    margin: 0 0 10px;
+    padding-right: 34px;
+}
+
+.tienda-modal__tab {
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background-color: var(--color-surface);
+    color: var(--color-text-muted);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+}
+
+.tienda-modal__tab--activa {
+    border-color: var(--color-accent);
+    color: var(--color-accent-contrast);
+    background-color: var(--color-accent);
+}
+
 .tienda-modal__panel-video {
     margin: 0 0 10px;
 }
