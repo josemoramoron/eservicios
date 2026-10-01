@@ -185,14 +185,12 @@
     <hr class="admin-form__separador">
     <label class="admin-form__label" for="video_url">Video (YouTube, TikTok, Vimeo, Twitch, Facebook, Threads, Instagram o X)</label>
     {% if plan_plus_activo %}
-    <input class="admin-form__input" type="url" id="video_url" name="video_url" value="{{ valores.video_url }}" placeholder="Pegá el link que copiaste de "Compartir" en cualquiera de estas redes">
+    <input class="admin-form__input" type="url" id="video_url" name="video_url" value="{{ valores.video_url }}" placeholder="Pegá el link que copiaste de &quot;Compartir&quot; en cualquiera de estas redes">
     <p class="admin-form__hint">
         Función de e-link Plus. Pega el link del video tal cual lo copias de "Compartir" en YouTube, TikTok,
         Vimeo, Twitch, Facebook, Threads, Instagram o X — detectamos sola la red, no hace falta indicar cuál
-        es. Para TikTok, usá el link "largo" que se ve en la barra de direcciones del navegador (con tu
-        @usuario y "/video/" en la ruta); el link corto del botón de compartir del celular todavía no se
-        reconoce. Se muestra directamente en la ficha del producto, en el lugar de las fotos. Déjalo vacío
-        para no mostrar ningún video.
+        es (incluido el link corto del botón de compartir del celular de TikTok). Se muestra directamente en
+        la ficha del producto, en el lugar de las fotos. Déjalo vacío para no mostrar ningún video.
     </p>
     {% else %}
     <p class="admin-form__hint">
