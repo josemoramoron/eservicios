@@ -4,8 +4,8 @@ Los formularios de producto y de perfil piden al vendedor un solo
 campo de "link de video" — decisión de Jose 2026-10-01 ("recuerda
 POO"): un campo único que detecta la red, en vez de un input separado
 por plataforma. Esto cubre hoy **8 redes**: YouTube, TikTok, Vimeo,
-Twitch (video y clip, bajo el mismo campo), Facebook, Threads,
-Instagram y X — cada una con su propio service hermano
+Twitch (video, clip o canal en vivo, bajo el mismo campo), Facebook,
+Threads, Instagram y X — cada una con su propio service hermano
 (`youtube_service.py`, `tiktok_service.py`, `vimeo_service.py`,
 `twitch_service.py`, `facebook_service.py`, `threads_service.py`,
 `instagram_service.py`, `x_service.py`). Este módulo es el que prueba
@@ -93,8 +93,8 @@ def resolver_campos_video(url: str | None) -> CamposVideo:
     """Detecta la plataforma de `url` entre las 8 reconocidas y devuelve el valor a guardar.
 
     Prueba cada plataforma en orden (YouTube, TikTok, Vimeo, Twitch
-    video, Twitch clip, Facebook, Threads, Instagram, X) y se queda con
-    la primera que matchee. Mismo criterio de "silenciosamente
+    video, Twitch clip, Twitch canal, Facebook, Threads, Instagram, X)
+    y se queda con la primera que matchee. Mismo criterio de "silenciosamente
     inválido" que cada service individual: si `url` viene vacío, es de
     un sitio no reconocido, o es un formato de alguna de las 8 que
     todavía no se reconoce (ver las limitaciones documentadas en cada
@@ -118,6 +118,8 @@ def resolver_campos_video(url: str | None) -> CamposVideo:
         return CamposVideo("twitch_video", video_id)
     if clip_slug := twitch_service.extraer_clip_slug(url):
         return CamposVideo("twitch_clip", clip_slug)
+    if canal := twitch_service.extraer_canal(url):
+        return CamposVideo("twitch_channel", canal)
     if url_facebook := facebook_service.normalizar_url(url):
         return CamposVideo("facebook", url_facebook)
     if url_threads := threads_service.normalizar_url(url):
@@ -156,6 +158,8 @@ def armar_url_prellenado(plataforma: str | None, valor: str | None) -> str:
         return f"https://www.twitch.tv/videos/{valor}"
     if plataforma == "twitch_clip":
         return f"https://clips.twitch.tv/{valor}"
+    if plataforma == "twitch_channel":
+        return f"https://www.twitch.tv/{valor}"
     # tiktok, facebook, threads, instagram, x: `valor` ya es el link
     # completo, se guardó tal cual.
     return valor

@@ -887,6 +887,18 @@
     background-color: var(--color-accent);
 }
 
+/* Refuerzo defensivo (2026-10-01, a pedido de Jose): tienda.js ya pone
+   tabs.hidden/panelFotos.hidden = true en abrirModalTrailer, pero esta
+   regla por CSS puro es la última línea de defensa — el tráiler nunca
+   tiene fotos propias que mostrar, así que si algún día un cambio en
+   el JS se olvida de ocultarlas, esto las esconde igual.
+   abrirModalTrailer marca data-modo="trailer" en el modal antes de
+   mostrarlo; abrirModal (producto) lo limpia. */
+.tienda-modal[data-modo="trailer"] .tienda-modal__tabs,
+.tienda-modal[data-modo="trailer"] .tienda-modal__panel-fotos {
+    display: none !important;
+}
+
 .tienda-modal__panel-video {
     margin: 0 0 10px;
 }

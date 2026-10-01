@@ -9,8 +9,9 @@
  *
  * Video del producto (2026-09-30, roadmap — sección "Video, estados y
  * productos digitales bloqueados"; ampliado 2026-10-01 de YouTube a 8
- * plataformas: YouTube, TikTok, Vimeo, Twitch (video o clip), Facebook,
- * Threads, Instagram y X — ver app/services/video_service.py). Si la
+ * plataformas: YouTube, TikTok, Vimeo, Twitch (video, clip o canal en
+ * vivo), Facebook, Threads, Instagram y X — ver
+ * app/services/video_service.py). Si la
  * tarjeta trae `data-video-plataforma`/`data-video-valor` (ver
  * resolver_video_producto) el modal muestra la pestaña "Video" además
  * de "Fotos" — un producto puede tener más fotos que la que ya se ve
@@ -111,6 +112,14 @@ document.addEventListener("DOMContentLoaded", () => {
         twitch_clip: {
             tipo: "iframe",
             src: (valor) => `https://clips.twitch.tv/embed?clip=${valor}&parent=${location.hostname}`,
+        },
+        // Canal en vivo (2026-10-01, Jose probó con el link de su propio
+        // canal y no se reconocía) — el reproductor de canal de Twitch
+        // funciona esté en vivo o no (muestra la pantalla "offline" si no
+        // transmite), así que no hace falta saber el estado del stream acá.
+        twitch_channel: {
+            tipo: "iframe",
+            src: (valor) => `https://player.twitch.tv/?channel=${valor}&parent=${location.hostname}`,
         },
         facebook: {
             tipo: "widget",
@@ -373,6 +382,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const hayVideo = mostrarVideo(tarjeta.dataset.videoPlataforma || "", tarjeta.dataset.videoValor || "");
         if (tabs) tabs.hidden = !hayVideo;
         mostrarPestana("fotos");
+        delete modal.dataset.modo;
 
         modal.hidden = false;
     }
@@ -389,6 +399,7 @@ document.addEventListener("DOMContentLoaded", () => {
             formAviso.hidden = true;
         }
         titulo.textContent = "Video";
+        modal.dataset.modo = "trailer";
         if (tabs) tabs.hidden = true;
         if (panelFotos) panelFotos.hidden = true;
         marcarVideoVertical(esVertical);
